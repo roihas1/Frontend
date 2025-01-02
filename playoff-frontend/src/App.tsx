@@ -10,6 +10,8 @@ import HomePage from "./pages/HomePage";
 import { SuccessMessageProvider } from "./components/successMassageProvider";
 import { UserProvider } from "./components/userContext";
 import UpdateBetsPage from "./pages/UpdateBetsPage";
+import PageBackground from "./components/Layout/PageBackground";
+import NBALogo from "./assets/NBALogo.jpg";
 
 function App() {
   // const location = useLocation();
@@ -20,7 +22,9 @@ function App() {
       <ErrorProvider>
         <SuccessMessageProvider>
           <UserProvider>
+          {/* <PageBackground imageSrc={NBALogo}/> */}
             <div className="flex flex-col min-h-screen overflow-auto bg-gray-100">
+              
               <Navbar />
               <Routes>
                 <Route path="/" element={<LoginPage />} />

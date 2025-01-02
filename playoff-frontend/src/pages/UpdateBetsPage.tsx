@@ -1,36 +1,45 @@
 import React, { useState, useEffect } from "react";
-import axiosInstance from "../api/axiosInstance"; // Adjust the import to your axios instance
+import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/ErrorProvider";
 import { useSuccessMessage } from "../components/successMassageProvider";
-import { PlayerMatchupBet, Series } from "./HomePage"; // Make sure this import path is correct
-// import { Bet } from '../components/form/TeamDialog';  // Make sure this import path is correct
+import SubmitButton from "../components/form/SubmitButton";
+import { Series, PlayerMatchupBet } from "./HomePage";
+
+// Enum for matchup type
+export enum PlayerMatchupType {
+  UNDEROVER = "UNDER/OVER",
+  PLAYERMATCHUP = "PLAYERMATCHUP",
+}
+
+// Enum for matchup categories
 export enum MatchupCategory {
-  POINTS = "Points",
-  REBOUNDS = "Rebounds",
   ASSISTS = "Assists",
-  THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
-  STEALS = "Steals",
   BLOCKS = "Blocks",
-  TURNOVERS = "Turnovers",
   FIELD_GOAL_PERCENTAGE = "Field Goal Percentage",
   FREE_THROW_PERCENTAGE = "Free Throw Percentage",
   MINUTES_PLAYED = "Minutes Played",
+  POINTS = "Points",
+  REBOUNDS = "Rebounds",
+  STEALS = "Steals",
+  THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
+  TURNOVERS = "Turnovers",
 }
+
 const UpdateBetsPage: React.FC = () => {
-  const [seriesList, setSeriesList] = useState<Series[]>([]); // Store series data
-  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null); // Track selected series
-  const [bets, setBets] = useState<PlayerMatchupBet[]>([]); // Store bets associated with selected series
-  const [selectedBet, setSelectedBet] = useState<PlayerMatchupBet | null>(null); // Track selected bet details
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
+  const [bets, setBets] = useState<PlayerMatchupBet[]>([]);
+  const [selectedBet, setSelectedBet] = useState<PlayerMatchupBet | null>(null);
   const [loading, setLoading] = useState(false);
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
 
-  // Fetch all series on initial render
+  // Fetch all series
   useEffect(() => {
     const fetchSeries = async () => {
       try {
-        const response = await axiosInstance.get("/series"); // Adjust the API endpoint
-        setSeriesList(response.data); // Store fetched series in state
+        const response = await axiosInstance.get("/series");
+        setSeriesList(response.data);
       } catch (error) {
         showError("Failed to fetch series.");
       }
@@ -41,62 +50,119 @@ const UpdateBetsPage: React.FC = () => {
   // Fetch bets for the selected series
   useEffect(() => {
     if (selectedSeries) {
-      // const fetchBets = async () => {
-      //   try {
-      //     const response = await axiosInstance.get(`/series/${selectedSeriesId}/bets`);  // Adjust API endpoint
-      //     setBets(response.data);  // Store bets for the selected series
-      //   } catch (error) {
-      //     showError('Failed to fetch bets.');
-      //   }
-      // };
-      // fetchBets();
+      setBets(selectedSeries.playerMatchupBets);
+      setSelectedBet(null);
     }
   }, [selectedSeries]);
 
   // Handle form field changes for the selected bet
   const handleInputChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (selectedBet) {
-      const { name, options } = e.target;
+      const { name, options, type, value } = e.target;
       console.log(name, options);
-      const selectedCategories = Array.from(options)
-        .filter((option) => option.selected)
-        .map((option) => option.value as MatchupCategory); // Get the selected categories
+      if (name === "categories") {
+        const selectedCategories = Array.from(options)
+          .filter((option) => option.selected)
+          .map((option) => option.value as MatchupCategory); // Get the selected categories
+
+        setSelectedBet({
+          ...selectedBet,
+          categories: [
+            ...new Set([...selectedBet.categories, selectedCategories[0]]),
+          ],
+        });
+      } else if (name === "typeOfMatchup") {
+        setSelectedBet({
+          ...selectedBet,
+          typeOfMatchup: Array.from(options)
+            .filter((option) => option.selected)
+            .map((option) => option.value as PlayerMatchupType)[0],
+        });
+      } else {
+        console.log(typeof e.target.value);
+        setSelectedBet({
+          ...selectedBet,
+          [name]: type === "number" ? parseInt(value) : value,
+        });
+      }
+    }
+  };
+  const handleRemoveCategory = (category: MatchupCategory) => {
+    if (selectedBet) {
       setSelectedBet({
         ...selectedBet,
-        [name]: selectedCategories,
+        categories: selectedBet.categories.filter((cat) => cat !== category), // Remove category from the array
       });
     }
   };
-
   // Handle bet selection for editing
   const handleBetSelection = (bet: PlayerMatchupBet) => {
-    setSelectedBet(bet); // Set selected bet details for editing
+    setSelectedBet(bet);
   };
 
-  // Handle form submission (either add or update bet)
+  // Handle form submission for new or updated bet
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBet) return;
 
     setLoading(true);
-
     try {
-      if (selectedBet) {
-        // Update existing bet
-        // API call logic to update bet
+      if (selectedBet.id) {
+        const response = await axiosInstance.patch(
+          `/player-matchup-bet/${selectedBet.id}/update`,
+          {
+            categories: selectedBet.categories,
+            fantasyPoints: selectedBet.fantasyPoints,
+            player1: selectedBet.player1,
+            player2: selectedBet.player2,
+            differential: selectedBet.differential,
+            typeOfMatchup: selectedBet.typeOfMatchup,
+          }
+        );
+        setBets((prevBets) =>
+          prevBets.map((bet) =>
+            bet.betId === selectedBet.betId ? { ...bet, ...selectedBet } : bet
+          )
+        );
         showSuccessMessage("Bet updated successfully!");
-      } else {
-        // Add new bet
-        // API call logic to add new bet
-        showSuccessMessage("New bet created successfully!");
+      } else{
+        const response = await axiosInstance.post("/player-matchup-bet", {
+          categories: selectedBet.categories,
+          fantasyPoints: selectedBet.fantasyPoints,
+          player1: selectedBet.player1,
+          player2: selectedBet.player2,
+          differential: selectedBet.differential,
+          typeOfMatchup: selectedBet.typeOfMatchup,
+          seriesId: selectedSeries?.id,
+        });
+        setBets((prevBets) => [...prevBets, response.data]);
+        showSuccessMessage("Bet created successfully!");
       }
+    
       setSelectedBet(null); // Clear selected bet after submission
     } catch (error) {
+      console.error(error.response ? error.response.data : error.message);
       showError("Failed to submit the bet.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Handle creating a new bet
+  const handleCreateNewBet = () => {
+    setSelectedBet({
+      betId: "", // Temporary value for betId
+      seriesId: selectedSeries?.id || "",
+      typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
+      categories: [],
+      fantasyPoints: 0,
+      player1: "",
+      player2: "",
+      differential: 0,
+    });
+  };
+  
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -109,10 +175,10 @@ const UpdateBetsPage: React.FC = () => {
         </label>
         <select
           id="selectSeries"
-          value={selectedSeries}
+          value={selectedSeries?.id || ""}
           onChange={(e) => {
-            const series = seriesList.find((s) => s.id === e.target.value); // Find the series object based on the selected ID
-            setSelectedSeries(series || null); // Store the entire series object
+            const series = seriesList.find((s) => s.id === e.target.value);
+            setSelectedSeries(series || null);
             setBets(series?.playerMatchupBets || []);
           }}
           className="w-full p-3 border border-gray-300 rounded-lg mt-2"
@@ -154,9 +220,34 @@ const UpdateBetsPage: React.FC = () => {
         </>
       )}
 
+      {/* Create New Bet */}
+      <div className="flex justify-center mt-4">
+        <SubmitButton
+          loading={loading}
+          text="Create New Bet"
+          onClick={handleCreateNewBet}
+        />
+      </div>
+
       {/* Bet Update Form */}
       {selectedBet && (
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-lg font-semibold">Matchup Type</label>
+            <select
+              name="typeOfMatchup"
+              value={selectedBet?.typeOfMatchup}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+            >
+              {Object.values(PlayerMatchupType).map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-lg font-semibold">Player 1</label>
             <input
@@ -191,13 +282,26 @@ const UpdateBetsPage: React.FC = () => {
           </div>
 
           <div>
+            <label className="block text-lg font-semibold">
+              Fantasy Points
+            </label>
+            <input
+              type="number"
+              name="fantasyPoints"
+              value={selectedBet.fantasyPoints}
+              onChange={handleInputChange}
+              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+            />
+          </div>
+
+          <div>
             <label className="block text-lg font-semibold">Categories</label>
             <select
               multiple
-              name="category"
-              value={selectedBet?.categories[0]} // Bind selected categories
+              name="categories"
+              value={selectedBet?.categories}
               onChange={handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+              className="w-full p-3 border border-gray-300 h-[150px] rounded-lg mt-2"
             >
               {Object.values(MatchupCategory).map((category) => (
                 <option key={category} value={category}>
@@ -207,20 +311,43 @@ const UpdateBetsPage: React.FC = () => {
             </select>
           </div>
 
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold">Selected Categories:</h3>
+            <ul className="list-disc pl-6">
+              {selectedBet.categories.map((category) => (
+                <li key={category} className="flex justify-between">
+                  <span>{category}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCategory(category)}
+                    className="text-colors-nba-red hover:text-red-700"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      className="size-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                      />
+                    </svg>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="flex justify-center mt-4">
-            <button
-              type="submit"
-              className={`px-4 py-2 text-white ${
-                loading ? "bg-gray-500" : "bg-blue-600"
-              } rounded-lg`}
-              disabled={loading}
-            >
-              {loading
-                ? "Submitting..."
-                : selectedBet
-                ? "Update Bet"
-                : "Create Bet"}
-            </button>
+            <SubmitButton
+              loading={loading}
+              text={loading ? "Updating" : "Update"}
+              onClick={handleSubmit}
+            />
           </div>
         </form>
       )}

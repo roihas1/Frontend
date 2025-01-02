@@ -35,10 +35,11 @@ import PageBackground from "../components/Layout/PageBackground";
 import NBALogo from "../assets/NBALogo.jpg";
 import axiosInstance from "../api/axiosInstance";
 import MobileMatchupList from "../components/MobileHomePage";
-import { MatchupCategory } from "./UpdateBetsPage";
+import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
 export interface PlayerMatchupBet {
+  betId: string;
   seriesId: string;
-  typeOfMatchup: "UNDER/OVER" | "PLAYERMATCHUP";
+  typeOfMatchup: PlayerMatchupType;
   categories: MatchupCategory[];
   fantasyPoints: number;
   player1: string;
@@ -94,14 +95,22 @@ const HomePage: React.FC = () => {
     washington_wizards: washingtonWizardsLogo,
   };
 
-  const [series, setSeries] = useState<{ west: Series[]; east: Series[]; finals: Series[] }>({
+  const [series, setSeries] = useState<{
+    west: Series[];
+    east: Series[];
+    finals: Series[];
+  }>({
     west: [],
     east: [],
     finals: [],
   });
   const getSeries = async () => {
     try {
-      const updatedSeries: { west: Series[]; east: Series[]; finals: Series[] } = {
+      const updatedSeries: {
+        west: Series[];
+        east: Series[];
+        finals: Series[];
+      } = {
         west: [],
         east: [],
         finals: [],
@@ -135,8 +144,7 @@ const HomePage: React.FC = () => {
           updatedSeries.west.push(series);
         } else if (series.conference === "East") {
           updatedSeries.east.push(series);
-        }
-        else{
+        } else {
           updatedSeries.finals.push(series);
         }
       });
@@ -164,7 +172,7 @@ const HomePage: React.FC = () => {
       return 0;
     });
   };
-  
+
   const Round = ({
     matchups,
     roundName,
@@ -173,19 +181,18 @@ const HomePage: React.FC = () => {
     matchups: Series[];
     roundName: string;
     className?: string;
-    
   }) => {
     // Sort matchups by seed
     const sortedMatchups = sortMatchups(matchups);
-  
+
     // Check if there are no matchups
     const placeholderCount =
       roundName === "Conference Semifinals"
         ? 2
-        : roundName === "Conference Finals" || roundName === 'Finals'
+        : roundName === "Conference Finals" || roundName === "Finals"
         ? 1
         : 0;
-  
+
     // If there are matchups, render them
     if (sortedMatchups.length > 0) {
       return (
@@ -203,12 +210,14 @@ const HomePage: React.FC = () => {
         </div>
       );
     }
-  
+
     // Otherwise, show placeholders for the current round
     const placeholders = Array.from({ length: placeholderCount }, (_, idx) => (
       <div
         key={idx}
-        className={`bg-white shadow-lg rounded-lg p-2 m-2 max-w-xs mx-auto ${idx == 1 ? "mt-72" : ""}`}
+        className={`bg-white shadow-lg rounded-lg p-2 m-2 max-w-xs mx-auto ${
+          idx == 1 ? "mt-72" : ""
+        }`}
       >
         <div className="flex flex-col items-center justify-center rounded-md">
           <div className="relative">
@@ -224,7 +233,7 @@ const HomePage: React.FC = () => {
         </div>
       </div>
     ));
-  
+
     return (
       <div className={`flex flex-col ${className}`}>
         <h3 className="text-sm font-semibold text-gray-500 mb-2 text-center break-words">
@@ -275,8 +284,8 @@ const HomePage: React.FC = () => {
   // };
 
   return (
-    <div className=" relative min-h-screen bg-gray-100 p-4">
-      <PageBackground imageSrc={NBALogo} />
+    <div className="relative z-10 min-h-screen bg-gray-100 p-4">
+      
       <h1 className="text-2xl font-bold text-center z-10 mb-8">
         NBA Playoff Bracket
       </h1>
@@ -294,17 +303,23 @@ const HomePage: React.FC = () => {
             </h2>
             <div className="flex gap-16 relative z-10">
               <Round
-                matchups={series.west.filter((elem)=> elem.round === "First Round")}
+                matchups={series.west.filter(
+                  (elem) => elem.round === "First Round"
+                )}
                 roundName="First Round"
                 className="h-[600px]"
               />
               <Round
-                matchups={series.west.filter((elem)=> elem.round === "Conference Semifinals")}
+                matchups={series.west.filter(
+                  (elem) => elem.round === "Conference Semifinals"
+                )}
                 roundName="Conference Semifinals"
                 className="h-[600px] mt-48"
               />
               <Round
-                matchups={series.west.filter((elem)=> elem.round === "Conference Finals")}
+                matchups={series.west.filter(
+                  (elem) => elem.round === "Conference Finals"
+                )}
                 roundName="Conference Finals"
                 className="h-[600px] mt-96"
               />
@@ -314,11 +329,11 @@ const HomePage: React.FC = () => {
           {/* NBA Finals */}
           <div className="flex flex-col items-center justify-center mt-64 relative z-10">
             <h2 className="text-lg font-semibold mb-4">NBA Finals</h2>
-            
+
             <Round
-            matchups={series.finals}
-            roundName="Finals"
-            className="h-[600px] mt-2"
+              matchups={series.finals}
+              roundName="Finals"
+              className="h-[600px] mt-2"
             />
           </div>
 
@@ -329,17 +344,23 @@ const HomePage: React.FC = () => {
             </h2>
             <div className="flex gap-16 relative z-10">
               <Round
-                matchups={series.east.filter((elem)=> elem.round === "Conference Finals")}
+                matchups={series.east.filter(
+                  (elem) => elem.round === "Conference Finals"
+                )}
                 roundName="Conference Finals"
                 className="h-[600px] mt-96"
               />
               <Round
-                matchups={series.east.filter((elem)=> elem.round === "Conference Semifinals")}
+                matchups={series.east.filter(
+                  (elem) => elem.round === "Conference Semifinals"
+                )}
                 roundName="Conference Semifinals"
                 className="h-[600px] mt-48"
               />
               <Round
-                matchups={series.east.filter((elem)=> elem.round === "First Round")}
+                matchups={series.east.filter(
+                  (elem) => elem.round === "First Round"
+                )}
                 roundName="First Round"
                 className="h-[600px]"
               />
