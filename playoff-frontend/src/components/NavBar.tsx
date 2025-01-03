@@ -1,9 +1,14 @@
 import React from "react";
 import NBAlogo from "../assets/NBALogo.jpg";
 import { useUser } from "./userContext";
+import { useLocation, Link } from "react-router-dom"; // Import Link from react-router-dom
 
 const Navbar: React.FC = () => {
   const { role } = useUser();
+  const location = useLocation(); // Get current location
+  
+  // Function to check if the link is active
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path);
 
   const toggleMenu = () => {
     const menu = document.getElementById("navbar-default");
@@ -16,12 +21,12 @@ const Navbar: React.FC = () => {
     <nav className="bg-gray-100 border-gray-200 dark:bg-gray-900 relative z-20">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
         {/* Logo Section */}
-        <a href="/" className="flex items-center space-x-1 rtl:space-x-reverse">
-          <img src={NBAlogo} className="h-8 rounded-md" alt="Flowbite Logo" />
+        <Link to="/" className="flex items-center space-x-1 rtl:space-x-reverse">
+          <img src={NBAlogo} className="h-8 rounded-md" alt="NBA Logo" />
           <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-            Playoffs NBA
+            NBA Playoffs
           </span>
-        </a>
+        </Link>
 
         {/* Hamburger Menu Button */}
         <button
@@ -54,46 +59,56 @@ const Navbar: React.FC = () => {
         <div className="hidden w-full md:block md:w-auto" id="navbar-default">
           <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-100 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-gray-100 dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
             <li>
-              <a
-                href="/home"
-                className="block py-2 px-3 text-white bg-colors-nba-blue rounded md:bg-transparent md:text-colors-nba-blue md:p-0 dark:text-white md:dark:text-blue-500"
+              <Link
+                to="/home"
+                className={`block py-2 px-3 rounded md:bg-transparent hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:text-blue-500 ${
+                  isActive("/home") 
+                    ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold" 
+                    : "text-gray-900"
+                } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
                 aria-current="page"
               >
                 Home
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#"
-                className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
+              <Link
+                to="/leagues"
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                  isActive("/leagues") 
+                    ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold" 
+                    : "text-gray-900"
+                } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
               >
                 Leagues
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="#"
-                className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
+              <Link
+                to="/about"
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                  isActive("/about") 
+                    ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold" 
+                    : "text-gray-900"
+                } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
               >
                 About
-              </a>
+              </Link>
             </li>
-            { role === 'ADMIN' && <li>
-              <a
-                href="/updateBets"
-                className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-              >
-                Update bets
-              </a>
-            </li> }
-            {/* <li>
-              <a
-                href="#"
-                className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-              >
-                Contact
-              </a>
-            </li> */}
+            {role === "ADMIN" && (
+              <li>
+                <Link
+                  to="/updateBets"
+                  className={`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                    isActive("/updateBets") 
+                      ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold" 
+                      : "text-gray-900"
+                  } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
+                >
+                  Update bets
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       </div>

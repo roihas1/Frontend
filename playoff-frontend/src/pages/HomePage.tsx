@@ -47,19 +47,19 @@ export interface PlayerMatchupBet {
   differential: number;
 }
 export interface Series {
-  id: string;
+  id?: string;
   team1: string;
   team2: string;
   dateOfStart: Date;
-  bestOf7BetId: string;
-  teamWinBetId: string;
+  bestOf7BetId?: string;
+  teamWinBetId?: string;
   conference: "West" | "East";
   round: string;
   seed1: number;
   seed2: number;
-  logo1: string;
-  logo2: string;
-  playerMatchupBets: PlayerMatchupBet[];
+  logo1?: string;
+  logo2?: string;
+  playerMatchupBets?: PlayerMatchupBet[];
 }
 const HomePage: React.FC = () => {
   const logos: Record<string, string> = {
@@ -287,7 +287,7 @@ const HomePage: React.FC = () => {
     <div className="relative z-10 min-h-screen bg-gray-100 p-4">
       
       <h1 className="text-2xl font-bold text-center z-10 mb-8">
-        NBA Playoff Bracket
+        NBA Playoffs Bracket
       </h1>
 
       {/* Mobile View */}

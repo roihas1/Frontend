@@ -12,6 +12,7 @@ import { UserProvider } from "./components/userContext";
 import UpdateBetsPage from "./pages/UpdateBetsPage";
 import PageBackground from "./components/Layout/PageBackground";
 import NBALogo from "./assets/NBALogo.jpg";
+import LeaguesPage from "./pages/LeaguesPage";
 
 function App() {
   // const location = useLocation();
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path='/updateBets' element={<UpdateBetsPage />} />
+                <Route path="/leagues" element={<LeaguesPage/>}/>
               </Routes>
             </div>
           </UserProvider>
