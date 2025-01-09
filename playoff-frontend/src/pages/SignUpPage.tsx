@@ -40,7 +40,7 @@ const SignUpPage: React.FC = () => {
       setLastName("");
       setEmail("");
       setConfirmPassword("");
-      navigate("/"); // Redirect to login page after successful sign-up
+      navigate("/login"); // Redirect to login page after successful sign-up
     } catch (err) {
       if (err.response) {
         console.log("Response error:", err.response.data);
@@ -125,7 +125,7 @@ const SignUpPage: React.FC = () => {
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{" "}
-            <Link to="/" className="text-colors-nba-blue hover:text-colors-nba-red">
+            <Link to="/login" className="text-colors-nba-blue hover:text-colors-nba-red">
               Login
             </Link>
           </p>

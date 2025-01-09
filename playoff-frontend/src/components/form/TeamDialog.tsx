@@ -40,8 +40,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
   const [hasGuesses, setHasGuesses] = useState<boolean>(false);
+  const isStartDatePassed = new Date() > new Date(series.dateOfStart);
   // const { role } = useUser();
- 
+
   // Handle team selection
   const handleTeamSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedTeam(parseInt(event.target.value));
@@ -124,7 +125,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       const response = await axiosInstance.get(
         `series/${series.id}/getGuesses`
       );
-      console.log(response.data);
       return response.data;
     } catch (error) {
       showError(`Failed to get guesses ${error}`);
@@ -132,7 +132,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && series) {
       const fetchGuesses = async () => {
         const userGuesses = await getUserGuesses();
         if (userGuesses["playerMatchupGuess"].length > 0) {
@@ -153,7 +153,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       };
       fetchGuesses();
     }
-  }, [isOpen, series.id]);
+  }, [isOpen, series]);
 
   return (
     <Dialog open={isOpen} onClose={closeDialog} className="relative z-30">
@@ -189,31 +189,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             </svg>
             <span className="sr-only">Close modal</span>
           </button>
-          {/* <div className="absolute top-4 left-4 text-lg font-semibold"> points</div> */}
-          {/* Edit Button for Admin */}
 
-          {/* {role === "ADMIN" && (
-            <button
-              type="button"
-              className="absolute top-4 right-16 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                className="size-6"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                />
-              </svg>
-              <span className="sr-only">Edit</span>
-            </button>
-          )} */}
           {/* Title */}
           <Dialog.Title
             as="h3"
@@ -222,13 +198,19 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             Series bets
           </Dialog.Title>
 
-          {/* Team Logos */}
-          <div className="flex justify-center mb-4 space-x-80">
+          <div className="flex justify-center mb-4 space-x-10 items-center">
             <img
               src={series.logo1}
               alt={`${series.logo1} logo`}
               className="h-20 object-contain"
             />
+
+            {isStartDatePassed && (
+              <div className="text-center text-lg font-semibold text-gray-700 bg-colors-nba-blue bg-opacity-40 px-4 py-2 rounded-lg shadow-md ">
+                The series has started! <br /> Bets are now closed.
+              </div>
+            )}
+
             <img
               src={series.logo2}
               alt={`${series.logo2} logo`}
@@ -236,8 +218,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             />
           </div>
 
-          {/* Dropdown and Team Names with Radio Buttons */}
-          <div className="mt-4">
+          <div className="mt-4 ">
             {/* Dropdown for selecting number of games */}
             <h4 className="text-lg font-semibold mb-2 flex justify-center">
               Choose the number of games
@@ -247,6 +228,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                 className="p-2 border w-1/6 text-colors-nba-blue border-colors-nba-blue rounded-lg"
                 value={selectedNumberOfGames}
                 onChange={handleNumberOfGamesSelection}
+                disabled={isStartDatePassed}
               >
                 <option value="">Games</option>
                 <option value="4">4</option>
@@ -271,6 +253,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   className="hidden peer"
                   onChange={handleTeamSelection}
                   checked={selectedTeam === 1}
+                  disabled={isStartDatePassed}
                 />
                 <label
                   htmlFor="team1"
@@ -295,6 +278,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   className="hidden peer"
                   onChange={handleTeamSelection}
                   checked={selectedTeam === 2}
+                  disabled={isStartDatePassed}
                 />
                 <label
                   htmlFor="team2"
@@ -316,10 +300,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             <div className="mt-4">
               <h4 className="text-lg font-semibold mb-2">Select the winner</h4>
               <ul className="space-y-4">
-                {series.playerMatchupBets.map((bet, index) => (
+                {series.playerMatchupBets?.map((bet, index) => (
                   <li key={index} className="flex justify-between">
                     {/* Player 1 Selection */}
-                    <div className="flex items-center space-x-2 w-full">
+                    <div className="flex items-center space-x-2 w-full relative">
                       <input
                         type="radio"
                         id={`bet-player1-${index}`}
@@ -328,19 +312,29 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                         className="hidden peer"
                         onChange={() => handlePlayerSelection(index, 1)}
                         checked={selectedPlayerForBet[index] == 1}
+                        disabled={isStartDatePassed}
                       />
                       <label
                         htmlFor={`bet-player1-${index}`}
-                        className="inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className={`inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
+                          bet.currentStats[0] > bet.currentStats[1]
+                            ? 'after:content-[""] after:w-3 after:h-3 after:bg-green-500 after:rounded-full after:absolute after:right-2 after:top-1/2 after:transform after:translate-y-[-50%]'
+                            : ""
+                        }`}
                       >
-                        <div className="w-full text-lg font-semibold">
-                          {bet.player1}
+                        <div className="flex justify-between w-1/2">
+                          <div className="w-full text-lg font-semibold">
+                            {bet.player1}
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {bet.currentStats[0]}
+                          </div>
                         </div>
                       </label>
                     </div>
 
                     {/* Player 2 Selection */}
-                    <div className="flex items-center space-x-2 w-full">
+                    <div className="flex items-center space-x-2 w-full relative">
                       <input
                         type="radio"
                         id={`bet-player2-${index}`}
@@ -349,17 +343,30 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                         className="hidden peer"
                         onChange={() => handlePlayerSelection(index, 2)}
                         checked={selectedPlayerForBet[index] == 2}
+                        disabled={isStartDatePassed}
                       />
                       <label
                         htmlFor={`bet-player2-${index}`}
-                        className="inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700"
+                        className={`inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
+                          bet.currentStats[0] < bet.currentStats[1]
+                            ? 'after:content-[""] after:w-3 after:h-3 after:bg-green-500 after:rounded-full after:absolute after:right-2 after:top-1/2 after:transform after:translate-y-[-50%]'
+                            : ""
+                        }`}
                       >
-                        <div className="w-full text-lg font-semibold">
-                          {bet.player2}
+                        <div className="flex justify-between w-1/2">
+                          <div className="w-full text-lg font-semibold">
+                            {bet.player2}
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {bet.currentStats[1]}
+                          </div>
+                          <div className="text-lg font-semibold">
+                            +{bet.differential}
+                          </div>
                         </div>
                       </label>
                     </div>
-                    <div className="flex items-center space-x-2 w-1/6">
+                    {/* <div className="flex items-center space-x-2 w-1/6">
                       <label
                         htmlFor={`bet-label-${index}`}
                         className="inline-flex items-center justify-between w-full p-3 text-black bg-white "
@@ -369,14 +376,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                           +{bet.differential}
                         </div>
                       </label>
-                    </div>
-                    <div className="flex items-center space-x-2 w-1/4 pl-4">
+                    </div> */}
+                    <div className="flex items-center space-x-2 w-1/2 pl-4">
                       <label
                         htmlFor={`bet-label-${index}`}
                         className="inline-flex items-center justify-between w-full p-3 text-black bg-white "
                       >
                         <div className="w-full text-lg font-semibold">
-                          {bet.categories.join(" ")}
+                          {bet.categories.join(" | ")}
                         </div>
                       </label>
                     </div>
@@ -392,6 +399,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               text={loading ? "Updating.." : "Update"}
               onClick={handleSubmit}
               loading={false}
+              disabled={isStartDatePassed}
             />
           </div>
         </Dialog.Panel>
