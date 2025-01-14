@@ -6,6 +6,7 @@ import axiosInstance from "../api/axiosInstance";
 import PageBackground from "../components/Layout/PageBackground";
 import SubmitButton from "../components/form/SubmitButton";
 import InputField from "../components/form/FormInput";
+import { useSuccessMessage } from "../components/successMassageProvider";
 
 const SignUpPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -17,6 +18,7 @@ const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { showError } = useError();
   const navigate = useNavigate();
+  const {showSuccessMessage} = useSuccessMessage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +58,7 @@ const SignUpPage: React.FC = () => {
       }
     } finally {
       setLoading(false);
+      showSuccessMessage("You are signed up! let's log in")
     }
   };
 

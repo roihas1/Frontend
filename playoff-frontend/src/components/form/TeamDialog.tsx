@@ -33,7 +33,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 }) => {
   const [selectedTeam, setSelectedTeam] = useState<number>(-1); // Track selected team
   const [selectedPlayerForBet, setSelectedPlayerForBet] = useState<{
-    [key: number]: number;
+    [key: string]: number;
   }>({}); // Track selected player for each bet
   const [selectedNumberOfGames, setSelectedNumberOfGames] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
@@ -49,10 +49,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   };
 
   // Handle player selection for each bet
-  const handlePlayerSelection = (betIndex: number, player: number) => {
+  const handlePlayerSelection = (id: string, player: number) => {
     setSelectedPlayerForBet((prevState) => ({
       ...prevState,
-      [betIndex]: player,
+      [id]: player,
     }));
   };
 
@@ -72,14 +72,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       return;
     }
 
-    const playerMatchupGuesses = Object.values(selectedPlayerForBet);
     setLoading(true);
+
     if (!hasGuesses) {
       try {
         await axiosInstance.post(`/series/${series.id}/createGuesses`, {
           teamWinGuess: selectedTeam,
           bestOf7Guess: selectedNumberOfGames,
-          playermatchupGuess: playerMatchupGuesses,
+          playermatchupGuess: selectedPlayerForBet,
         });
         closeDialog(); // Close the dialog if submission is successful
       } catch (error) {
@@ -95,6 +95,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       } finally {
         showSuccessMessage("Guesses were updated.");
         setLoading(false);
+        setSelectedTeam(-1); // Reset selected team
+        setSelectedPlayerForBet({}); // Reset selected players for bets
+        setSelectedNumberOfGames(0); // Reset number of games
+        setHasGuesses(false);
       }
     } else {
       try {
@@ -117,10 +121,15 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       } finally {
         showSuccessMessage("Guesses were updated.");
         setLoading(false);
+        setSelectedTeam(-1); // Reset selected team
+        setSelectedPlayerForBet({}); // Reset selected players for bets
+        setSelectedNumberOfGames(0); // Reset number of games
+        setHasGuesses(false);
       }
     }
   };
   const getUserGuesses = async () => {
+    setLoading(true);
     try {
       const response = await axiosInstance.get(
         `series/${series.id}/getGuesses`
@@ -128,6 +137,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       return response.data;
     } catch (error) {
       showError(`Failed to get guesses ${error}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,15 +146,22 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     if (isOpen && series) {
       const fetchGuesses = async () => {
         const userGuesses = await getUserGuesses();
-        if (userGuesses["playerMatchupGuess"].length > 0) {
-          setHasGuesses(true);
+
+        if (userGuesses["teamWinGuess"]) {
+          // setHasGuesses(true);
           setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
-          setSelectedNumberOfGames(userGuesses["bestOf7Guess"]["guess"]);
+        }
+        if (userGuesses["playerMatchupGuess"].length > 0) {
           userGuesses["playerMatchupGuess"].forEach(
             (element: any, idx: number) => {
-              handlePlayerSelection(idx, element["guess"]);
+              handlePlayerSelection(element["bet"]["id"], element["guess"]);
             }
           );
+          // setHasGuesses(true);
+        }
+        if (userGuesses["bestOf7Guess"]) {
+          setSelectedNumberOfGames(userGuesses["bestOf7Guess"]["guess"]);
+          // setHasGuesses(true);
         } else {
           setSelectedTeam(-1); // Reset selected team
           setSelectedPlayerForBet({}); // Reset selected players for bets
@@ -155,6 +173,17 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
   }, [isOpen, series]);
 
+  const handleRemoveGuessFromBet = (id: string, idx: number) => {
+    if (selectedPlayerForBet[id] === idx) {
+      const updatedState = { ...selectedPlayerForBet };
+
+      // Delete the property from the copy
+      delete updatedState[id];
+
+      // Update the state with the new object
+      setSelectedPlayerForBet(updatedState);
+    }
+  };
   return (
     <Dialog open={isOpen} onClose={closeDialog} className="relative z-30">
       {/* Backdrop */}
@@ -252,6 +281,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   value={1}
                   className="hidden peer"
                   onChange={handleTeamSelection}
+                  onClick={() => setSelectedTeam(-1)}
                   checked={selectedTeam === 1}
                   disabled={isStartDatePassed}
                 />
@@ -277,6 +307,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   value={2}
                   className="hidden peer"
                   onChange={handleTeamSelection}
+                  onClick={() => setSelectedTeam(-1)}
                   checked={selectedTeam === 2}
                   disabled={isStartDatePassed}
                 />
@@ -301,7 +332,17 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               <h4 className="text-lg font-semibold mb-2">Select the winner</h4>
               <ul className="space-y-4">
                 {series.playerMatchupBets?.map((bet, index) => (
-                  <li key={index} className="flex justify-between">
+                  <li key={bet.betId} className="flex justify-between">
+                    <div className="flex items-center space-x-2 w-1/2 pl-4">
+                      <label
+                        htmlFor={`bet-label-${index}`}
+                        className="inline-flex items-center justify-between w-full p-3 text-black bg-white "
+                      >
+                        <div className="w-full text-lg font-semibold">
+                          {bet.categories.join(" & ")}
+                        </div>
+                      </label>
+                    </div>
                     {/* Player 1 Selection */}
                     <div className="flex items-center space-x-2 w-full relative">
                       <input
@@ -310,14 +351,16 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                         name={`bet-${index}`}
                         value={1}
                         className="hidden peer"
-                        onChange={() => handlePlayerSelection(index, 1)}
-                        checked={selectedPlayerForBet[index] == 1}
+                        onChange={() => handlePlayerSelection(bet.id, 1)}
+                        onClick={() => handleRemoveGuessFromBet(bet.id, 1)}
+                        checked={selectedPlayerForBet[bet.id] == 1}
                         disabled={isStartDatePassed}
                       />
                       <label
                         htmlFor={`bet-player1-${index}`}
                         className={`inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
-                          bet.currentStats[0] > bet.currentStats[1]
+                          bet.currentStats[0] >
+                          bet.currentStats[1] + bet.differential
                             ? 'after:content-[""] after:w-3 after:h-3 after:bg-green-500 after:rounded-full after:absolute after:right-2 after:top-1/2 after:transform after:translate-y-[-50%]'
                             : ""
                         }`}
@@ -341,14 +384,16 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                         name={`bet-${index}`}
                         value={2}
                         className="hidden peer"
-                        onChange={() => handlePlayerSelection(index, 2)}
-                        checked={selectedPlayerForBet[index] == 2}
+                        onChange={() => handlePlayerSelection(bet.id, 2)}
+                        checked={selectedPlayerForBet[bet.id] == 2}
+                        onClick={() => handleRemoveGuessFromBet(bet.id, 2)}
                         disabled={isStartDatePassed}
                       />
                       <label
                         htmlFor={`bet-player2-${index}`}
                         className={`inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
-                          bet.currentStats[0] < bet.currentStats[1]
+                          bet.currentStats[0] <
+                          bet.currentStats[1] + bet.differential
                             ? 'after:content-[""] after:w-3 after:h-3 after:bg-green-500 after:rounded-full after:absolute after:right-2 after:top-1/2 after:transform after:translate-y-[-50%]'
                             : ""
                         }`}
@@ -357,33 +402,12 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                           <div className="w-full text-lg font-semibold">
                             {bet.player2}
                           </div>
-                          <div className="text-lg font-semibold">
+                          <div className="text-lg font-semibold flex items-center">
                             {bet.currentStats[1]}
+                            <span className=" ml-1 text-lg font-semibold">
+                              (+{bet.differential})
+                            </span>
                           </div>
-                          <div className="text-lg font-semibold">
-                            +{bet.differential}
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                    {/* <div className="flex items-center space-x-2 w-1/6">
-                      <label
-                        htmlFor={`bet-label-${index}`}
-                        className="inline-flex items-center justify-between w-full p-3 text-black bg-white "
-                      >
-                        <div className="w-full text-lg font-semibold">
-                          {" "}
-                          +{bet.differential}
-                        </div>
-                      </label>
-                    </div> */}
-                    <div className="flex items-center space-x-2 w-1/2 pl-4">
-                      <label
-                        htmlFor={`bet-label-${index}`}
-                        className="inline-flex items-center justify-between w-full p-3 text-black bg-white "
-                      >
-                        <div className="w-full text-lg font-semibold">
-                          {bet.categories.join(" | ")}
                         </div>
                       </label>
                     </div>

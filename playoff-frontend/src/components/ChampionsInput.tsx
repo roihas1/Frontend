@@ -1,18 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Series } from "../pages/HomePage"; // Assuming `Series` type is correctly imported
-import {
-  Button,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-  TextField,
-  FormHelperText,
-} from "@mui/material";
+import { InputLabel, FormControl, CircularProgress } from "@mui/material";
 import axiosInstance from "../api/axiosInstance";
 import { useSuccessMessage } from "./successMassageProvider";
 import { useError } from "./ErrorProvider";
 import SubmitButton from "./form/SubmitButton";
+import CustomSelectInput from "./form/CustomSelectInput";
+import axios from "axios";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -21,6 +15,38 @@ interface ChampionsInputProps {
   stage: string;
   setShowInput: () => void;
 }
+const nbaTeamsNicknames: { [key: string]: string } = {
+  Hawks: "Atlanta Hawks",
+  Celtics: "Boston Celtics",
+  Nets: "Brooklyn Nets",
+  Hornets: "Charlotte Hornets",
+  Bulls: "Chicago Bulls",
+  Cavs: "Cleveland Cavaliers",
+  Mavs: "Dallas Mavericks",
+  Nuggets: "Denver Nuggets",
+  Pistons: "Detroit Pistons",
+  Warriors: "Golden State Warriors",
+  Rockets: "Houston Rockets",
+  Pacers: "Indiana Pacers",
+  Clippers: "Los Angeles Clippers",
+  Lakers: "Los Angeles Lakers",
+  Grizzlies: "Memphis Grizzlies",
+  Heat: "Miami Heat",
+  Bucks: "Milwaukee Bucks",
+  Timberwolves: "Minnesota Timberwolves",
+  Pelicans: "New Orleans Pelicans",
+  Knicks: "New York Knicks",
+  Thunder: "Oklahoma City Thunder",
+  Magic: "Orlando Magic",
+  Suns: "Phoenix Suns",
+  Sixers: "Philadelphia 76ers",
+  Blazers: "Portland Trail Blazers",
+  Kings: "Sacramento Kings",
+  Spurs: "San Antonio Spurs",
+  Raptors: "Toronto Raptors",
+  Jazz: "Utah Jazz",
+  Wizards: "Washington Wizards",
+};
 
 const ChampionsInput: React.FC<ChampionsInputProps> = ({
   west,
@@ -29,32 +55,23 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   stage,
   setShowInput,
 }) => {
-  const [selectedEasternTeam1, setSelectedEasternTeam1] = useState<
-    string | null
-  >(null);
-  const [selectedEasternTeam2, setSelectedEasternTeam2] = useState<
-    string | null
-  >(null);
-  const [selectedWesternTeam1, setSelectedWesternTeam1] = useState<
-    string | null
-  >(null);
-  const [selectedWesternTeam2, setSelectedWesternTeam2] = useState<
-    string | null
-  >(null);
-  const [selectedFinalsTeam1, setSelectedFinalsTeam1] = useState<string | null>(
-    null
-  );
-  const [selectedFinalsTeam2, setSelectedFinalsTeam2] = useState<string | null>(
-    null
-  );
+  const [selectedEasternTeam1, setSelectedEasternTeam1] = useState<string>("");
+  const [selectedEasternTeam2, setSelectedEasternTeam2] = useState<string>("");
+  const [selectedWesternTeam1, setSelectedWesternTeam1] = useState<string>("");
+  const [selectedWesternTeam2, setSelectedWesternTeam2] = useState<string>("");
+  const [selectedFinalsTeam1, setSelectedFinalsTeam1] = useState<string>("");
+  const [selectedFinalsTeam2, setSelectedFinalsTeam2] = useState<string>("");
   const [selectedMvp, setSelectedMvp] = useState<string>("");
   const [selectedChampion, setSelectedChampion] = useState<string>("");
+  const[guessesFilled, setGuessesFilled] = useState<boolean> (false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const { showSuccessMessage } = useSuccessMessage();
   const { showError } = useError();
 
   // Function to get teams from the selected round
   const getTeamsForRound = (round: "east" | "west" | "finals") => {
+    
     switch (round) {
       case "east":
         return [
@@ -153,6 +170,51 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       showSuccessMessage("Your guesses updated!");
     }
   };
+  const fetchUserGuesses = async (stage: string) => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/playoffs-stage/userGuesses/${stage}`);
+      const guesses = response.data;
+      
+      if (
+        guesses.conferenceFinalGuesses.length > 0 &&
+        stage === "Before playoffs"
+      ) {
+        for (const guess of guesses.conferenceFinalGuesses) {
+          switch (guess.conference) {
+            case "East":
+              setSelectedEasternTeam1(guess.team1);
+              setSelectedEasternTeam2(guess.team2);
+              break;
+            case "West":
+              setSelectedWesternTeam1(guess.team1);
+              setSelectedWesternTeam2(guess.team2);
+              break;
+            case "Finals":
+              setSelectedFinalsTeam1(guess.team1);
+              setSelectedFinalsTeam2(guess.team2);
+              break;
+          }
+        }
+      }
+      if (guesses.championTeamGuesses.length > 0) {
+        setSelectedChampion(
+          guesses.championTeamGuesses[0].team
+        );
+      }
+      if (guesses.mvpGuesses.length > 0) {
+        setSelectedMvp(guesses.mvpGuesses[0].player);
+      }
+      setGuessesFilled(true);
+    } catch (error) {
+      showError(`Failed to get your guesses.`);
+    }finally{
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchUserGuesses(stage);
+  }, [ stage]);
 
   // Get the teams for each round
   const easternTeams = getTeamsForRound("east");
@@ -169,11 +231,17 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
           You have until <span className="font-semibold">{startDate}</span> to
           make your guesses.
         </p>
+        {guessesFilled && (<p className="font-bold text-colors-nba-blue">*** Your previous guesses already filled in. ***</p>)}
       </div>
 
       <form onSubmit={handleSubmit}>
+      {loading && (
+          <div className="flex justify-center">
+            <CircularProgress />
+          </div>
+        )}
         {/* Eastern Conference Finals */}
-        {stage === "Before playoffs" && (
+        {!loading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">
               Eastern Conference Finals
@@ -181,43 +249,36 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormControl fullWidth required>
                 <InputLabel>Team 1</InputLabel>
-                <Select
+                <CustomSelectInput
                   id="easternTeam1"
-                  value={selectedEasternTeam1 || ""}
-                  onChange={(e) => setSelectedEasternTeam1(e.target.value)}
                   label="Team 1"
-                >
-                  <MenuItem value="">Select Team 1</MenuItem>
-                  {easternTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  value={selectedEasternTeam1}
+                  options={easternTeams}
+                  onChange={(e) => {
+                    console.log(e.target.name);
+                    setSelectedEasternTeam1(nbaTeamsNicknames[e.target.value]);
+                  }}
+                />
               </FormControl>
 
               <FormControl fullWidth required>
                 <InputLabel>Team 2</InputLabel>
-                <Select
+                <CustomSelectInput
                   id="easternTeam2"
-                  value={selectedEasternTeam2 || ""}
-                  onChange={(e) => setSelectedEasternTeam2(e.target.value)}
+                  value={selectedEasternTeam2}
                   label="Team 2"
-                >
-                  <MenuItem value="">Select Team 2</MenuItem>
-                  {easternTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  options={easternTeams}
+                  onChange={(e) =>
+                    setSelectedEasternTeam2(nbaTeamsNicknames[e.target.value])
+                  }
+                />
               </FormControl>
             </div>
           </div>
         )}
 
         {/* Western Conference Finals */}
-        {stage === "Before playoffs" && (
+        {!loading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">
               Western Conference Finals
@@ -225,78 +286,62 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormControl fullWidth required>
                 <InputLabel>Team 1</InputLabel>
-                <Select
+                <CustomSelectInput
                   id="westernTeam1"
-                  value={selectedWesternTeam1 || ""}
-                  onChange={(e) => setSelectedWesternTeam1(e.target.value)}
+                  value={selectedWesternTeam1}
                   label="Team 1"
-                >
-                  <MenuItem value="">Select Team 1</MenuItem>
-                  {westernTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  options={westernTeams}
+                  onChange={(e) =>
+                    setSelectedWesternTeam1(nbaTeamsNicknames[e.target.value])
+                  }
+                />
               </FormControl>
 
               <FormControl fullWidth required>
                 <InputLabel>Team 2</InputLabel>
-                <Select
+                <CustomSelectInput
                   id="westernTeam2"
-                  value={selectedWesternTeam2 || ""}
-                  onChange={(e) => setSelectedWesternTeam2(e.target.value)}
+                  value={selectedWesternTeam2}
                   label="Team 2"
-                >
-                  <MenuItem value="">Select Team 2</MenuItem>
-                  {westernTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  options={westernTeams}
+                  onChange={(e) =>
+                    setSelectedWesternTeam2(nbaTeamsNicknames[e.target.value])
+                  }
+                />
               </FormControl>
             </div>
           </div>
         )}
 
         {/* Finals */}
-        {stage === "Before playoffs" && (
+        {!loading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl font-semibold mt-2 text-gray-700">Finals</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormControl fullWidth required>
                 <InputLabel>Team 1</InputLabel>
-                <Select
-                  id="finalsTeam1"
-                  value={selectedFinalsTeam1 || ""}
-                  onChange={(e) => setSelectedFinalsTeam1(e.target.value)}
+                <CustomSelectInput
+                  id="FinalsTeam1"
+                  value={selectedFinalsTeam1}
                   label="Team 1"
-                >
-                  <MenuItem value="">Select Team 1</MenuItem>
-                  {finalsTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  onChange={(e) =>
+                    setSelectedFinalsTeam1(nbaTeamsNicknames[e.target.value])
+                  }
+                  options={finalsTeams}
+                />
               </FormControl>
 
               <FormControl fullWidth required>
                 <InputLabel>Team 2</InputLabel>
-                <Select
-                  id="finalsTeam2"
-                  value={selectedFinalsTeam2 || ""}
-                  onChange={(e) => setSelectedFinalsTeam2(e.target.value)}
+                <CustomSelectInput
+                  id="FinalsTeam2"
+                  value={selectedFinalsTeam2}
                   label="Team 2"
-                >
-                  <MenuItem value="">Select Team 2</MenuItem>
-                  {finalsTeams.map((team) => (
-                    <MenuItem key={team} value={team}>
-                      {team}
-                    </MenuItem>
-                  ))}
-                </Select>
+                  onChange={(e) =>
+                    setSelectedFinalsTeam2(nbaTeamsNicknames[e.target.value])
+                  }
+                  options={finalsTeams}
+                />
               </FormControl>
             </div>
           </div>
@@ -305,24 +350,18 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         {/* MVP */}
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
-          stage === "Round 2") && (
+          stage === "Round 2") &&  !loading && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">MVP</h3>
             <FormControl fullWidth required>
               <InputLabel>MVP</InputLabel>
-              <Select
-                onChange={(e) => setSelectedMvp(e.target.value)}
+              <CustomSelectInput
                 id="MVP choice"
-                label="Enter MVP's name"
+                label="MVP's name"
                 value={selectedMvp}
-              >
-                <MenuItem disabled>-- Select MVP --</MenuItem>
-                {playersList.map((player)=>(
-                    <MenuItem key={player} value={player}>
-                        {player}
-                    </MenuItem>
-                ))}
-              </Select>
+                options={playersList}
+                onChange={(e) => setSelectedMvp(e.target.value)}
+              />
             </FormControl>
           </div>
         )}
@@ -330,29 +369,20 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         {/* Champion */}
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
-          stage === "Round 2") && (
+          stage === "Round 2") &&  !loading && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">
               Champion
             </h3>
             <FormControl fullWidth required>
               <InputLabel>Champion Team</InputLabel>
-              <Select
+              <CustomSelectInput
                 id="champion"
-                value={selectedChampion || ""}
+                value={selectedChampion}
                 onChange={(e) => setSelectedChampion(e.target.value)}
                 label="Champion Team"
-                sx={{
-                    borderRadius:"1rem",
-                }}
-              >
-                <MenuItem value="">Select Champion Team</MenuItem>
-                {finalsTeams.map((team) => (
-                  <MenuItem key={team} value={team}>
-                    {team}
-                  </MenuItem>
-                ))}
-              </Select>
+                options={finalsTeams}
+              />
             </FormControl>
           </div>
         )}

@@ -4,6 +4,16 @@ import { useError } from "../components/ErrorProvider";
 import { useSuccessMessage } from "../components/successMassageProvider";
 import SubmitButton from "../components/form/SubmitButton";
 import { Series, PlayerMatchupBet } from "./HomePage";
+import CustomSelectInput from "../components/form/CustomSelectInput";
+import {
+  FormControl,
+  Input,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
+} from "@mui/material";
 
 // Enum for matchup type
 export enum PlayerMatchupType {
@@ -78,13 +88,22 @@ const UpdateBetsPage: React.FC = () => {
   const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [showCreateSeriesForm, setShowCreateSeriesForm] =
     useState<boolean>(false);
+  const [showPlaoffsStageCreation, setShowPlayoffsStageCreation] =
+    useState<boolean>(false);
+  const [stageName, setStageName] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
   const [teamsList, setTeamList] = useState<{ name: string; seed: number }[]>(
     []
   );
+
   const [createNewBet, setCreateNewBet] = useState<boolean>(false);
   const [updateResultSelected, setUpdateResultSelected] =
     useState<boolean>(false);
-
+  const [showCloseChampionsBets, setShowCloseChampionsBets] =
+    useState<boolean>(false);
+  const [mvpPlayer, setMvpPlayer] = useState<string>("");
+  const [championTeam, setChampionTeam] = useState<string>("");
+  const [finalsTeams, setFinalsTeams] = useState<string[]>([]);
   const [newSeries, setNewSeries] = useState<Series>({
     team1: "", // Default empty string for team1
     team2: "", // Default empty string for team2
@@ -110,7 +129,6 @@ const UpdateBetsPage: React.FC = () => {
       try {
         const response = await axiosInstance.get("/series");
         setSeriesList(response.data);
-        console.log(response.data);
       } catch (error) {
         showError("Failed to fetch series.");
         console.log(error);
@@ -136,7 +154,13 @@ const UpdateBetsPage: React.FC = () => {
         currentStats: [0, 0],
       });
     }
-  }, [selectedSeries]);
+    const temporaryList = seriesList
+      .filter((series) => series.conference === "Finals")
+      .map((series) => [series.team1, series.team2])
+      .flat();
+    setFinalsTeams(temporaryList);
+  }, [selectedSeries, seriesList]);
+
   const handleCloseEditBet = () => {
     setIsInEdit(false);
     setSelectedBet({
@@ -304,8 +328,9 @@ const UpdateBetsPage: React.FC = () => {
       } finally {
         setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
-    else{setLoading(false);}
   };
 
   // Handle creating a new bet
@@ -370,6 +395,15 @@ const UpdateBetsPage: React.FC = () => {
       console.log(error.stack);
     }
   };
+  const handleSelectChange = (e: SelectChangeEvent<string>) => {
+    const { value, name } = e.target;
+    const newDate = new Date(value);
+    setNewSeries((prevState) => ({
+      ...prevState,
+      dateOfStart: newDate, // Store the Date object
+    }));
+  };
+
   const handleInputNewSeriesChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -384,7 +418,6 @@ const UpdateBetsPage: React.FC = () => {
       }));
     } else if (name === "team1" || name === "team2") {
       const selectedTeam = teamsList?.find((team) => team.name === value);
-      console.log(selectedTeam);
       if (selectedTeam) {
         setNewSeries((prevState) => ({
           ...prevState,
@@ -409,6 +442,7 @@ const UpdateBetsPage: React.FC = () => {
     }
   };
   const handleCloseSeriesCreation = () => {
+    setIsInEdit(false);
     setShowCreateSeriesForm(false);
   };
   const handleDeleteSeries = async () => {
@@ -476,10 +510,10 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const updateStats = [...selectedBet.currentStats];
-    console.log(selectedBet.currentStats)
+    console.log(selectedBet.currentStats);
     updateStats[0] += player1Stat;
     updateStats[1] += player2Stat;
-    console.log(updateStats)
+    console.log(updateStats);
     try {
       await axiosInstance.patch(
         `/player-matchup-bet/${selectedBet?.id}/update`,
@@ -491,10 +525,11 @@ const UpdateBetsPage: React.FC = () => {
       setPlayer1Stat(0);
       setPlayer2Stat(0);
       setBets((prevBets) =>
-        prevBets.map((bet) =>
-          bet.betId === selectedBet.betId
-            ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
-            : bet // Keep other bets unchanged
+        prevBets.map(
+          (bet) =>
+            bet.betId === selectedBet.betId
+              ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
+              : bet // Keep other bets unchanged
         )
       );
       setSelectedBet({
@@ -511,11 +546,11 @@ const UpdateBetsPage: React.FC = () => {
       });
       showSuccessMessage("Matchup Result updated successfully!");
       setSelectedSeries((prev) => prev);
-      console.log(bets)
+      console.log(bets);
     } catch (error) {
       showError("Failed to update match result.");
     }
-    setLoading(false)
+    setLoading(false);
   };
   const handleUpdateSeriesResult = () => {
     setshowSeriesResultForm(true);
@@ -545,6 +580,44 @@ const UpdateBetsPage: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleCloseChampionsBets = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (window.confirm("Are you sure you want to close Champions Bets?")) {
+      setLoading(true);
+      const easternFinalsTeams = seriesList
+        .filter(
+          (series) =>
+            series.conference === "East" && series.round === "Conference Finals"
+        )
+        .map((series) => [series.team1, series.team2])
+        .flat();
+      const westernFinalsTeams = seriesList
+        .filter(
+          (series) =>
+            series.conference === "West" && series.round === "Conference Finals"
+        )
+        .map((series) => [series.team1, series.team2])
+        .flat();
+      try {
+        axiosInstance.patch("/playoffs-stage/closeGuess", {
+          westernConferenceFinal: westernFinalsTeams,
+          easternConferenceFinal: easternFinalsTeams,
+          finals: finalsTeams,
+          championTeam,
+          mvp: mvpPlayer,
+        });
+        setShowCloseChampionsBets(false);
+        setChampionTeam("");
+        setMvpPlayer("");
+        setLoading(false);
+        setIsInEdit(false);
+        showSuccessMessage("Champions bets closed.");
+      } catch (error) {
+        showError("Failed to close champions bets");
+      }
+    }
+  };
   const handleCreateNewSeries = () => {
     const teamList: { name: string; seed: number }[] = [];
     if (seriesList.length > 7) {
@@ -560,23 +633,158 @@ const UpdateBetsPage: React.FC = () => {
       });
       setTeamList(teamList);
     }
-
+    setIsInEdit(true);
     setShowCreateSeriesForm(true);
   };
+  const handleCreateNewStage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await axiosInstance.post("/playoffs-stage", {
+        name: stageName,
+        startDate,
+      });
+      console.log(response.data);
+      showSuccessMessage("Stage created.");
+
+      setStageName("");
+      setStartDate("");
+      setShowPlayoffsStageCreation(false);
+    } catch (error) {
+      showError("Failed to create new stage.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="p-4 max-w-screen-xl mx-auto flex-1">
-        <h1 className="text-3xl font-bold mb-6">Update Bets</h1>
+    <div className="flex flex-col min-h-screen ">
+      <div className="p-4 max-w-screen-2xl mx-auto flex-1">
+        <h1 className="flex text-3xl font-bold mb-6 justify-center">
+          Update Bets
+        </h1>
         {/* Button to show the create series form */}
-        {!showCreateSeriesForm && (
-          <div className="flex justify-center mb-6">
+        <div className="w-full flex justify-center gap-4 my-8">
+          {!showCreateSeriesForm && (
             <SubmitButton
               loading={loading}
               text="Create New Series"
               onClick={handleCreateNewSeries}
               disabled={isInEdit === true}
+              className="w-1/3"
             />
-          </div>
+          )}
+
+          {!showPlaoffsStageCreation && (
+            <SubmitButton
+              loading={loading}
+              text="Create New Playoffs Stage"
+              onClick={() => {
+                setIsInEdit(true);
+                setShowPlayoffsStageCreation(true);
+              }}
+              disabled={isInEdit === true}
+              className="w-1/3"
+            />
+          )}
+
+          {!showCloseChampionsBets && (
+            <SubmitButton
+              loading={loading}
+              text="Close Champions Bets"
+              disabled={isInEdit}
+              className="w-1/3"
+              onClick={() => {
+                setIsInEdit(true);
+                setShowCloseChampionsBets(true);
+              }}
+            />
+          )}
+        </div>
+        {showCloseChampionsBets && (
+          <form onSubmit={handleCloseChampionsBets}>
+            <div className="space-y-4">
+              <InputLabel> MVP player</InputLabel>
+              <Input
+                type="text"
+                name="mvp player"
+                value={mvpPlayer}
+                onChange={(e) => setMvpPlayer(e.target.value)}
+                placeholder="MVP Player"
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              />
+              <InputLabel> Champion Team</InputLabel>
+              <FormControl fullWidth required>
+                <InputLabel>-- Select Champion Team --</InputLabel>
+                <Select
+                  id="championTeam"
+                  value={championTeam || ""}
+                  label="Champion Team"
+                  name="Champion Team"
+                  onChange={(e) => setChampionTeam(e.target.value)}
+                  className="bg-white"
+                  sx={{
+                    borderRadius: "1rem",
+                  }}
+                >
+                  <MenuItem key={finalsTeams[0]} value={finalsTeams[0]}>
+                    {finalsTeams[0]}
+                  </MenuItem>
+                  <MenuItem key={finalsTeams[1]} value={finalsTeams[1]}>
+                    {finalsTeams[1]}
+                  </MenuItem>
+                </Select>
+              </FormControl>
+              <div className="flex justify-between mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsInEdit(false);
+                    setShowCloseChampionsBets(false);
+                  }}
+                  className="text-colors-nba-red hover:scale-110 transition-transform"
+                >
+                  Close Edit
+                </button>
+                <SubmitButton loading={loading} text="Submit" />
+              </div>
+            </div>
+          </form>
+        )}
+        {showPlaoffsStageCreation && (
+          <form onSubmit={handleCreateNewStage}>
+            <FormControl fullWidth required>
+              <InputLabel>Stage</InputLabel>
+              <CustomSelectInput
+                id="playoffs Stage"
+                label="Stage"
+                value={stageName}
+                options={["Before playoffs", "Round 1", "Round 2"]}
+                onChange={(e) => setStageName(e.target.value)}
+              />
+              <input
+                type="date"
+                name="dateOfStart"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2 bg-transparent"
+              />
+            </FormControl>
+            <div className="flex justify-between mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsInEdit(false);
+                  setShowPlayoffsStageCreation(false);
+                }}
+                className="text-colors-nba-red hover:scale-110 transition-transform"
+              >
+                Close Edit
+              </button>
+              <SubmitButton loading={loading} text="Submit" />
+            </div>
+          </form>
         )}
 
         {/* Create New Series Form */}
@@ -687,7 +895,6 @@ const UpdateBetsPage: React.FC = () => {
                 value={newSeries.team1}
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-                
               >
                 <option value="">-- Select Second Team --</option>
                 {nbaTeamsList?.map((team) => (

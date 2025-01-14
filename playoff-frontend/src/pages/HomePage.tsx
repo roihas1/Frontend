@@ -38,8 +38,8 @@ import MobileMatchupList from "../components/MobileHomePage";
 import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
 import ChampionsInput from "../components/ChampionsInput";
 import { useError } from "../components/ErrorProvider";
-import Tooltip from '@mui/material/Tooltip';
-import { Zoom } from "@mui/material";
+import Tooltip from "@mui/material/Tooltip";
+import { CircularProgress, Zoom } from "@mui/material";
 export interface PlayerMatchupBet {
   betId: string;
   seriesId: string;
@@ -59,7 +59,7 @@ export interface Series {
   dateOfStart: Date;
   bestOf7BetId?: string;
   teamWinBetId?: string;
-  conference: "West" | "East" | "Final";
+  conference: "West" | "East" | "Finals";
   round: string;
   seed1: number;
   seed2: number;
@@ -69,30 +69,63 @@ export interface Series {
   winnerTeam: number;
   numOfGames: number;
 }
-interface ChampionTeamGuess {
-  id: string;
-  fantasyPoints: number;
-  team: string;
-}
-interface ConferenceFinalGuess {
-  id: string;
-  fantasyPoints: number;
-  team1: string;
-  team2: string;
-  conference: "West" | "East" | "Final";
-}
-interface MVPGuess {
-  id: string;
-  fantasyPoints: number;
-  player: string;
-}
-interface Stage {
-  championTeamGuess: ChampionTeamGuess;
-  conferenceFinalGuess: ConferenceFinalGuess;
-  mvpGuess: MVPGuess;
-  name: string;
-  startDate: Date;
-}
+// interface ChampionTeamGuess {
+//   id: string;
+//   fantasyPoints: number;
+//   team: string;
+// }
+// interface ConferenceFinalGuess {
+//   id: string;
+//   fantasyPoints: number;
+//   team1: string;
+//   team2: string;
+//   conference: "West" | "East" | "Finals";
+// }
+// interface MVPGuess {
+//   id: string;
+//   fantasyPoints: number;
+//   player: string;
+// }
+// interface Stage {
+//   championTeamGuess: ChampionTeamGuess;
+//   conferenceFinalGuess: ConferenceFinalGuess;
+//   mvpGuess: MVPGuess;
+//   name: string;
+//   startDate: Date;
+// }
+const nbaTeams = {
+  "Atlanta Hawks": "Hawks",
+  "Boston Celtics": "Celtics",
+  "Brooklyn Nets": "Nets",
+  "Charlotte Hornets": "Hornets",
+  "Chicago Bulls": "Bulls",
+  "Cleveland Cavaliers": "Cavs",
+  "Dallas Mavericks": "Mavs",
+  "Denver Nuggets": "Nuggets",
+  "Detroit Pistons": "Pistons",
+  "Golden State Warriors": "Warriors",
+  "Houston Rockets": "Rockets",
+  "Indiana Pacers": "Pacers",
+  "Los Angeles Clippers": "Clippers",
+  "Los Angeles Lakers": "Lakers",
+  "Memphis Grizzlies": "Grizzlies",
+  "Miami Heat": "Heat",
+  "Milwaukee Bucks": "Bucks",
+  "Minnesota Timberwolves": "Wolves",
+  "New Orleans Pelicans": "Pelicans",
+  "New York Knicks": "Knicks",
+  "Oklahoma City Thunder": "Thunder",
+  "Orlando Magic": "Magic",
+  "Phoenix Suns": "Suns",
+  "Philadelphia 76ers": "Sixers",
+  "Portland Trail Blazers": "Blazers",
+  "Sacramento Kings": "Kings",
+  "San Antonio Spurs": "Spurs",
+  "Toronto Raptors": "Raptors",
+  "Utah Jazz": "Jazz",
+  "Washington Wizards": "Wizards",
+};
+
 const HomePage: React.FC = () => {
   const logos: Record<string, string> = {
     atlanta_hawks: atlantaHawksLogo,
@@ -139,9 +172,11 @@ const HomePage: React.FC = () => {
   const [showInput, setShowInput] = useState<boolean>(false);
   const [stage, setStage] = useState<string>("");
   const [stageStartDate, setStageStartDate] = useState<string>("");
-  const [stages, setStages] = useState<Stage[] | null>(null);
-  const [showTooltip, setShowTooltip] = useState(false);
+  // const [stages, setStages] = useState<Stage[] | null>(null);
+  // const [showTooltip, setShowTooltip] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const getSeries = async () => {
+    setLoading(true);
     try {
       const updatedSeries: {
         west: Series[];
@@ -164,8 +199,8 @@ const HomePage: React.FC = () => {
         const team2Logo = logos[element.team2.toLowerCase().replace(/ /g, "_")];
         const series: Series = {
           id: element.id,
-          team1: capitalize(element.team1.split(" ").pop()),
-          team2: capitalize(element.team2.split(" ").pop()),
+          team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
+          team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
           dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
           bestOf7BetId: element.bestOf7BetId || "", // If these are optional, use a fallback value
           teamWinBetId: element.teamWinBetId || "",
@@ -177,23 +212,27 @@ const HomePage: React.FC = () => {
           logo2: team2Logo,
           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
         };
-        // console.log(series);
         // Push series into the correct conference array based on the "conference" field
         if (series.conference === "West") {
           updatedSeries.west.push(series);
         } else if (series.conference === "East") {
           updatedSeries.east.push(series);
         } else {
-          console.log(series);
           updatedSeries.finals.push(series);
         }
       });
 
       // Set the series state with the updated data
-
+      setTimeout(() => {
+        setLoading(false);
+      }, 3000); // 3000ms delay, i.e., 3 seconds
       setSeries(updatedSeries);
     } catch (err) {
       console.error("Error fetching series data:", err);
+      showError("Error fetching series data");
+      setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
   const checkIfGuessed = async () => {
@@ -203,7 +242,7 @@ const HomePage: React.FC = () => {
           stage: stage,
         },
       });
-      console.log(response.data);
+
       setShowInput(response.data);
     } catch (error) {
       console.log(error);
@@ -218,10 +257,8 @@ const HomePage: React.FC = () => {
       const response = await axiosInstance.get("/playoffs-stage");
 
       const stages = response.data;
-      console.log(new Date(stages[0].startDate) > new Date());
       for (const round of stages) {
         if (new Date(round.startDate) > new Date()) {
-          console.log("stage", round);
           setStage(round.name);
           setStageStartDate(round.startDate);
           break;
@@ -337,7 +374,7 @@ const HomePage: React.FC = () => {
             {sortedMatchups.map((matchup, idx) => (
               <div
                 key={idx}
-                className={`mb-6 ${
+                className={`mb-6 relative ${
                   positionToPlace && placeholderCount === 1 ? "mt-36" : ""
                 } ${
                   placeholderCount === 0 &&
@@ -345,13 +382,35 @@ const HomePage: React.FC = () => {
                   idx === 1
                     ? "mt-32"
                     : ""
-                } ${
-                  new Date() > new Date(matchup.dateOfStart)
-                    ? "border-2 border-colors-nba-red rounded-xl"
-                    : "border-4 border-colors-select-bet rounded-xl"
                 }`}
               >
-                <NBASeedCard series={matchup} />
+                {/* Info Icon Outside of the Border */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mb-2 z-10">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="size-6"
+                  >
+                    <circle cx="12" cy="12" r="9" fill="#FDB927" />
+                    <path
+                      fill="white"
+                      d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                    />
+                  </svg>
+                </div>
+
+                {/* Matchup Container with Border */}
+                <div
+                  className={`${
+                    new Date() > new Date(matchup.dateOfStart)
+                      ? "border-2 border-colors-nba-red"
+                      : "border-4 border-colors-select-bet"
+                  } rounded-xl`}
+                >
+                  {/* NBASeedCard */}
+                  <NBASeedCard series={matchup} />
+                </div>
               </div>
             ))}
             {placeholderCount === 1 && !positionToPlace && placeholders}
@@ -375,122 +434,134 @@ const HomePage: React.FC = () => {
     <div className="relative z-10 min-h-screen bg-gray-100 p-4">
       {/* Mobile View */}
       {/* <MobileMatchupList series={series} /> */}
-
+      {loading && (
+        <div className="flex justify-center">
+          <CircularProgress />
+        </div>
+      )}
       {/* Desktop View */}
-      <div className="hidden md:flex justify-center">
-        <div className="flex gap-8">
-          {showInput && (
-            <div className={`flex-none w-full md:w-1/4`}>
-              <ChampionsInput
-                west={series.west}
-                east={series.east}
-                startDate={stageStartDate}
-                stage={stage}
-                setShowInput={hideInputAfterSubmit}
-              />
-            </div>
-          )}
-          {!showInput && (
-            
-            <div
-              className="flex-none md:w-10 relative cursor-pointer h-10"
-              // onMouseEnter={() => setShowTooltip(true)}
-              // onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowInput(true)}
-            >
-              <Tooltip  title="Champion bets" slots={{
-          transition: Zoom,
-        }}arrow>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                className="size-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+      {!loading && (
+        <div className="hidden md:flex justify-center">
+          <div className="flex gap-8">
+            {showInput && (
+              <div className={`flex-none w-full md:w-1/4`}>
+                <ChampionsInput
+                  west={series.west}
+                  east={series.east}
+                  startDate={stageStartDate}
+                  stage={stage}
+                  setShowInput={hideInputAfterSubmit}
                 />
-              </svg>
-              </Tooltip>
+              </div>
+            )}
+            {!showInput && (
+              <div
+                className="flex-none md:w-10 relative cursor-pointer h-10"
+                onClick={() => setShowInput(true)}
+              >
+                <Tooltip
+                  title="Champions betting"
+                  slots={{
+                    transition: Zoom,
+                  }}
+                  arrow
+                  sx={{
+                    "& .MuiTooltip-tooltip": {
+                      backgroundColor: "#1D428A", // Tooltip background color
+                      color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
+                    },
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                    />
+                  </svg>
+                </Tooltip>
+              </div>
+            )}
+            {/* Western Conference */}
+            <div>
+              <h2 className="text-lg font-semibold text-center mb-4">
+                Western Conference
+              </h2>
+              <div className="flex gap-16 relative z-10">
+                <Round
+                  matchups={series.west.filter(
+                    (elem) => elem.round === "First Round"
+                  )}
+                  roundName="First Round"
+                  className="h-[600px]"
+                />
+                <Round
+                  matchups={series.west.filter(
+                    (elem) => elem.round === "Conference Semifinals"
+                  )}
+                  roundName="Conference Semifinals"
+                  className="h-[600px] mt-20"
+                />
+                <Round
+                  matchups={series.west.filter(
+                    (elem) => elem.round === "Conference Finals"
+                  )}
+                  roundName="Conference Finals"
+                  className="h-[600px] mt-52"
+                />
+              </div>
             </div>
-            
-          )}
-          {/* Western Conference */}
-          <div>
-            <h2 className="text-lg font-semibold text-center mb-4">
-              Western Conference
-            </h2>
-            <div className="flex gap-16 relative z-10">
+
+            {/* NBA Finals */}
+            <div className="flex flex-col items-center justify-center mt-64 relative z-10">
+              <h2 className="text-lg font-semibold mb-4">NBA Finals</h2>
+
               <Round
-                matchups={series.west.filter(
-                  (elem) => elem.round === "First Round"
-                )}
-                roundName="First Round"
-                className="h-[600px]"
-              />
-              <Round
-                matchups={series.west.filter(
-                  (elem) => elem.round === "Conference Semifinals"
-                )}
-                roundName="Conference Semifinals"
-                className="h-[600px] mt-20"
-              />
-              <Round
-                matchups={series.west.filter(
-                  (elem) => elem.round === "Conference Finals"
-                )}
-                roundName="Conference Finals"
-                className="h-[600px] mt-52"
+                matchups={series.finals}
+                roundName="Finals"
+                className="h-[600px] mt-2"
               />
             </div>
-          </div>
 
-          {/* NBA Finals */}
-          <div className="flex flex-col items-center justify-center mt-64 relative z-10">
-            <h2 className="text-lg font-semibold mb-4">NBA Finals</h2>
-
-            <Round
-              matchups={series.finals}
-              roundName="Finals"
-              className="h-[600px] mt-2"
-            />
-          </div>
-
-          {/* Eastern Conference */}
-          <div>
-            <h2 className="text-lg font-semibold text-center mb-4">
-              Eastern Conference
-            </h2>
-            <div className="flex gap-16 relative z-10">
-              <Round
-                matchups={series.east.filter(
-                  (elem) => elem.round === "Conference Finals"
-                )}
-                roundName="Conference Finals"
-                className="h-[600px] mt-52"
-              />
-              <Round
-                matchups={series.east.filter(
-                  (elem) => elem.round === "Conference Semifinals"
-                )}
-                roundName="Conference Semifinals"
-                className="h-[600px] mt-20"
-              />
-              <Round
-                matchups={series.east.filter(
-                  (elem) => elem.round === "First Round"
-                )}
-                roundName="First Round"
-                className="h-[600px]"
-              />
+            {/* Eastern Conference */}
+            <div>
+              <h2 className="text-lg font-semibold text-center mb-4">
+                Eastern Conference
+              </h2>
+              <div className="flex gap-16 relative z-10">
+                <Round
+                  matchups={series.east.filter(
+                    (elem) => elem.round === "Conference Finals"
+                  )}
+                  roundName="Conference Finals"
+                  className="h-[600px] mt-52"
+                />
+                <Round
+                  matchups={series.east.filter(
+                    (elem) => elem.round === "Conference Semifinals"
+                  )}
+                  roundName="Conference Semifinals"
+                  className="h-[600px] mt-20"
+                />
+                <Round
+                  matchups={series.east.filter(
+                    (elem) => elem.round === "First Round"
+                  )}
+                  roundName="First Round"
+                  className="h-[600px]"
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

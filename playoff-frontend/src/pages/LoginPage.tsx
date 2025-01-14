@@ -8,6 +8,8 @@ import AuthCard from "../components/Layout/AuthCard";
 import FormInput from "../components/form/FormInput";
 import SubmitButton from "../components/form/SubmitButton";
 import { useSuccessMessage } from "../components/successMassageProvider";
+import { useUser } from "../components/userContext";
+
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -16,6 +18,7 @@ const LoginPage: React.FC = () => {
   const { showError } = useError();
   const navigate = useNavigate();
   const {showSuccessMessage} = useSuccessMessage()
+  const {setRole} = useUser()
   
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -35,6 +38,7 @@ const LoginPage: React.FC = () => {
       // localStorage.setItem('expiresIn',  Date.now() + expiresIn * 1000);
       console.log(accessToken, expiresIn, userRole);
       localStorage.setItem("role", userRole);
+      setRole(userRole);
       showSuccessMessage('Logged in successfully!')
     navigate('/home')
     } catch (err) {

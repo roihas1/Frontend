@@ -40,6 +40,7 @@ function App() {
               </main>
               <Footer/>
             </div>
+            
           </UserProvider>
         </SuccessMessageProvider>
       </ErrorProvider>
