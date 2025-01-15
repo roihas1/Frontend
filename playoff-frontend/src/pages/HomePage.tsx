@@ -174,6 +174,9 @@ const HomePage: React.FC = () => {
   const [stageStartDate, setStageStartDate] = useState<string>("");
   // const [stages, setStages] = useState<Stage[] | null>(null);
   // const [showTooltip, setShowTooltip] = useState(false);
+  const [isPartialGuess, setIspartialGuess] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const getSeries = async () => {
     setLoading(true);
@@ -222,10 +225,6 @@ const HomePage: React.FC = () => {
         }
       });
 
-      // Set the series state with the updated data
-      setTimeout(() => {
-        setLoading(false);
-      }, 3000); // 3000ms delay, i.e., 3 seconds
       setSeries(updatedSeries);
     } catch (err) {
       console.error("Error fetching series data:", err);
@@ -255,31 +254,45 @@ const HomePage: React.FC = () => {
   const getPlayoffsStage = async () => {
     try {
       const response = await axiosInstance.get("/playoffs-stage");
-
+      let flag =true;
       const stages = response.data;
       for (const round of stages) {
         if (new Date(round.startDate) > new Date()) {
           setStage(round.name);
           setStageStartDate(round.startDate);
+          flag = false;
           break;
         }
       }
-      // stages.forEach((round) => {
+      if (flag){
+        setStage('Finish');
+      }
 
-      // });
     } catch (error) {
       console.log(error);
       showError("Server Error.");
     }
   };
+  const checkIfGuessSeriesBetting = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(`series/isUserGuessed/All`);
+      setIspartialGuess(response.data);
+    } catch (error) {
+      showError(`Failed to check guesses ${error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    if (stage) {
+    if (stage && stage!='Finish') {
       checkIfGuessed();
     }
   }, [stage]);
   useEffect(() => {
     getSeries();
     getPlayoffsStage();
+    checkIfGuessSeriesBetting();
   }, []);
 
   const sortMatchups = (matchups: Series[]) => {
@@ -366,7 +379,7 @@ const HomePage: React.FC = () => {
     if (sortedMatchups.length > 0) {
       return (
         <div className={`flex flex-col ${className}`}>
-          <h3 className="text-sm font-semibold text-gray-500 mb-2 text-center break-words">
+          <h3 className="text-sm font-semibold text-gray-500 mb-4 text-center break-words">
             {roundName}
           </h3>
           {positionToPlace && placeholderCount === 1 && placeholders}
@@ -385,20 +398,28 @@ const HomePage: React.FC = () => {
                 }`}
               >
                 {/* Info Icon Outside of the Border */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 mb-2 z-10">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    className="size-6"
-                  >
-                    <circle cx="12" cy="12" r="9" fill="#FDB927" />
-                    <path
-                      fill="white"
-                      d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                    />
-                  </svg>
-                </div>
+                {! isPartialGuess[matchup.id] && (
+                  <div className="absolute top-[-20px] left-[-4px] transform mb-2 ">
+                    <Tooltip title="Missing guesses"
+                  slots={{
+                    transition: Zoom,
+                  }}
+                  arrow>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="size-6"
+                    >
+                      <circle cx="12" cy="12" r="9" fill="#FDB927" />
+                      <path
+                        fill="white"
+                        d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                      />
+                    </svg>
+                    </Tooltip>
+                  </div>
+                )}
 
                 {/* Matchup Container with Border */}
                 <div

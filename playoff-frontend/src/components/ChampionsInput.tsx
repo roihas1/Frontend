@@ -6,7 +6,7 @@ import { useSuccessMessage } from "./successMassageProvider";
 import { useError } from "./ErrorProvider";
 import SubmitButton from "./form/SubmitButton";
 import CustomSelectInput from "./form/CustomSelectInput";
-import axios from "axios";
+import ChampionGuessSummary from "./ChampionGuessSummary";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -63,7 +63,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const [selectedFinalsTeam2, setSelectedFinalsTeam2] = useState<string>("");
   const [selectedMvp, setSelectedMvp] = useState<string>("");
   const [selectedChampion, setSelectedChampion] = useState<string>("");
-  const[guessesFilled, setGuessesFilled] = useState<boolean> (false);
+  const [guessesFilled, setGuessesFilled] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
   const { showSuccessMessage } = useSuccessMessage();
@@ -71,7 +71,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   // Function to get teams from the selected round
   const getTeamsForRound = (round: "east" | "west" | "finals") => {
-    
     switch (round) {
       case "east":
         return [
@@ -173,9 +172,12 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const fetchUserGuesses = async (stage: string) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/playoffs-stage/userGuesses/${stage}`);
+      console.log(stage);
+      const response = await axiosInstance.get(
+        `/playoffs-stage/userGuesses/${stage}`
+      );
       const guesses = response.data;
-      
+
       if (
         guesses.conferenceFinalGuesses.length > 0 &&
         stage === "Before playoffs"
@@ -185,57 +187,83 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
             case "East":
               setSelectedEasternTeam1(guess.team1);
               setSelectedEasternTeam2(guess.team2);
+              setGuessesFilled(true);
               break;
             case "West":
               setSelectedWesternTeam1(guess.team1);
               setSelectedWesternTeam2(guess.team2);
+              setGuessesFilled(true);
               break;
             case "Finals":
               setSelectedFinalsTeam1(guess.team1);
               setSelectedFinalsTeam2(guess.team2);
+              setGuessesFilled(true);
               break;
           }
         }
       }
       if (guesses.championTeamGuesses.length > 0) {
-        setSelectedChampion(
-          guesses.championTeamGuesses[0].team
-        );
+        setSelectedChampion(guesses.championTeamGuesses[0].team);
+        setGuessesFilled(true);
       }
       if (guesses.mvpGuesses.length > 0) {
         setSelectedMvp(guesses.mvpGuesses[0].player);
+        setGuessesFilled(true);
       }
-      setGuessesFilled(true);
     } catch (error) {
       showError(`Failed to get your guesses.`);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
   useEffect(() => {
-    fetchUserGuesses(stage);
-  }, [ stage]);
+    if (stage !== "Finish") {
+      fetchUserGuesses(stage);
+    }
+  }, [stage]);
 
   // Get the teams for each round
   const easternTeams = getTeamsForRound("east");
   const westernTeams = getTeamsForRound("west");
   const finalsTeams = getTeamsForRound("finals");
+  if (stage === "Finish") {
+    return (
+      <div className="bg-white p-6 mx-auto shadow-lg rounded-lg">
+        <h3 className="text-lg font-bold text-center text-gray-800 mb-4">
+          Champions Betting - Previous Guesses
+        </h3>
+        <ChampionGuessSummary stage={stage} />
+        <button
+            type="button"
+            onClick={() => setShowInput()}
+            className="text-colors-nba-red hover:scale-110 transition-transform mt-6"
+          >
+            Collapse Previous Guesses
+          </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
-      <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Bets - ${
+      <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
         stage === "Round 1" || stage === "Round 2" ? `After ${stage}` : stage
       }`}</h3>
+      <ChampionGuessSummary stage={stage} />
       <div className="text-center text-gray-600 text-sm mt-4">
         <p>
           You have until <span className="font-semibold">{startDate}</span> to
           make your guesses.
         </p>
-        {guessesFilled && (<p className="font-bold text-colors-nba-blue">*** Your previous guesses already filled in. ***</p>)}
+        {guessesFilled && (
+          <p className="font-bold text-colors-nba-blue">
+            *** Your previous guesses already filled in. ***
+          </p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>
-      {loading && (
+        {loading && (
           <div className="flex justify-center">
             <CircularProgress />
           </div>
@@ -350,42 +378,44 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         {/* MVP */}
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
-          stage === "Round 2") &&  !loading && (
-          <div className="space-y-4">
-            <h3 className="text-xl mt-2 font-semibold text-gray-700">MVP</h3>
-            <FormControl fullWidth required>
-              <InputLabel>MVP</InputLabel>
-              <CustomSelectInput
-                id="MVP choice"
-                label="MVP's name"
-                value={selectedMvp}
-                options={playersList}
-                onChange={(e) => setSelectedMvp(e.target.value)}
-              />
-            </FormControl>
-          </div>
-        )}
+          stage === "Round 2") &&
+          !loading && (
+            <div className="space-y-4">
+              <h3 className="text-xl mt-2 font-semibold text-gray-700">MVP</h3>
+              <FormControl fullWidth required>
+                <InputLabel>MVP</InputLabel>
+                <CustomSelectInput
+                  id="MVP choice"
+                  label="MVP's name"
+                  value={selectedMvp}
+                  options={playersList}
+                  onChange={(e) => setSelectedMvp(e.target.value)}
+                />
+              </FormControl>
+            </div>
+          )}
 
         {/* Champion */}
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
-          stage === "Round 2") &&  !loading && (
-          <div className="space-y-4">
-            <h3 className="text-xl mt-2 font-semibold text-gray-700">
-              Champion
-            </h3>
-            <FormControl fullWidth required>
-              <InputLabel>Champion Team</InputLabel>
-              <CustomSelectInput
-                id="champion"
-                value={selectedChampion}
-                onChange={(e) => setSelectedChampion(e.target.value)}
-                label="Champion Team"
-                options={finalsTeams}
-              />
-            </FormControl>
-          </div>
-        )}
+          stage === "Round 2") &&
+          !loading && (
+            <div className="space-y-4">
+              <h3 className="text-xl mt-2 font-semibold text-gray-700">
+                Champion
+              </h3>
+              <FormControl fullWidth required>
+                <InputLabel>Champion Team</InputLabel>
+                <CustomSelectInput
+                  id="champion"
+                  value={selectedChampion}
+                  onChange={(e) => setSelectedChampion(e.target.value)}
+                  label="Champion Team"
+                  options={finalsTeams}
+                />
+              </FormControl>
+            </div>
+          )}
 
         {/* Submit Button */}
         <div className="flex justify-center mt-6 space-x-10">
