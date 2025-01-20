@@ -123,6 +123,19 @@ const Navbar: React.FC = () => {
                 About
               </Link>
             </li>
+            <li>
+              <Link
+                to="/comparing"
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                  isActive("/comparing")
+                    ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
+                    : "text-gray-900"
+                } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
+                style={{ pointerEvents: isLoggedIn ? "auto" : "none", opacity: isLoggedIn ? 1 : 0.5 }}
+              >
+                Comparison
+              </Link>
+            </li>
             {role === "ADMIN" && (
               <li className= 'hover:bg-slate-200 hover:opacity-95 rounded-lg'>
                 <Link

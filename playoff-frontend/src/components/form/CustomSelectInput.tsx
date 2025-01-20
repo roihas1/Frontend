@@ -1,13 +1,16 @@
-import { SelectChangeEvent, Select, MenuItem } from "@mui/material";
-import React from "react";
+import { SelectChangeEvent, Select, MenuItem, TextField } from "@mui/material";
+import React, { useState } from "react";
 
 interface CustomSelectInputProps {
   id: string;
   value: string;
   label: string;
   options?: string[];
-  optionsObject?: { name: string; seed: number }[];
+  optionsObject?: { name: string; seed: number }[] ;
+  optionsForCompare?: { id: string; name: string }[];
   onChange: (event: SelectChangeEvent<string>) => void;
+  isDisabled?: boolean;
+  searchBar?: boolean;
 }
 
 const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
@@ -16,8 +19,28 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
   label,
   options,
   optionsObject,
+  optionsForCompare,
   onChange,
+  isDisabled,
+  searchBar,
 }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [open, setOpen] = useState<boolean>(false);
+  const filteredOptions = (optionsList:  {id:string, name: string }[]) =>
+    optionsList.filter((option: any) =>
+      option.name
+        ? option.name.toLowerCase().includes(searchQuery.toLowerCase()) 
+        : option.toLowerCase().includes(searchQuery.toLowerCase()) 
+    );
+    const handleOpen = () => {
+      setOpen(true);
+    };
+  
+    const handleClose = () => {
+      setOpen(false);
+    };
+
+    
   return (
     <Select
       id={id}
@@ -25,11 +48,43 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
       label={label}
       name={label}
       onChange={onChange}
+      open={open}
+      onOpen={handleOpen}
+      onClose={handleClose}
       sx={{
         borderRadius: "1rem",
       }}
+      MenuProps={{
+        PaperProps: {
+          style: {
+            maxHeight: 300,
+          },
+        },
+      }}
+      disabled={isDisabled}
     >
       <MenuItem disabled>Select {label}</MenuItem>
+      {/* {searchBar && (
+         <TextField
+         fullWidth
+         variant="outlined"
+         label="Search"
+         value={searchQuery}
+         onChange={(e) => setSearchQuery(e.target.value)}
+         sx={{ marginBottom: "8px" }}
+         size="small"
+         onClick={handleSearchClick}
+       />
+      )}
+      {optionsForCompare && searchBar && 
+        filteredOptions(optionsForCompare).map((option) => (
+          <MenuItem key={option.name} value={option.id}>
+            {option.name}
+          </MenuItem>
+        ))
+      }
+ */}
+
       {/* If 'options' is passed */}
       {options &&
         options.map((option) => (
@@ -41,6 +96,12 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
       {optionsObject &&
         optionsObject.map((option) => (
           <MenuItem key={option.name} value={option.name}>
+            {option.name}
+          </MenuItem>
+        ))}
+        {optionsForCompare && 
+        optionsForCompare.map((option) => (
+          <MenuItem key={option.name} value={option.id}>
             {option.name}
           </MenuItem>
         ))}

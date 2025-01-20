@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
+import { useNavigate } from "react-router-dom";
+import { Tooltip, Zoom } from "@mui/material";
 
 interface User {
   id: string;
@@ -13,11 +15,13 @@ const LeaguesPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User>();
+  const navigate = useNavigate();
 
   // Fetch user data
   const fetchUsers = async () => {
     try {
       const response = await axiosInstance.get("/auth");
+      console.log(response.data);
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -30,6 +34,7 @@ const LeaguesPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get("/auth/user");
+      console.log(response.data);
       setCurrentUser(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -37,9 +42,14 @@ const LeaguesPage: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleUserClick = (user: User) => {
+    navigate("/comparing", { state: { secondUserId: user.id } });
+  };
 
   // Sort users by totalPoints and assign ranks
-  const sortedUsers = [...users].sort((a, b) => b.fantasyPoints - a.fantasyPoints);
+  const sortedUsers = [...users].sort(
+    (a, b) => b.fantasyPoints - a.fantasyPoints
+  );
 
   // Assign ranks
   const usersWithRank = sortedUsers.map((user, index) => ({
@@ -63,24 +73,59 @@ const LeaguesPage: React.FC = () => {
           <table className="min-w-full table-auto border-collapse border border-gray-300">
             <thead>
               <tr className="bg-colors-nba-blue text-white">
-                <th className="border px-6 py-3 text-center" title="The user's rank in the league">Rank</th>
-                <th className="border px-6 py-3" title="Player's username and full name">Player</th>
-                <th className="border px-6 py-3 text-center" title="Total points accumulated by the player">TOT</th>
+                <th
+                  className="border px-6 py-3 text-center"
+                  title="The user's rank in the league"
+                >
+                  Rank
+                </th>
+                <th
+                  className="border px-6 py-3"
+                  title="Player's username and full name"
+                >
+                  Player
+                </th>
+                <th
+                  className="border px-6 py-3 text-center"
+                  title="Total points accumulated by the player"
+                >
+                  TOT
+                </th>
               </tr>
             </thead>
             <tbody>
               {usersWithRank.map((user) => (
                 <tr
                   key={user.id}
-                  className={`hover:bg-gray-100 ${user.id === currentUser?.id ? 'bg-colors-select-bet text-black' : ''}`}
+                  className={` ${
+                    user.id === currentUser?.id
+                      ? "bg-colors-select-bet text-black"
+                      : ""
+                  }`}
                 >
                   <td className="border px-6 py-4 text-center">{user.rank}</td>
                   <td className="border px-6 py-4">
-                    <strong>{user.username}</strong>
+                    <Tooltip
+                      title="Click to compare"
+                      slots={{
+                        transition: Zoom,
+                      }}
+                      arrow
+                      placement="right"
+                    >
+                      <strong
+                        className=" cursor-pointer hover:underline"
+                        onClick={() => handleUserClick(user)}
+                      >
+                        {user.username}
+                      </strong>
+                    </Tooltip>
                     <br />
                     {user.firstName} {user.lastName}
                   </td>
-                  <td className="border px-6 py-4 text-center">{user.fantasyPoints.toFixed(1)}</td>
+                  <td className="border px-6 py-4 text-center">
+                    {user.fantasyPoints.toFixed(1)}
+                  </td>
                 </tr>
               ))}
             </tbody>

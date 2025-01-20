@@ -9,6 +9,7 @@ module.exports = {
           'nba-red': '#C8102E',  // Custom color example (NBA Red)
           'nba-yellow': '#FDB927', // Custom color example (NBA Yellow)
           'select-bet':'#ccffcc',
+          'test': 'rgb(22,106,234,0.57)',
         },
       }
     },

@@ -39,7 +39,7 @@ import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
 import ChampionsInput from "../components/ChampionsInput";
 import { useError } from "../components/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
-import { CircularProgress, Zoom } from "@mui/material";
+import { CircularProgress, Typography, Zoom } from "@mui/material";
 export interface PlayerMatchupBet {
   betId: string;
   seriesId: string;
@@ -172,8 +172,9 @@ const HomePage: React.FC = () => {
   const [showInput, setShowInput] = useState<boolean>(false);
   const [stage, setStage] = useState<string>("");
   const [stageStartDate, setStageStartDate] = useState<string>("");
-  // const [stages, setStages] = useState<Stage[] | null>(null);
-  // const [showTooltip, setShowTooltip] = useState(false);
+  const [userPointsPerSeries, setUserPointsPerSeries] = useState<{
+    [key: string]: number;
+  } | null>(null);
   const [isPartialGuess, setIspartialGuess] = useState<{
     [key: string]: boolean;
   }>({});
@@ -254,7 +255,7 @@ const HomePage: React.FC = () => {
   const getPlayoffsStage = async () => {
     try {
       const response = await axiosInstance.get("/playoffs-stage");
-      let flag =true;
+      let flag = true;
       const stages = response.data;
       for (const round of stages) {
         if (new Date(round.startDate) > new Date()) {
@@ -264,10 +265,9 @@ const HomePage: React.FC = () => {
           break;
         }
       }
-      if (flag){
-        setStage('Finish');
+      if (flag) {
+        setStage("Finish");
       }
-
     } catch (error) {
       console.log(error);
       showError("Server Error.");
@@ -285,10 +285,27 @@ const HomePage: React.FC = () => {
     }
   };
   useEffect(() => {
-    if (stage && stage!='Finish') {
+    if (stage && stage != "Finish") {
       checkIfGuessed();
     }
   }, [stage]);
+  const getUserPointsPerSeries = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosInstance.get(
+        "series/getOverallPoints/allSeries"
+      );
+      console.log(response.data);
+      setUserPointsPerSeries(response.data);
+    } catch (error) {
+      showError(`Failed to get user's points.`);
+    }finally{
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    getUserPointsPerSeries();
+  }, []);
   useEffect(() => {
     getSeries();
     getPlayoffsStage();
@@ -379,7 +396,7 @@ const HomePage: React.FC = () => {
     if (sortedMatchups.length > 0) {
       return (
         <div className={`flex flex-col ${className}`}>
-          <h3 className="text-sm font-semibold text-gray-500 mb-4 text-center break-words">
+          <h3 className="text-sm font-semibold text-gray-500 mb-6 text-center break-words">
             {roundName}
           </h3>
           {positionToPlace && placeholderCount === 1 && placeholders}
@@ -393,30 +410,47 @@ const HomePage: React.FC = () => {
                   placeholderCount === 0 &&
                   roundName === "Conference Semifinals" &&
                   idx === 1
-                    ? "mt-32"
+                    ? "mt-36"
                     : ""
                 }`}
               >
                 {/* Info Icon Outside of the Border */}
-                {! isPartialGuess[matchup.id] && (
-                  <div className="absolute top-[-20px] left-[-4px] transform mb-2 ">
-                    <Tooltip title="Missing guesses"
-                  slots={{
-                    transition: Zoom,
-                  }}
-                  arrow>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="size-6"
+                {new Date() > new Date(matchup.dateOfStart) && userPointsPerSeries && (
+                  <Tooltip
+                    title="Points per Series"
+                    slots={{
+                      transition: Zoom,
+                    }}
+                    arrow
+                    placement="right"
+                  >
+                    <div className="absolute top-[-22px] left-1/2 transform -translate-x-1/2 w-4 h-4 border-2 border-colors-nba-blue text-colors-nba-blue  p-2 rounded-full flex items-center justify-center text-xs font-semibold">
+                      {userPointsPerSeries[matchup.id]}
+                    </div>
+                  </Tooltip>
+                )}
+                {!isPartialGuess[matchup.id] && (
+                  <div className="absolute top-[-24px]  transform mb-4 ">
+                    <Tooltip
+                      title="Missing guesses"
+                      slots={{
+                        transition: Zoom,
+                      }}
+                      arrow
+                      placement="right"
                     >
-                      <circle cx="12" cy="12" r="9" fill="#FDB927" />
-                      <path
-                        fill="white"
-                        d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                      />
-                    </svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="size-6"
+                      >
+                        <circle cx="12" cy="12" r="9" fill="#FDB927" />
+                        <path
+                          fill="white"
+                          d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                        />
+                      </svg>
                     </Tooltip>
                   </div>
                 )}
@@ -427,7 +461,7 @@ const HomePage: React.FC = () => {
                     new Date() > new Date(matchup.dateOfStart)
                       ? "border-2 border-colors-nba-red"
                       : "border-4 border-colors-select-bet"
-                  } rounded-xl`}
+                  } rounded-xl mb-2`}
                 >
                   {/* NBASeedCard */}
                   <NBASeedCard series={matchup} />

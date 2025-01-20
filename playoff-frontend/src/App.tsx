@@ -15,6 +15,7 @@ import UpdateBetsPage from "./pages/UpdateBetsPage";
 import LeaguesPage from "./pages/LeaguesPage";
 import WelcomePage from "./pages/WelcomePage";
 import Footer from "./components/Layout/Footer";
+import ComparingPage from "./pages/ComparingPage";
 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path='/updateBets' element={<UpdateBetsPage />} />
                 <Route path="/leagues" element={<LeaguesPage/>}/>
+                <Route path="/comparing" element= {<ComparingPage/>} />
               </Routes>
               </main>
               <Footer/>

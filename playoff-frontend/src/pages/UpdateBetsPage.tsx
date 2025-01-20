@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+
 import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/ErrorProvider";
 import { useSuccessMessage } from "../components/successMassageProvider";
@@ -10,9 +11,12 @@ import {
   Input,
   InputAdornment,
   InputLabel,
+  Menu,
   MenuItem,
   Select,
   SelectChangeEvent,
+  Tooltip,
+  Zoom,
 } from "@mui/material";
 
 // Enum for matchup type
@@ -95,6 +99,30 @@ const UpdateBetsPage: React.FC = () => {
   const [teamsList, setTeamList] = useState<{ name: string; seed: number }[]>(
     []
   );
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement | SVGSVGElement>(
+    null
+  );
+  const [filteredSeriesList, setFilteredSeriesList] = useState<Series[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<string>("");
+
+  const handleFilterClick = (event: React.MouseEvent<SVGSVGElement>) => {
+    setAnchorEl(event.currentTarget); // Opens the dropdown
+  };
+
+  const handleCloseFilter = () => {
+    setAnchorEl(null); // Closes the dropdown
+  };
+  const handleFilterSeries = (filterSelected: string) => {
+    setSelectedFilter(filterSelected);
+    if (filterSelected === "All Series") {
+      setFilteredSeriesList(seriesList);
+    } else {
+      setFilteredSeriesList(
+        seriesList.filter((series) => series.round === filterSelected)
+      );
+    }
+    handleCloseFilter();
+  };
 
   const [createNewBet, setCreateNewBet] = useState<boolean>(false);
   const [updateResultSelected, setUpdateResultSelected] =
@@ -129,6 +157,7 @@ const UpdateBetsPage: React.FC = () => {
       try {
         const response = await axiosInstance.get("/series");
         setSeriesList(response.data);
+        setFilteredSeriesList(response.data);
       } catch (error) {
         showError("Failed to fetch series.");
         console.log(error);
@@ -395,6 +424,22 @@ const UpdateBetsPage: React.FC = () => {
       console.log(error.stack);
     }
   };
+  const CheckIcon: React.FC = () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="2.5"
+      stroke="currentColor"
+      className="size-4 mr-2"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  );
   const handleSelectChange = (e: SelectChangeEvent<string>) => {
     const { value, name } = e.target;
     const newDate = new Date(value);
@@ -1032,23 +1077,95 @@ const UpdateBetsPage: React.FC = () => {
           <label htmlFor="selectSeries" className="block text-lg font-semibold">
             Select a Series
           </label>
-          <select
-            id="selectSeries"
-            value={selectedSeries?.id || ""}
-            onChange={(e) => {
-              const series = seriesList.find((s) => s.id === e.target.value);
-              setSelectedSeries(series || null);
-              setBets(series?.playerMatchupBets || []);
-            }}
-            className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-          >
-            <option value="">-- Select Series --</option>
-            {seriesList.map((series) => (
-              <option key={series.id} value={series.id}>
-                {series.team1} vs {series.team2} ({series.round})
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center space-x-8 w-full">
+            <select
+              id="selectSeries"
+              value={selectedSeries?.id || ""}
+              onChange={(e) => {
+                const series = seriesList.find((s) => s.id === e.target.value);
+                setSelectedSeries(series || null);
+                setBets(series?.playerMatchupBets || []);
+              }}
+              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+            >
+              <option value="">-- Select Series --</option>
+              {filteredSeriesList.map((series) => (
+                <option key={series.id} value={series.id}>
+                  {series.team1} vs {series.team2} ({series.round})
+                </option>
+              ))}
+            </select>
+            <Tooltip
+              title="Filter Series"
+              slots={{
+                transition: Zoom,
+              }}
+              arrow
+              placement="right"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                className="size-6 cursor-pointer transform transition-transform duration-200 hover:scale-125"
+                onClick={handleFilterClick}
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                />
+              </svg>
+            </Tooltip>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleCloseFilter}
+            >
+              <MenuItem
+                selected={selectedFilter === "First Round"}
+                onClick={() => handleFilterSeries("First Round")}
+              >
+                {selectedFilter === "First Round" && <CheckIcon />}
+                First Round
+              </MenuItem>
+
+              <MenuItem
+                onClick={() => {
+                  handleFilterSeries("Conference Semifinals");
+                }}
+              >
+                {selectedFilter === "Conference Semifinals" && <CheckIcon />}
+                Conference Semi-Finals
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleFilterSeries("Conference Finals");
+                }}
+              >
+                {selectedFilter === "Conference Finals" && <CheckIcon />}
+                Conference Finals
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleFilterSeries("NBA Finals");
+                }}
+              >
+                {selectedFilter === "NBA Finals" && <CheckIcon />}
+                NBA Finals
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleFilterSeries("All Series");
+                }}
+              >
+                {selectedFilter === "All Series" && <CheckIcon />}
+                All Series
+              </MenuItem>
+            </Menu>
+          </div>
         </div>
         {selectedSeries && (
           <div className="flex justify-center mt-4 space-x-4">
