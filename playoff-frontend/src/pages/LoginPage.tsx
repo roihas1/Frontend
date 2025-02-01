@@ -9,7 +9,8 @@ import FormInput from "../components/form/FormInput";
 import SubmitButton from "../components/form/SubmitButton";
 import { useSuccessMessage } from "../components/successMassageProvider";
 import { useUser } from "../components/userContext";
-
+import Cookies from "js-cookie";
+import Logo from '../assets/export/gray_trans.png'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -17,9 +18,8 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { showError } = useError();
   const navigate = useNavigate();
-  const {showSuccessMessage} = useSuccessMessage()
-  const {setRole} = useUser()
-  
+  const { showSuccessMessage } = useSuccessMessage();
+  const { setRole } = useUser();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +32,24 @@ const LoginPage: React.FC = () => {
       });
       const { accessToken } = response.data;
       const { expiresIn } = response.data;
-      const { userRole } = response.data
-      localStorage.setItem('username', username);
-      localStorage.setItem("token", accessToken);
-      // localStorage.setItem('expiresIn',  Date.now() + expiresIn * 1000);
-      console.log(accessToken, expiresIn, userRole);
+      const { userRole } = response.data;
+      const days = parseInt(expiresIn.replace("d", ""));
+
+      // Convert days to seconds
+      const expiresInSeconds = days * 24 * 60 * 60;
+      Cookies.set("auth_token", accessToken, {
+        expires: expiresInSeconds/(24 * 60 * 60),
+      });
+      localStorage.setItem("username", username);
+      // localStorage.setItem("token", accessToken);
+      const expiryTime = Date.now() + expiresInSeconds * 1000;
+      
+      Cookies.set("tokenExpiry", expiryTime.toString(), { expires: expiresInSeconds/(24 * 60 * 60) });
+
       localStorage.setItem("role", userRole);
       setRole(userRole);
-      showSuccessMessage('Logged in successfully!')
-    navigate('/home')
+      showSuccessMessage("Logged in successfully!");
+      navigate("/home");
     } catch (err) {
       if (err.response) {
         console.log("Response error:", err.response.data);
@@ -62,7 +71,7 @@ const LoginPage: React.FC = () => {
   return (
     <div className="relative min-h-screen  flex items-center justify-center">
       {/* NBA Logo in the background */}
-      <PageBackground imageSrc={NBAlogo} />
+      <PageBackground imageSrc={Logo} />
 
       {/* Login Form */}
       <AuthCard title="NBA App Login">
@@ -84,7 +93,11 @@ const LoginPage: React.FC = () => {
             required
           />
           <div className="col-span-full flex justify-center">
-            <SubmitButton loading={loading} text="Login" onClick={handleSubmit}/>
+            <SubmitButton
+              loading={loading}
+              text="Login"
+              onClick={handleSubmit}
+            />
           </div>
         </form>
         <div className="mt-4 text-center">

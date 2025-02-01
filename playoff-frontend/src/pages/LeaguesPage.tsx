@@ -21,7 +21,6 @@ const LeaguesPage: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const response = await axiosInstance.get("/auth");
-      console.log(response.data);
       setUsers(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -34,7 +33,6 @@ const LeaguesPage: React.FC = () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get("/auth/user");
-      console.log(response.data);
       setCurrentUser(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -42,6 +40,7 @@ const LeaguesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
   const handleUserClick = (user: User) => {
     navigate("/comparing", { state: { secondUserId: user.id } });
   };
@@ -64,72 +63,85 @@ const LeaguesPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="p-4 max-w-4xl mx-auto flex-1">
-        <h1 className="text-3xl font-bold mb-6 text-center">Leagues Ranking</h1>
+    <div className="flex flex-col min-h-screen ">
+      <div className="p-8 max-w-7xl mx-auto flex-1 bg-white rounded-lg shadow-lg">
+        <h1 className="text-4xl font-semibold mb-8 text-center text-colors-nba-blue">
+          Leagues Ranking
+        </h1>
         {loading ? (
-          <div className="text-center">Loading...</div>
+          <div className="text-center text-lg text-gray-500">Loading...</div>
         ) : (
-          <table className="min-w-full table-auto border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-colors-nba-blue text-white">
-                <th
-                  className="border px-6 py-3 text-center"
-                  title="The user's rank in the league"
-                >
-                  Rank
-                </th>
-                <th
-                  className="border px-6 py-3"
-                  title="Player's username and full name"
-                >
-                  Player
-                </th>
-                <th
-                  className="border px-6 py-3 text-center"
-                  title="Total points accumulated by the player"
-                >
-                  TOT
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {usersWithRank.map((user) => (
-                <tr
-                  key={user.id}
-                  className={` ${
-                    user.id === currentUser?.id
-                      ? "bg-colors-select-bet text-black"
-                      : ""
-                  }`}
-                >
-                  <td className="border px-6 py-4 text-center">{user.rank}</td>
-                  <td className="border px-6 py-4">
-                    <Tooltip
-                      title="Click to compare"
-                      slots={{
-                        transition: Zoom,
-                      }}
-                      arrow
-                      placement="right"
-                    >
-                      <strong
-                        className=" cursor-pointer hover:underline"
-                        onClick={() => handleUserClick(user)}
-                      >
-                        {user.username}
-                      </strong>
-                    </Tooltip>
-                    <br />
-                    {user.firstName} {user.lastName}
-                  </td>
-                  <td className="border px-6 py-4 text-center">
-                    {user.fantasyPoints.toFixed(1)}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto border-separate border-spacing-0.5">
+              <thead className="bg-colors-nba-blue text-white">
+                <tr>
+                  <th
+                    className="px-6 py-3 text-center"
+                    title="The user's rank in the league"
+                  >
+                    Rank
+                  </th>
+                  <th
+                    className="px-6 py-3"
+                    title="Player's username and full name"
+                  >
+                    Player
+                  </th>
+                  <th
+                    className="px-6 py-3 text-center"
+                    title="Total points accumulated by the player"
+                  >
+                    TOT
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {usersWithRank.map((user) => (
+                  <tr
+                    key={user.id}
+                    className={`${
+                      user.id === currentUser?.id
+                        ? "bg-indigo-100 text-indigo-800"
+                        : "hover:bg-gray-100"
+                    } transition-all duration-300`}
+                  >
+                    <td className="border-t px-6 py-4 text-center text-lg font-semibold">
+                      {user.rank}
+                    </td>
+                    <td className="border-t px-6 py-4">
+                      <Tooltip
+                        title="Click to compare"
+                        slots={{
+                          transition: Zoom,
+                        }}
+                        arrow
+                        placement="right"
+                        disableHoverListener={user.id === currentUser?.id}
+                      >
+                        <strong
+                          className={`text-colors-nba-blue  ${user.id != currentUser?.id ? "cursor-pointer hover:underline transition-all duration-300": ""}`}
+                          onClick={() => {
+                            if (user.id != currentUser?.id) {
+                              handleUserClick(user);
+                            }
+                          }}
+                        >
+                          {user.username}
+                        </strong>
+                      </Tooltip>
+                      <br />
+                      <span className="text-gray-700">
+                        {user.firstName} {user.lastName}
+                      </span>
+                    </td>
+                    <td className="border-t px-6 py-4 text-center text-lg">
+                      {user.fantasyPoints}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

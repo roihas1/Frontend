@@ -22,16 +22,11 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
   optionsForCompare,
   onChange,
   isDisabled,
-  searchBar,
+ 
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+ 
   const [open, setOpen] = useState<boolean>(false);
-  const filteredOptions = (optionsList:  {id:string, name: string }[]) =>
-    optionsList.filter((option: any) =>
-      option.name
-        ? option.name.toLowerCase().includes(searchQuery.toLowerCase()) 
-        : option.toLowerCase().includes(searchQuery.toLowerCase()) 
-    );
+  
     const handleOpen = () => {
       setOpen(true);
     };

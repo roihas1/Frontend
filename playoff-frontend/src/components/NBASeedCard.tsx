@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import TeamDialog from "./form/TeamDialog"; // Import the TeamDialog component
 import { Series } from "../pages/HomePage";
 import NBALogo from "../assets/NBALogo.jpg";
-import axiosInstance from "../api/axiosInstance";
 import { useError } from "./ErrorProvider";
 import { CircularProgress } from "@mui/material";
 
@@ -99,7 +98,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
                 className="w-10 h-10 object-contain transition-transform hover:scale-110"
               />
               {/* Team name (hidden initially) */}
-              <p className="absolute inset-0 flex items-center justify-center text-sm text-white font-bold opacity-0 hover:opacity-90 bg-black rounded-3xl max-w-full text-ellipsis overflow-hidden transition-opacity text-center">
+              <p className="absolute inset-0 flex items-center justify-center text-sm text-white font-bold opacity-0 hover:opacity-90 bg-black rounded-xl max-w-full text-ellipsis overflow-hidden transition-opacity text-center">
                 {series.team1 === "timberwolves" ? "Wolves" : series.team1}
               </p>
               {/* <p className="text-xs font-semibold text-gray-700 mt-2">{series.team1 === "timberwolves" ? "Wolves" : series.team1}</p> */}
@@ -135,7 +134,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
                 className="w-10 h-10 object-contain transition-transform hover:scale-110"
               />
               {/* Team name (hidden initially) */}
-              <p className="absolute inset-0 flex items-center justify-center text-sm text-white font-bold opacity-0 hover:opacity-90 bg-black rounded-3xl max-w-full text-ellipsis overflow-hidden transition-opacity text-center">
+              <p className="absolute inset-0 flex items-center justify-center text-sm text-white font-bold opacity-0 hover:opacity-90 bg-black rounded-xl max-w-full text-ellipsis overflow-hidden transition-opacity text-center">
                 {series.team2 === "timberwolves" ? "Wolves" : series.team2}
               </p>
               {/* <p className="text-xs font-semibold text-gray-700 mt-2">{series.team2 === "timberwolves" ? "Wolves" : series.team2}</p> */}

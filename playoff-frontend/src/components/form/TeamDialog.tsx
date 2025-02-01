@@ -40,6 +40,13 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
   const [hasGuesses, setHasGuesses] = useState<boolean>(false);
+  const [guessPercentage, setGuessPercentage] = useState<{
+    teamWin: { 1: number; 2: number };
+    playerMatchup: { [key: string]: { 1: number; 2: number } };
+  }>({ teamWin: { 1: 0, 2: 0 }, playerMatchup: [] });
+  const time = series.timeOfStart.split(":");
+  series.dateOfStart.setHours(parseInt(time[0]));
+  series.dateOfStart.setMinutes(parseInt(time[0]));
   const isStartDatePassed = new Date() > new Date(series.dateOfStart);
   // const { role } = useUser();
 
@@ -63,11 +70,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   };
   const handleSubmit = async () => {
     // Validate input
-    if (
-      selectedTeam === -1 ||
-      selectedNumberOfGames === 0 ||
-      Object.keys(selectedPlayerForBet).length === 0
-    ) {
+    if (selectedTeam === -1 || selectedNumberOfGames === 0) {
       showError("Please complete all selections before submitting.");
       return;
     }
@@ -173,6 +176,55 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
   }, [isOpen, series]);
 
+  useEffect(()=>{
+    if(isOpen && series) {
+      const fetchGuessPercentage = async ()=>{
+        setLoading(true);
+        try{
+        const response = await axiosInstance.get(`/series/${series.id}/getPercentages`)
+        console.log(response)
+        setGuessPercentage(response.data)
+        }catch(error){
+          showError(`Failed to get percentage.`)
+        }finally{
+          setLoading(false);
+        }
+      }
+      fetchGuessPercentage();
+    }
+
+  },[isOpen,series]);
+
+  const HorizontalBar = ({ first, second }) => {
+    // Ensure value is between 0 and 100
+    const leftWidth = Math.max(0, Math.min(first, 100));
+    
+    return (
+      <div className="flex w-full border-spacing-2 border  border-gray-200 rounded-lg p-0.5 h-8">
+        
+        <div
+          className="flex bg-colors-nba-blue rounded-s-md items-center justify-center truncate"
+          style={{ width: `${leftWidth}%` }}
+        >
+          {first}
+        </div>
+        
+        <div
+          className={`flex items-center justify-center truncate ${first + second == 100 ? "rounded-e-md" : ""}`}
+          style={{ width: `${second}%` , backgroundColor:'#539dc9'}}
+        >
+          {second}
+        </div>
+        {first + second < 100 && (
+          <div
+          className=" flex items-center rounded-e-md justify-center truncate"
+          style={{ width: `${100 - leftWidth-second}%`, backgroundColor:'#c8f7ff' }}
+
+        > {100 - second - first}</div>
+        )}
+      </div>
+    );
+  };
   const handleRemoveGuessFromBet = (id: string, idx: number) => {
     if (selectedPlayerForBet[id] === idx) {
       const updatedState = { ...selectedPlayerForBet };
@@ -236,7 +288,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
             {isStartDatePassed && (
               <div className="text-center text-lg font-semibold text-gray-700 bg-colors-nba-blue bg-opacity-40 px-4 py-2 rounded-lg shadow-md ">
-                The series has started! <br /> Bets are now closed.
+                The series has started! <br /> Bets are now closed. <br/>
+                Last update: {new Date(series.lastUpdate).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' })}
               </div>
             )}
 
@@ -271,9 +324,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             <h4 className="text-lg font-semibold mb-2 flex justify-center">
               Choose the winner of the series
             </h4>
-            <ul className="grid w-full gap-6 md:grid-cols-2">
+            <ul className="space-x-4 w-full ">
+              <li className="flex justify-between">
               {/* Team 1 Selection */}
-              <li className="flex items-center space-x-4">
+              <div className="flex items-center md:w-full space-x-4">
                 <input
                   type="radio"
                   id="team1"
@@ -296,10 +350,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     <div className="w-full">Seed #{series.seed1}</div>
                   </div>
                 </label>
-              </li>
+              </div>
 
               {/* Team 2 Selection */}
-              <li className="flex items-center space-x-4">
+              <div className="flex items-center md:w-full space-x-4">
                 <input
                   type="radio"
                   id="team2"
@@ -322,17 +376,21 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     <div className="w-full">Seed #{series.seed2}</div>
                   </div>
                 </label>
+              </div>
+              <div className="items-center ml-2 md:w-1/4 inline-flex justify-end  text-black bg-white  rounded-lg">
+              <HorizontalBar first={80} second={20}/>
+              </div>
               </li>
             </ul>
           </div>
 
           {/* Display Bets */}
-          {series.playerMatchupBets.length > 0 && (
+          {series.playerMatchupBets  && (
             <div className="mt-4">
               <h4 className="text-lg font-semibold mb-2">Select the winner</h4>
               <ul className="space-y-4">
                 {series.playerMatchupBets?.map((bet, index) => (
-                  <li key={bet.betId} className="flex justify-between">
+                  <li key={index} className="flex justify-between">
                     <div className="flex items-center space-x-2 w-1/2 pl-4">
                       <label
                         htmlFor={`bet-label-${index}`}
@@ -370,7 +428,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                             {bet.player1}
                           </div>
                           <div className="text-lg font-semibold">
-                            {bet.currentStats[0]}
+                            { bet.playerGames[0] === 0 ? 0 : parseFloat((bet.currentStats[0] / bet.playerGames[0]).toFixed(2))}
                           </div>
                         </div>
                       </label>
@@ -391,7 +449,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                       />
                       <label
                         htmlFor={`bet-player2-${index}`}
-                        className={`inline-flex items-center justify-between w-full p-3 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
+                        className={`flex items-center  w-full p-2 text-black bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 ${
                           bet.currentStats[0] <
                           bet.currentStats[1] + bet.differential
                             ? 'after:content-[""] after:w-3 after:h-3 after:bg-green-500 after:rounded-full after:absolute after:right-2 after:top-1/2 after:transform after:translate-y-[-50%]'
@@ -403,14 +461,23 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                             {bet.player2}
                           </div>
                           <div className="text-lg font-semibold flex items-center">
-                            {bet.currentStats[1]}
+                            { bet.playerGames[1] === 0 ? 0 : parseFloat((bet.currentStats[1]/bet.playerGames[1]).toFixed(2))}
                             <span className=" ml-1 text-lg font-semibold">
-                              (+{bet.differential})
+                              (+{bet.differential}) 
                             </span>
                           </div>
                         </div>
                       </label>
                     </div>
+                    <div className="flex justify-center items-center space-x-2 w-1/3  relative">
+                      {/* <label className={`inline-flex items-center justify-between w-1/2 p-3 text-black bg-white border border-gray-200 rounded-lg  dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:bg-colors-select-bet peer-checked:border-colors-nba-blue peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700`}>
+                          hh
+                      </label> */}
+                      <div className="inline-flex items-center justify-between w-full ml-2 p-0.5 text-black bg-white  rounded-lg ">
+                        {guessPercentage?.playerMatchup[bet.id] === undefined ? "un": "yes"}
+                      <HorizontalBar first={80} second={20}/>
+                      </div>
+                      </div>
                   </li>
                 ))}
               </ul>

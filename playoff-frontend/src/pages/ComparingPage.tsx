@@ -7,10 +7,13 @@ import {
   Autocomplete,
   TextField,
   InputAdornment,
+  Tooltip,
+  Modal,
+  Box,
 } from "@mui/material";
 import { useError } from "../components/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-import { AllSeriesBets, Guess, User } from "../types";
+import { AllSeriesBets, checkTokenExpiration, Guess, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import { useLocation } from "react-router-dom";
 
@@ -22,7 +25,7 @@ interface ComparingPageProps {
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
   const [allSeriesBets, setAllSeriesBets] = useState<AllSeriesBets>({});
-  const [users, setUsers] = useState<User[]>();
+  const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [series, setSeries] = useState<{ [key: string]: string }>();
   const [selectedSeries, setSelectedSeries] = useState<string>("");
@@ -31,7 +34,7 @@ const ComparingPage: React.FC = () => {
     {}
   );
   const location = useLocation();
-  const secondUserId = location.state.secondUserId;
+  const secondUserId = location.state?.secondUserId;
   const [currentUser, setCurrentUser] = useState<User>();
   const [usersGuesses, setUsersGuesses] = useState<{
     [key: string]: {
@@ -43,40 +46,27 @@ const ComparingPage: React.FC = () => {
   const [suggestedUsers, setSuggestedUsers] = useState<{
     [key: string]: string;
   }>({});
+  const [open, setOpen] = useState<boolean>(false);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get("/auth");
       const responseUser = await (await axiosInstance.get("/auth/user")).data;
-      //   const id = responseUser.id;
-      //   const userObj = {
-      //     [id]: `${responseUser.firstName} ${responseUser.lastName}`,
-      //   };
-      //   setSelectedUsers(userObj);
       setCurrentUser(responseUser);
       const sortedUsers = response.data.sort(
         (a, b) => b.fantasyPoints - a.fantasyPoints
       );
-      const users = {};
+      const users: { [key: string]: string } = {};
       sortedUsers.slice(0, 5).map((user: User) => {
         users[user.id] = `${user.firstName} ${user.lastName}`;
       });
       setSuggestedUsers(users);
-      //   const index = sortedUsers.findIndex(
-      //     (user) => user.username === responseUser.username
-      //   );
-      //   const indices =
-      //     index === sortedUsers.length - 1
-      //       ? [sortedUsers.length - 3, sortedUsers.length - 2]
-      //       : index === 0
-      //       ? [1, 2]
-      //       : [index - 1, index + 1];
-
-      //   const initialselectedUsers = {
-      //     [responseUser.id]: `${responseUser?.firstName} ${responseUser?.lastName}`,
-      //   };
-      setUsers(response.data);
+      const allUsers: { [key: string]: User } = {};
+      response.data.map((user: User) => {
+        allUsers[user.id] = user;
+      });
+      setUsers(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -112,7 +102,7 @@ const ComparingPage: React.FC = () => {
     }
   };
   const setInitialsComprison = (secondId: string) => {
-    console.log("Inside initial", secondId);
+    // console.log("Inside initial", secondId);
     let series = "";
     let name = "";
     for (const key of Object.keys(allSeriesBets)) {
@@ -124,10 +114,10 @@ const ComparingPage: React.FC = () => {
         ) {
           name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
           series = key;
-          console.log(`key:${key}`)
+          //   console.log(`key:${key}`)
           setSelectedSeries(key);
           setSelectedSeriesName(name);
-          
+
           break;
         }
       }
@@ -135,12 +125,13 @@ const ComparingPage: React.FC = () => {
     handleUserSelection(currentUser?.id, series);
     handleUserSelection(secondUserId, series);
   };
-
+  checkTokenExpiration();
   useEffect(() => {
-    if (secondUserId && currentUser) {
+    // console.log(JSON.stringify(allSeriesBets));
+    if (secondUserId && currentUser && allSeriesBets) {
       setInitialsComprison(secondUserId);
     }
-  }, [currentUser, secondUserId]);
+  }, [allSeriesBets, currentUser, secondUserId]);
   useEffect(() => {
     getAllBetsBySeries();
     fetchUsers();
@@ -154,47 +145,61 @@ const ComparingPage: React.FC = () => {
   }
   const opacity = 0.218;
   const [columnsVisible, setColumnsVisible] = useState([true]);
-
+  const handleOpenModal = () => {
+    setOpen(true);
+  };
+  const handleCloseModal = () => {
+    setOpen(false);
+  };
   const handleUserSelection = (userId: string, seriesId?: string) => {
+    if (Object.keys(selectedUsers).length === 5) {
+      showError(
+        `Max participents in comparison is 5! Remove at least one user.`
+      );
+    }
     // Add a new column on the left when a user is selected
-    
-    if (!(userId in selectedUsers)) {
-      const id = seriesId ? seriesId : selectedSeries;
-      const user = users?.find((user) => user.id === userId);
-      const name = `${user?.firstName} ${user?.lastName}`;
-      const series = allSeriesBets[id];
-      const bestOf7Guess = series.bestOf7Bet.guesses.filter(
-        (guess) => guess.createdById === userId
-      );
-      const team = series.teamWinBet.guesses.filter(
-        (guess) => guess.createdById === userId
-      );
-      const playerMatchups = series.playerMatchupBets.flatMap((bet) => {
-        const matchingGuesses = bet.guesses.filter(
+    try {
+      if (!(userId in selectedUsers)) {
+        const id = seriesId ? seriesId : selectedSeries;
+        const user = users[userId];
+        const name = `${user?.firstName} ${user?.lastName}`;
+        //   console.log(`name: ${name} id:${id} bets:${JSON.stringify(allSeriesBets)}`)
+        const series = allSeriesBets[id];
+        const bestOf7Guess = series.bestOf7Bet.guesses.filter(
           (guess) => guess.createdById === userId
         );
-        const player1 = bet.player1;
-        const player2 = bet.player2;
-        return { guesses: matchingGuesses, player1, player2 };
-      });
-      console.log(bestOf7Guess, team, playerMatchups);
-      setUsersGuesses({
-        ...usersGuesses,
-        [userId]: {
-          bestOf7: bestOf7Guess[0],
-          teamWon: team[0],
-          playerMatchups,
-        },
-      });
-      setSelectedUsers({ ...selectedUsers, [userId]: name });
-      setColumnsVisible([true, ...columnsVisible]);
+        const team = series.teamWinBet.guesses.filter(
+          (guess) => guess.createdById === userId
+        );
+        const playerMatchups = series.playerMatchupBets.flatMap((bet) => {
+          const matchingGuesses = bet.guesses.filter(
+            (guess) => guess.createdById === userId
+          );
+          const player1 = bet.player1;
+          const player2 = bet.player2;
+          return { guesses: matchingGuesses, player1, player2 };
+        });
+        setUsersGuesses({
+          ...usersGuesses,
+          [userId]: {
+            bestOf7: bestOf7Guess[0],
+            teamWon: team[0],
+            playerMatchups,
+          },
+        });
+        setSelectedUsers({ ...selectedUsers, [userId]: name });
+        setColumnsVisible([true, ...columnsVisible]);
+      }
+    } catch (error) {
+      console.log(error);
+      // showError(`Failed to to select user`)
     }
   };
   const removeUser = (obj: { [key: string]: string }, keyToRemove: string) => {
     const { [keyToRemove]: _, ...newObj } = obj;
     return newObj;
   };
-  const handleClose = (userId: string) => {
+  const handleRemoveUser = (userId: string) => {
     setSelectedUsers(removeUser(selectedUsers, userId));
   };
 
@@ -207,32 +212,51 @@ const ComparingPage: React.FC = () => {
           <Paper
             sx={{
               padding: 1,
-              backgroundColor: `rgba(107, 144, 225,${opacity - 0.15})`,
+              backgroundColor: `rgba(107, 144, 225,${opacity})`,
             }}
           >
-            <Typography className="text-md">Number Of Games</Typography>
-            {/* <Typography variant="body1">
-              Result - {betsData.bestOf7Bet.result}
-            </Typography> */}
+            <Typography className="text-md truncate">
+              Number Of Games <strong>({betsData.bestOf7Bet.result})</strong>
+            </Typography>
           </Paper>
         </div>
 
         {/* TeamWinBet */}
         <div>
-          <Paper
-            sx={{
-              padding: 1,
-              backgroundColor: `rgba(107, 144, 225,${opacity - 0.1})`,
-            }}
+          <Tooltip
+            title={
+              <Typography className="text-md truncate">
+                Series Winner{" "}
+                <strong>
+                  (
+                  {betsData.teamWinBet.result === 1
+                    ? betsData.team1
+                    : betsData.team2}
+                  )
+                </strong>
+              </Typography>
+            }
+            arrow
+            placement="top"
           >
-            <Typography className="text-md">Series Winner</Typography>
-            {/* <Typography variant="body1">
-              Result -{" "}
-              {betsData.teamWinBet.result === 1
-                ? betsData.team1
-                : betsData.team2}
-            </Typography> */}
-          </Paper>
+            <Paper
+              sx={{
+                padding: 1,
+                backgroundColor: `rgba(107, 144, 225,${opacity})`,
+              }}
+            >
+              <Typography className="text-md truncate">
+                Series Winner{" "}
+                <strong>
+                  (
+                  {betsData.teamWinBet.result === 1
+                    ? betsData.team1
+                    : betsData.team2}
+                  )
+                </strong>
+              </Typography>
+            </Paper>
+          </Tooltip>
         </div>
 
         {/* PlayerMatchupBets */}
@@ -247,15 +271,46 @@ const ComparingPage: React.FC = () => {
                 sx={{
                   padding: 1,
                   marginBottom: 1,
-                  backgroundColor: `rgba(107, 144, 225,${
-                    opacity + index * 0.15
-                  })`,
+                  backgroundColor: `rgba(107, 144, 225,${opacity + 0.5})`,
                 }}
               >
-                <Typography className="text-xs">
-                  {matchup.player1} vs {matchup.player2} (
-                  {matchup.categories.join(" & ")})
-                </Typography>
+                <Tooltip
+                  title={
+                    <Typography className="text-xs ">
+                      {matchup.player1} vs {matchup.player2} (
+                      {matchup.categories.join(" & ")}){" "}
+                      <strong>
+                        (
+                        {matchup.result === null
+                          ? `[${matchup.currentStats[0]}, ${
+                              matchup.currentStats[1] + matchup.differential
+                            }]`
+                          : matchup.result === 1
+                          ? matchup.player1
+                          : matchup.player2}
+                        )
+                      </strong>
+                    </Typography>
+                  }
+                  placement="top"
+                  arrow
+                >
+                  <Typography className="text-xs truncate">
+                    {matchup.player1} vs {matchup.player2} (
+                    {matchup.categories.join(" & ")}){" "}
+                    <strong>
+                      (
+                      {matchup.result === null
+                        ? `[${matchup.currentStats[0]}, ${
+                            matchup.currentStats[1] + matchup.differential
+                          }]`
+                        : matchup.result === 1
+                        ? matchup.player1
+                        : matchup.player2}
+                      )
+                    </strong>
+                  </Typography>
+                </Tooltip>
               </Paper>
             ))}
         </div>
@@ -276,7 +331,7 @@ const ComparingPage: React.FC = () => {
                   allSeriesBets[selectedSeries].bestOf7Bet.result ===
                   guessData.bestOf7.guess
                     ? "#ccffcc"
-                    : "#ff8080"
+                    : "rgba(0,0,0,0)"
                 }`,
               }}
             >
@@ -289,61 +344,244 @@ const ComparingPage: React.FC = () => {
             </Paper>
           </div>
         )}
+        {!guessData.bestOf7 && (
+          <Tooltip
+            title={
+              <Typography className="flex justify-center text-xs">
+                - Looser didn't guess -
+              </Typography>
+            }
+            arrow
+            placement="bottom"
+          >
+            <Paper
+              sx={{
+                padding: 1,
+                backgroundColor: "rgba(0,0,0,0)", // Transparent background
+              }}
+            >
+              <Typography className="flex truncate justify-center text-xs">
+                - Looser didn't guess -
+              </Typography>
+            </Paper>
+          </Tooltip>
+        )}
 
         {/* TeamWinBet */}
-        <div>
-          <Paper
-            sx={{
-              padding: 1,
-              backgroundColor: `${
-                allSeriesBets[selectedSeries].teamWinBet.result ===
-                guessData.teamWon.guess
-                  ? "#ccffcc"
-                  : "#ff8080"
-              }`,
-            }}
-          >
-            <Typography className="flex justify-center text-xs">
-              {guessData.teamWon.guess === 1
-                ? allSeriesBets[selectedSeries].team1
-                : allSeriesBets[selectedSeries].team2}
-            </Typography>
-          </Paper>
-        </div>
-
-        {/* PlayerMatchupGuess */}
-        <div>
-          <Typography className="text-md" gutterBottom>
-            Player Matchups
-          </Typography>
-          {guessData.playerMatchups.length > 0 &&
-            guessData.playerMatchups.map((matchup: any, index: number) => (
+        {guessData.teamWon && (
+          <div>
+            <Tooltip
+              title={
+                <Typography className="items-center text-xs">
+                  {guessData.teamWon.guess === 1
+                    ? allSeriesBets[selectedSeries].team1
+                    : allSeriesBets[selectedSeries].team2}
+                </Typography>
+              }
+              placement="top"
+              arrow
+            >
               <Paper
-                key={index}
                 sx={{
                   padding: 1,
-                  marginBottom: 1,
                   backgroundColor: `${
-                    allSeriesBets[selectedSeries].playerMatchupBets[index]
-                      .result == matchup.guesses[0].guess
+                    allSeriesBets[selectedSeries].teamWinBet.result ===
+                    guessData.teamWon.guess
                       ? "#ccffcc"
-                      : "#ff8080"
+                      : "rgba(0,0,0,0)"
                   }`,
+                  display: "flex", // Enable flexbox
+                  justifyContent: "center", // Horizontally center content
+                  alignItems: "center",
                 }}
               >
-                <Typography className="flex justify-center text-xs">
-                  {matchup.guesses[0].guess === 1
-                    ? matchup.player1
-                    : matchup.player2}
+                <Typography className="justify-center truncate items-center text-xs">
+                  {guessData.teamWon.guess === 1
+                    ? allSeriesBets[selectedSeries].team1
+                    : allSeriesBets[selectedSeries].team2}
                 </Typography>
               </Paper>
-            ))}
+            </Tooltip>
+          </div>
+        )}
+        {!guessData.teamWon && (
+          <Tooltip
+            title={
+              <Typography className="flex justify-center text-xs">
+                - Looser didn't guess -
+              </Typography>
+            }
+            arrow
+            placement="bottom"
+          >
+            <Paper
+              sx={{
+                padding: 1,
+                backgroundColor: "rgba(0,0,0,0)", // Transparent background
+              }}
+            >
+              <Typography className="flex truncate justify-center text-xs">
+                - Looser didn't guess -
+              </Typography>
+            </Paper>
+          </Tooltip>
+        )}
+        {/* PlayerMatchupGuess */}
+
+        <div>
+          <Tooltip
+            title={<Typography>Player Matchups</Typography>}
+            arrow
+            placement="left"
+          >
+            <Typography className="text-md truncate" gutterBottom>
+              Player Matchups
+            </Typography>
+          </Tooltip>
+          {guessData.playerMatchups.length > 0 &&
+            guessData.playerMatchups.map((matchup: any, index: number) => {
+              // Check if guesses is undefined
+              if (matchup.guesses.length === 0) {
+                return (
+                  <Tooltip
+                  key={index+10}
+                    title={
+                      <Typography className="flex justify-center text-xs">
+                        - Looser didn't guess -
+                      </Typography>
+                    }
+                    arrow
+                    placement="bottom"
+                  >
+                    <Paper
+                      key={index}
+                      sx={{
+                        padding: 1,
+                        marginBottom: 1,
+                        backgroundColor: "rgba(0,0,0,0)", // Transparent background
+                      }}
+                    >
+                      <Typography className="flex truncate justify-center text-xs">
+                        - Looser didn't guess -
+                      </Typography>
+                    </Paper>
+                  </Tooltip>
+                );
+              }
+
+              // Render Paper for matchups with guesses
+              return (
+                <Tooltip
+                key={index}
+                  title={
+                    <Typography className="flex justify-center text-xs">
+                      {matchup.guesses[0].guess === 1
+                        ? matchup.player1
+                        : matchup.player2}
+                    </Typography>
+                  }
+                  arrow
+                  placement="top"
+                >
+                  <Paper
+                    key={index}
+                    sx={{
+                      padding: 1,
+                      marginBottom: 1,
+                      backgroundColor: `${
+                        allSeriesBets[selectedSeries].playerMatchupBets[index]
+                          .result === matchup.guesses[0].guess
+                          ? "#ccffcc" // Green if correct
+                          : "rgba(0,0,0,0)" // Transparent if not correct
+                      }`,
+                    }}
+                  >
+                    <Typography className="flex justify-center text-xs">
+                      {matchup.guesses[0].guess === 1
+                        ? matchup.player1
+                        : matchup.player2}
+                    </Typography>
+                  </Paper>
+                </Tooltip>
+              );
+            })}
         </div>
       </div>
     );
   };
+  const InstructionPaper = () => (
+    <Paper
+      sx={{
+        padding: 3,
+        marginBottom: 2,
+        backgroundColor: "#f9fafb", // Lighter background for better contrast
+        maxWidth: "600px",
+        margin: "auto",
+        borderRadius: "8px",
+        boxShadow: 3, // Adding a subtle shadow to make the Paper pop
+      }}
+    >
+      {/* Title */}
+      <Typography
+        className="text-2xl font-semibold text-center mb-4"
+        sx={{
+          fontFamily: '"Inter", sans-serif',
+          fontWeight: 700,
+          color: "#333", // Slightly darker text color for better readability
+        }}
+      >
+        <strong>Welcome to User Comparison Page!</strong>
+      </Typography>
+
+      {/* Instructions Title */}
+      <Typography
+        className="text-lg text-left mb-5"
+        sx={{
+          fontFamily: '"Inter", sans-serif',
+          fontWeight: 600,
+          color: "#4b4b4b", // Slightly lighter than the title
+        }}
+      >
+        Here’s a quick guide to get you started:
+      </Typography>
+
+      {/* Instruction List */}
+      <ul className="text-sm text-left space-y-4">
+        <li>
+          <strong>1. Choose a Series:</strong> Start by selecting a series from
+          the "Select Series" dropdown. This is where your comparison journey
+          begins!
+        </li>
+        <li>
+          <strong>2. Pick Users to Compare:</strong> Once you’ve selected a
+          series, it’s time to choose users to compare:
+          <ul className="text-sm list-disc pl-6 space-y-2 mt-2">
+            <li>
+              <strong>Top Users:</strong> You can quickly pick from the
+              top-ranked users in the "Top 5" chart.
+            </li>
+            <li>
+              <strong>Search Users:</strong> Want to compare someone else?
+              Simply search for their name using the search bar!
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>3. See the Comparison:</strong> After choosing at least one
+          user, you’ll see detailed insights into their predictions and
+          performance.
+        </li>
+        <li>
+          <strong>4. Remove Users if Needed:</strong> If you want to clean up
+          your comparison, just click on the close icon next to any user’s name
+          to remove them.
+        </li>
+      </ul>
+    </Paper>
+  );
+
   const getFantasyPoints = (userId: string) => {
-    const user = users?.find((user) => user.id === userId);
+    const user = users[userId];
     return user?.fantasyPoints;
   };
   const SearchIcon = () => (
@@ -352,8 +590,8 @@ const ComparingPage: React.FC = () => {
       fill="none"
       viewBox="0 0 24 24"
       strokeWidth="1.5"
-      stroke="currentColor"
-      className="size-6"
+      stroke="#737373"
+      className="size-8 mt-1"
     >
       <path
         strokeLinecap="round"
@@ -365,13 +603,59 @@ const ComparingPage: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <h1 className="text-2xl font-semibold underline mb-2">
-        Users comparison
-      </h1>
+      <div className="flex flex-row items-center ">
+        <h1 className="text-2xl font-semibold underline mb-2">
+          Users comparison
+        </h1>
+        <Tooltip
+          title={
+            <Typography className="flex justify-center text-xs">
+              Instruction
+            </Typography>
+          }
+          arrow
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="currentColor"
+            className="size-6 ml-12 hover:cursor-pointer "
+            onClick={handleOpenModal}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+            />
+          </svg>
+        </Tooltip>
+        <Modal open={open} onClose={handleCloseModal}>
+          <Box
+            sx={{
+              width: "50%",
+              height: "auto",
+              margin: "auto",
+              marginTop: 10,
+              backgroundColor: "white",
+              padding: 3,
+              borderRadius: "8px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              boxShadow: 24,
+            }}
+          >
+            <InstructionPaper />
+          </Box>
+        </Modal>
+      </div>
+
       {/* Custom Select for Users */}
-      <div className="flex justify-evenly  space-x-4 mb-4 w-full ">
+      <div className="flex justify-between items-center mb-4 w-full ">
         {series && (
-          <div className="w-1/3 mr-4">
+          <div className="w-1/4 truncate mb-4 ml-8 mt-2 pt-2 ">
             <FormControl fullWidth>
               <InputLabel>Select Series</InputLabel>
               <CustomSelectInput
@@ -393,76 +677,87 @@ const ComparingPage: React.FC = () => {
           </div>
         )}
         {users && (
-          <div className="flex justify-between  w-1/2 space-x-4 items-center mb-2">
+          <div className="flex space-x-5 w-3/5  items-center mb-2 mr-6">
+            <h3 className="w-12 font-semibold underline">Top 5:</h3>
             <div className="grid grid-cols-3 w-1/2 gap-1">
               {suggestedUsers &&
                 Object.keys(suggestedUsers).map((userId) => (
-                  <div className="flex flex-row">
-                    <button
-                      value={userId}
-                      className="rounded-2xl p-1 truncate border-slate-200 text-black opacity-1 border-2 hover:bg-slate-200"
-                      onClick={(e) => handleUserSelection(e.target.value)}
+                  <div key={userId} className="flex flex-row">
+                    <Tooltip
+                      title={
+                        <Typography>
+                          {userId === currentUser?.id
+                            ? "You"
+                            : suggestedUsers[userId]}
+                        </Typography>
+                      }
+                      arrow
+                      placement="right"
                     >
-                      {userId === currentUser?.id
-                        ? "You"
-                        : suggestedUsers[userId]}
-                    </button>
+                      <button
+                        value={userId}
+                        className="rounded-2xl p-1 w-32  text-md truncate border-slate-200 text-black opacity-1 border-2 hover:bg-slate-200"
+                        onClick={(e) => handleUserSelection(e.target.value)}
+                        disabled={!selectedSeries}
+                      >
+                        {userId === currentUser?.id
+                          ? "You"
+                          : suggestedUsers[userId]}
+                      </button>
+                    </Tooltip>
                   </div>
                 ))}
             </div>
-            <div className="w-1/4 ">
+            <div className="w-1/4 items-start ">
               <Autocomplete
                 freeSolo
                 onChange={(event, newValue) => {
                   handleUserSelection(newValue.id);
                 }}
-                options={users}
+                options={Object.values(users)}
                 getOptionLabel={(option) =>
                   `${option.firstName} ${option.lastName}`
                 }
+                selectOnFocus
                 renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "1rem", // Round the border of the input field
-                      },
-                    }}
-                    label="Search Users"
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <SearchIcon /> {/* Replace with any icon */}
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                  <div className="flex justify-center items-center">
+                    <TextField
+                      {...params}
+                      margin="normal"
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "1rem",
+                        },
+                      }}
+                      label="Search Users"
+                      // slotProps={{
+                      //   input: {
+                      //     ...params.InputProps,
+                      //     endAdornment: (
+                      //       <InputAdornment position="end">
+                      //         <SearchIcon /> {/* Replace with any icon */}
+                      //       </InputAdornment>
+                      //     ),
+                      //   },
+                      // }}
+                    />
+                    <SearchIcon />
+                  </div>
                 )}
               ></Autocomplete>
-              {/* <FormControl fullWidth>
-                <InputLabel> Add User</InputLabel>
-                <CustomSelectInput
-                  id="select-user"
-                  value={""}
-                  label="User to compare"
-                  onChange={(e) => handleUserSelection(e.target.value)}
-                  optionsForCompare={users.map((user) => ({
-                    id: user.id, // Set the user id as value
-                    name: `${user.firstName} ${user.lastName}`, // Display full name as label
-                  }))}
-                  searchBar={true}
-                  isDisabled={selectedSeries === ""}
-                />
-              </FormControl> */}
             </div>
           </div>
         )}
       </div>
-
-      <div className="flex  w-full">
+      {!selectedSeries && !selectedSeriesName && <InstructionPaper />}
+      {selectedSeriesName && (
+        <h1 className="text-2xl font-semibold text-black mb-10 text-center shadow-md p-4 rounded-2xl ">
+          {selectedSeriesName}
+        </h1>
+      )}
+      <div className="flex w-full pl-8">
         {/* BetColumn */}
-        <div className="w-1/4 mt-10 ">
+        <div className="w-1/4  mt-12">
           {allSeriesBets && allSeriesBets[selectedSeries] ? (
             <BetColumn betsData={allSeriesBets[selectedSeries]} />
           ) : (
@@ -471,57 +766,65 @@ const ComparingPage: React.FC = () => {
         </div>
 
         {/* Column visibility toggling */}
-        <div className="flex flex-row space-x-4 w-1/2 mx-auto justify-start">
-          {Object.keys(selectedUsers).map((userId, index) => (
-            <div
-              key={index}
-              className={`w-1/${Object.keys(selectedUsers).length}`}
-            >
-              {/* Title and Close Button Above the Column */}
-              <div className="flex justify-between mb-2">
-                <p className={`${userId === currentUser?.id ? "bg-colors-select-bet border-colors-select-bet": "border-slate-200"} rounded-2xl p-1  text-black opacity-1 border-2`}>
-                  {userId === currentUser?.id
-                        ? "You"
-                        : suggestedUsers[userId]}
-                </p>
-                <p className="p-2">{getFantasyPoints(userId)}Pts</p>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="black"
-                  className="size-4 cursor-pointer mt-3"
-                  onClick={() => handleClose(userId)}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18 18 6M6 6l12 12"
-                  />
-                </svg>
-              </div>
+        <div className="flex flex-row space-x-4 w-1/2 mx-8 justify-start">
+          {Object.keys(selectedUsers).map((userId, index) => {
+            const userName = `${users[userId].firstName} ${users[userId].lastName}`;
+            const firstName = users[userId].firstName;
+            const lastName = users[userId].lastName;
+            return (
+              <div
+                key={index}
+                className={`w-1/${Object.keys(selectedUsers).length} `}
+              >
+                {/* Title and Close Button Above the Column */}
+                <div className={`flex justify-between mb-2`}>
+                  <Tooltip
+                    title={<Typography>{userName}</Typography>}
+                    arrow
+                    placement="top"
+                  >
+                    <div
+                      className={`truncate ${
+                        userId === currentUser?.id
+                          ? "bg-colors-select-bet border-colors-select-bet"
+                          : "border-slate-200"
+                      } rounded-2xl p-1 text-black opacity-1 w-32 border-2 justify-center`}
+                    >
+                      {userId === currentUser?.id && <span>You</span>}
+                      {userId !== currentUser?.id && (
+                        <div className="flex row-span-1">
+                          <span className="hidden xl:block">{firstName}</span>
+                          <span className="hidden truncate md:block">
+                            &nbsp;{lastName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </Tooltip>
+                  <p className="p-2">{getFantasyPoints(userId)}Pts</p>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="black"
+                    className="size-4 cursor-pointer mt-3"
+                    onClick={() => handleRemoveUser(userId)}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18 18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
 
-              <div className="flex flex-col">
-                <GuessColumn guessData={usersGuesses[userId]} />
-                {/* {usersGuesses[userId].map((row, rowIndex) => (
-                      <div key={rowIndex}>
-                        <Paper
-                          className="flex justify-center p-2 hover:opacity-80 text-sm"
-                          sx={{
-                            backgroundColor: `rgb(1,130,202,${
-                              opacity + (1 / rows.length) * rowIndex
-                            })`,
-                            borderRadius: "4px",
-                          }}
-                        >
-                          {row}
-                        </Paper>
-                      </div>
-                    ))} */}
+                <div className="flex flex-col">
+                  <GuessColumn guessData={usersGuesses[userId]} />
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

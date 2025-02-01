@@ -13,11 +13,13 @@ import {
   InputLabel,
   Menu,
   MenuItem,
+  OutlinedInput,
   Select,
   SelectChangeEvent,
   Tooltip,
   Zoom,
 } from "@mui/material";
+import { checkTokenExpiration } from "../types";
 
 // Enum for matchup type
 export enum PlayerMatchupType {
@@ -27,49 +29,47 @@ export enum PlayerMatchupType {
 
 // Enum for matchup categories
 export enum MatchupCategory {
-  ASSISTS = "Assists",
-  BLOCKS = "Blocks",
-  FIELD_GOAL_PERCENTAGE = "Field Goal Percentage",
-  FREE_THROW_PERCENTAGE = "Free Throw Percentage",
-  MINUTES_PLAYED = "Minutes Played",
   POINTS = "Points",
   REBOUNDS = "Rebounds",
+  ASSISTS = "Assists",
   STEALS = "Steals",
+  BLOCKS = "Blocks",
   THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
   TURNOVERS = "Turnovers",
 }
 export const nbaTeamsList = [
-  "Atlanta Hawks",
-  "Boston Celtics",
-  "Brooklyn Nets",
-  "Charlotte Hornets",
-  "Chicago Bulls",
-  "Cleveland Cavaliers",
-  "Dallas Mavericks",
-  "Denver Nuggets",
-  "Detroit Pistons",
-  "Golden State Warriors",
-  "Houston Rockets",
-  "Indiana Pacers",
-  "Los Angeles Clippers",
-  "Los Angeles Lakers",
-  "Memphis Grizzlies",
-  "Miami Heat",
-  "Milwaukee Bucks",
-  "Minnesota Timberwolves",
-  "New Orleans Pelicans",
-  "New York Knicks",
-  "Oklahoma City Thunder",
-  "Orlando Magic",
-  "Phoenix Suns",
-  "Philadelphia 76ers",
-  "Portland Trail Blazers",
-  "Sacramento Kings",
-  "San Antonio Spurs",
-  "Toronto Raptors",
-  "Utah Jazz",
-  "Washington Wizards",
+  { teamName: "Atlanta Hawks", conference: "East" },
+  { teamName: "Boston Celtics", conference: "East" },
+  { teamName: "Brooklyn Nets", conference: "East" },
+  { teamName: "Charlotte Hornets", conference: "East" },
+  { teamName: "Chicago Bulls", conference: "East" },
+  { teamName: "Cleveland Cavaliers", conference: "East" },
+  { teamName: "Dallas Mavericks", conference: "West" },
+  { teamName: "Denver Nuggets", conference: "West" },
+  { teamName: "Detroit Pistons", conference: "East" },
+  { teamName: "Golden State Warriors", conference: "West" },
+  { teamName: "Houston Rockets", conference: "West" },
+  { teamName: "Indiana Pacers", conference: "East" },
+  { teamName: "Los Angeles Clippers", conference: "West" },
+  { teamName: "Los Angeles Lakers", conference: "West" },
+  { teamName: "Memphis Grizzlies", conference: "West" },
+  { teamName: "Miami Heat", conference: "East" },
+  { teamName: "Milwaukee Bucks", conference: "East" },
+  { teamName: "Minnesota Timberwolves", conference: "West" },
+  { teamName: "New Orleans Pelicans", conference: "West" },
+  { teamName: "New York Knicks", conference: "East" },
+  { teamName: "Oklahoma City Thunder", conference: "West" },
+  { teamName: "Orlando Magic", conference: "East" },
+  { teamName: "Phoenix Suns", conference: "West" },
+  { teamName: "Philadelphia 76ers", conference: "East" },
+  { teamName: "Portland Trail Blazers", conference: "West" },
+  { teamName: "Sacramento Kings", conference: "West" },
+  { teamName: "San Antonio Spurs", conference: "West" },
+  { teamName: "Toronto Raptors", conference: "East" },
+  { teamName: "Utah Jazz", conference: "West" },
+  { teamName: "Washington Wizards", conference: "East" },
 ];
+
 const UpdateBetsPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
@@ -85,6 +85,7 @@ const UpdateBetsPage: React.FC = () => {
     differential: 0,
     result: 0,
     currentStats: [0, 0],
+    playerGames: [0, 0],
   });
   const [player1Stat, setPlayer1Stat] = useState<number>(0);
   const [player2Stat, setPlayer2Stat] = useState<number>(0);
@@ -96,9 +97,10 @@ const UpdateBetsPage: React.FC = () => {
     useState<boolean>(false);
   const [stageName, setStageName] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
-  const [teamsList, setTeamList] = useState<{ name: string; seed: number }[]>(
-    []
-  );
+  const [stageTime, setStageTime] = useState<string>("");
+  const [teamsList, setTeamList] = useState<
+    { name: string; seed: number; conference: string }[]
+  >([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement | SVGSVGElement>(
     null
   );
@@ -132,6 +134,8 @@ const UpdateBetsPage: React.FC = () => {
   const [mvpPlayer, setMvpPlayer] = useState<string>("");
   const [championTeam, setChampionTeam] = useState<string>("");
   const [finalsTeams, setFinalsTeams] = useState<string[]>([]);
+  const [showUpdateSeriesTime, setShowUpdateSeriesTime] =
+    useState<boolean>(false);
   const [newSeries, setNewSeries] = useState<Series>({
     team1: "", // Default empty string for team1
     team2: "", // Default empty string for team2
@@ -140,8 +144,8 @@ const UpdateBetsPage: React.FC = () => {
     conference: "West", // Default conference
     round: "First Round", // Default round
     dateOfStart: new Date(), // Default to current date
-    winnerTeam: 0,
     numOfGames: 0,
+    timeOfStart: "",
   });
   const [showSeriesResultForm, setshowSeriesResultForm] =
     useState<boolean>(false);
@@ -150,7 +154,7 @@ const UpdateBetsPage: React.FC = () => {
 
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
-
+  checkTokenExpiration();
   // Fetch all series
   useEffect(() => {
     const fetchSeries = async () => {
@@ -220,6 +224,21 @@ const UpdateBetsPage: React.FC = () => {
       differential: 0,
       result: 0,
       currentStats: [0, 0],
+      playerGames: [0, 0],
+    });
+  };
+  const handleCategoriesSelection = (
+    event: SelectChangeEvent<typeof selectedBet.categories>
+  ) => {
+    const { value } = event.target;
+
+    const selectedCategories: MatchupCategory[] =
+      typeof value === "string"
+        ? value.split(",").map((category) => category as MatchupCategory)
+        : value;
+    setSelectedBet({
+      ...selectedBet,
+      categories: [...selectedCategories], // Prevent duplicates
     });
   };
 
@@ -255,11 +274,9 @@ const UpdateBetsPage: React.FC = () => {
       } else if (name === "currentStats1") {
         setPlayer2Stat(parseInt(value));
       } else {
-        console.log(type, name, typeof value);
-
         setSelectedBet({
           ...selectedBet,
-          [name]: type === "text" ? value : parseInt(value),
+          [name]: type === "text" ? value : parseFloat(value),
         });
       }
     }
@@ -330,6 +347,7 @@ const UpdateBetsPage: React.FC = () => {
         differential: 0,
         result: 0,
         currentStats: [0, 0],
+        playerGames: [0, 0],
       }); // Clear selected bet after submission
     } catch (error) {
       console.error(error.response ? error.response.data : error.message);
@@ -375,6 +393,7 @@ const UpdateBetsPage: React.FC = () => {
       differential: 0,
       result: 0,
       currentStats: [0, 0],
+      playerGames: [0, 0],
     });
     setCreateNewBet(true);
   };
@@ -394,7 +413,6 @@ const UpdateBetsPage: React.FC = () => {
     const formattedDate = new Date(newSeries.dateOfStart)
       .toISOString()
       .split("T")[0];
-    console.log(newSeries);
     try {
       const response = await axiosInstance.post("/series", {
         team1: newSeries.team1,
@@ -404,21 +422,25 @@ const UpdateBetsPage: React.FC = () => {
         round: newSeries.round,
         conference: newSeries.conference,
         dateOfStart: formattedDate,
+        timeOfStart: newSeries.timeOfStart,
       });
       setSeriesList((prevState) => [...prevState, response.data]); // Update the series list
+      setFilteredSeriesList((prevState) => [...prevState, response.data]);
       setNewSeries({
-        team1: "", // Default empty string for team1
-        team2: "", // Default empty string for team2
-        seed1: 0, // Default seed for team1
-        seed2: 0, // Default seed for team2
-        conference: "West", // Default conference
-        round: "First Round", // Default round
-        dateOfStart: new Date(), // Default to current date
+        team1: "",
+        team2: "",
+        seed1: 0,
+        seed2: 0,
+        conference: "West",
+        round: "First Round",
+        dateOfStart: new Date(),
         winnerTeam: 0,
         numOfGames: 0,
       });
+
       showSuccessMessage("New series created successfully!");
       setShowCreateSeriesForm(false); // Close the form
+      setIsInEdit(false);
     } catch (error) {
       showError("Failed to create the new series." + error);
       console.log(error.stack);
@@ -455,7 +477,8 @@ const UpdateBetsPage: React.FC = () => {
     const { name, value, type } = e.target;
 
     // If the field is 'dateOfStart', convert the value to a Date object
-    if (name === "dateOfStart") {
+    if (name === "dateOfStart" && value) {
+      console.log(value);
       const newDate = new Date(value);
       setNewSeries((prevState) => ({
         ...prevState,
@@ -469,14 +492,14 @@ const UpdateBetsPage: React.FC = () => {
           [name]: selectedTeam.name,
           [`seed${name === "team1" ? "1" : "2"}`]: selectedTeam.seed,
         }));
+      } else {
+        setNewSeries((prevState) => ({
+          ...prevState,
+          [name]: value,
+        }));
       }
-      setNewSeries((prevState) => ({
-        ...prevState,
-        [name]: value,
-      }));
     } else {
       // For other fields, just update the state with the value directly
-      console.log(name, value, type);
       setNewSeries((prevState) => ({
         ...prevState,
         [name]:
@@ -501,6 +524,9 @@ const UpdateBetsPage: React.FC = () => {
           setSeriesList((prevState) =>
             prevState.filter((series) => series.id !== selectedSeries.id)
           ); // Remove the deleted series from the list
+          setFilteredSeriesList((prevState) =>
+            prevState.filter((series) => series.id !== selectedSeries.id)
+          );
           setSelectedSeries(null); // Clear the selected series
           showSuccessMessage("Series deleted successfully!");
         } catch (error) {
@@ -543,6 +569,7 @@ const UpdateBetsPage: React.FC = () => {
         differential: 0,
         result: 0,
         currentStats: [0, 0],
+        playerGames: [0, 0],
       });
       showSuccessMessage("Matchup Result updated successfully!");
       setSelectedSeries((prev) => prev);
@@ -555,10 +582,8 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const updateStats = [...selectedBet.currentStats];
-    console.log(selectedBet.currentStats);
     updateStats[0] += player1Stat;
     updateStats[1] += player2Stat;
-    console.log(updateStats);
     try {
       await axiosInstance.patch(
         `/player-matchup-bet/${selectedBet?.id}/update`,
@@ -588,6 +613,7 @@ const UpdateBetsPage: React.FC = () => {
         differential: 0,
         result: 0,
         currentStats: [0, 0],
+        playerGames: [0, 0],
       });
       showSuccessMessage("Matchup Result updated successfully!");
       setSelectedSeries((prev) => prev);
@@ -600,9 +626,17 @@ const UpdateBetsPage: React.FC = () => {
   const handleUpdateSeriesResult = () => {
     setshowSeriesResultForm(true);
   };
+  const handleUpdateSeriesTime = () => {
+    setShowUpdateSeriesTime(true);
+  };
+  const handleCloseUpdateSeriesTime = () => {
+    setShowUpdateSeriesTime(false);
+  };
   const handleCloseUpdateResultSeries = () => {
     setshowSeriesResultForm(false);
   };
+  
+  
   const handleSubmitSeriesResult = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -664,22 +698,46 @@ const UpdateBetsPage: React.FC = () => {
     }
   };
   const handleCreateNewSeries = () => {
-    const teamList: { name: string; seed: number }[] = [];
+    const teamList: { name: string; seed: number; conference: string }[] = [];
     if (seriesList.length > 7) {
       seriesList.forEach((series) => {
         if (!teamList.some((team) => team.name === series.team1)) {
-          teamList.push({ name: series.team1, seed: series.seed1 });
+          teamList.push({
+            name: series.team1,
+            seed: series.seed1,
+            conference: series.conference,
+          });
         }
 
         // Check if team2 is already in the list
         if (!teamList.some((team) => team.name === series.team2)) {
-          teamList.push({ name: series.team2, seed: series.seed2 });
+          teamList.push({
+            name: series.team2,
+            seed: series.seed2,
+            conference: series.conference,
+          });
         }
       });
       setTeamList(teamList);
     }
     setIsInEdit(true);
     setShowCreateSeriesForm(true);
+  };
+  const hadnleSubmitUpdateSeriesTime = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+       await axiosInstance.patch(`series/${selectedSeries?.id}/updateTime`,{
+        dateOfStart: selectedSeries?.dateOfStart,
+        timeOfStart: selectedSeries?.timeOfStart
+       })
+       showSuccessMessage(`Date and Time updated!`)
+       setShowUpdateSeriesTime(false)
+    } catch (error) {
+      showError(`Failed to Update Series Time.`);
+    }finally{
+      setLoading(false);
+    }
   };
   const handleCreateNewStage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -689,8 +747,9 @@ const UpdateBetsPage: React.FC = () => {
       const response = await axiosInstance.post("/playoffs-stage", {
         name: stageName,
         startDate,
+        timeOfStart: stageTime,
       });
-      console.log(response.data);
+
       showSuccessMessage("Stage created.");
 
       setStageName("");
@@ -700,11 +759,12 @@ const UpdateBetsPage: React.FC = () => {
       showError("Failed to create new stage.");
     } finally {
       setLoading(false);
+      setIsInEdit(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen ">
+    <div className="flex flex-col  ">
       <div className="p-4 max-w-screen-2xl mx-auto flex-1">
         <h1 className="flex text-3xl font-bold mb-6 justify-center">
           Update Bets
@@ -712,39 +772,39 @@ const UpdateBetsPage: React.FC = () => {
         {/* Button to show the create series form */}
         <div className="w-full flex justify-center gap-4 my-8">
           {!showCreateSeriesForm && (
-            <SubmitButton
-              loading={loading}
-              text="Create New Series"
+            <button
               onClick={handleCreateNewSeries}
-              disabled={isInEdit === true}
-              className="w-1/3"
-            />
+              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
+              disabled={isInEdit || selectedSeries != null}
+            >
+              Create New Series
+            </button>
           )}
 
           {!showPlaoffsStageCreation && (
-            <SubmitButton
-              loading={loading}
-              text="Create New Playoffs Stage"
+            <button
               onClick={() => {
                 setIsInEdit(true);
                 setShowPlayoffsStageCreation(true);
               }}
-              disabled={isInEdit === true}
-              className="w-1/3"
-            />
+              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
+              disabled={isInEdit || selectedSeries != null}
+            >
+              Create New Champion Bets
+            </button>
           )}
 
           {!showCloseChampionsBets && (
-            <SubmitButton
-              loading={loading}
-              text="Close Champions Bets"
-              disabled={isInEdit}
-              className="w-1/3"
+            <button
               onClick={() => {
                 setIsInEdit(true);
                 setShowCloseChampionsBets(true);
               }}
-            />
+              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
+              disabled={isInEdit || selectedSeries != null}
+            >
+              Close Champions Bets
+            </button>
           )}
         </div>
         {showCloseChampionsBets && (
@@ -808,11 +868,19 @@ const UpdateBetsPage: React.FC = () => {
                 options={["Before playoffs", "Round 1", "Round 2"]}
                 onChange={(e) => setStageName(e.target.value)}
               />
+
               <input
                 type="date"
                 name="dateOfStart"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2 bg-transparent"
+              />
+              <input
+                type="time"
+                name="startTime"
+                value={stageTime}
+                onChange={(e) => setStageTime(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2 bg-transparent"
               />
             </FormControl>
@@ -834,7 +902,21 @@ const UpdateBetsPage: React.FC = () => {
 
         {/* Create New Series Form */}
         {showCreateSeriesForm && teamsList?.length > 15 && (
-          <form onSubmit={handleCreateNewSeries} className="space-y-4 mb-6">
+          <form onSubmit={handleSubmitNewSeries} className="space-y-4 mb-6">
+            <div>
+              <label className="block text-lg font-semibold">Conference</label>
+              <select
+                name="conference"
+                value={newSeries.conference}
+                onChange={handleInputNewSeriesChange}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
+              >
+                <option value="West">West</option>
+                <option value="East">East</option>
+                <option value="Finals">Finals</option>
+              </select>
+            </div>
             <div>
               <label className="block text-lg font-semibold">Team 1</label>
               <select
@@ -845,11 +927,22 @@ const UpdateBetsPage: React.FC = () => {
                 required
               >
                 <option value="">-- Select First Team --</option>
-                {teamsList?.map((team) => (
-                  <option key={team.name} value={team.name}>
-                    {team.name}
-                  </option>
-                ))}
+                {newSeries.conference !== "Finals" &&
+                  teamsList
+                    ?.filter((team) => team.conference === newSeries.conference)
+                    .map((team) => (
+                      <option key={team.name} value={team.name}>
+                        {team.name}
+                      </option>
+                    ))}
+                {newSeries.conference === "Finals" &&
+                  teamsList
+                    ?.filter((team) => team.conference === "West")
+                    .map((team) => (
+                      <option key={team.name} value={team.name}>
+                        {team.name}
+                      </option>
+                    ))}
               </select>
             </div>
             <div>
@@ -859,28 +952,28 @@ const UpdateBetsPage: React.FC = () => {
                 value={newSeries.team2}
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
               >
                 <option value="">-- Select Second Team --</option>
-                {teamsList?.map((team) => (
-                  <option key={team.name} value={team.name}>
-                    {team.name}
-                  </option>
-                ))}
+                {newSeries.conference !== "Finals" &&
+                  teamsList
+                    ?.filter((team) => team.conference === newSeries.conference)
+                    .map((team) => (
+                      <option key={team.name} value={team.name}>
+                        {team.name}
+                      </option>
+                    ))}
+                {newSeries.conference === "Finals" &&
+                  teamsList
+                    ?.filter((team) => team.conference === "East")
+                    .map((team) => (
+                      <option key={team.name} value={team.name}>
+                        {team.name}
+                      </option>
+                    ))}
               </select>
             </div>
-            <div>
-              <label className="block text-lg font-semibold">Conference</label>
-              <select
-                name="conference"
-                value={newSeries.conference}
-                onChange={handleInputNewSeriesChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              >
-                <option value="West">West</option>
-                <option value="East">East</option>
-                <option value="Finals">Finals</option>
-              </select>
-            </div>
+
             <div>
               <label className="block text-lg font-semibold">Round</label>
               <select
@@ -888,6 +981,7 @@ const UpdateBetsPage: React.FC = () => {
                 value={newSeries.round}
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
               >
                 <option value="First Round">First Round</option>
                 <option value="Conference Semifinals">
@@ -912,6 +1006,18 @@ const UpdateBetsPage: React.FC = () => {
                 }
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Time</label>
+              <input
+                type="time"
+                name="timeOfStart"
+                value={newSeries.timeOfStart}
+                onChange={handleInputNewSeriesChange}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
               />
             </div>
 
@@ -926,13 +1032,25 @@ const UpdateBetsPage: React.FC = () => {
               <SubmitButton
                 text="Create Series"
                 loading={loading}
-                onClick={handleSubmitNewSeries}
+                onClick={() => {}}
               />
             </div>
           </form>
         )}
-        {showCreateSeriesForm && teamsList.length < 15 && (
+        {showCreateSeriesForm && teamsList.length <= 15 && (
           <form onSubmit={handleSubmitNewSeries} className="space-y-4 mb-6">
+            <div>
+              <label className="block text-lg font-semibold">Conference</label>
+              <select
+                name="conference"
+                value={newSeries.conference}
+                onChange={handleInputNewSeriesChange}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+              >
+                <option value="West">West</option>
+                <option value="East">East</option>
+              </select>
+            </div>
             <div>
               <label className="block text-lg font-semibold">Team 1</label>
               <select
@@ -941,32 +1059,16 @@ const UpdateBetsPage: React.FC = () => {
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               >
-                <option value="">-- Select Second Team --</option>
-                {nbaTeamsList?.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
+                <option value="">-- Select First Team --</option>
+                {nbaTeamsList
+                  ?.filter((team) => team.conference === newSeries.conference)
+                  .map((team) => (
+                    <option key={team.teamName} value={team.teamName}>
+                      {team.teamName}
+                    </option>
+                  ))}
               </select>
             </div>
-
-            <div>
-              <label className="block text-lg font-semibold">Team 2</label>
-              <select
-                name="team2"
-                value={newSeries.team2}
-                onChange={handleInputNewSeriesChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              >
-                <option value="">-- Select Second Team --</option>
-                {nbaTeamsList?.map((team) => (
-                  <option key={team} value={team}>
-                    {team}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="block text-lg font-semibold">Seed 1</label>
 
@@ -989,6 +1091,25 @@ const UpdateBetsPage: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-lg font-semibold">Team 2</label>
+              <select
+                name="team2"
+                value={newSeries.team2}
+                onChange={handleInputNewSeriesChange}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+              >
+                <option value="">-- Select Second Team --</option>
+                {nbaTeamsList
+                  ?.filter((team) => team.conference === newSeries.conference)
+                  .map((team) => (
+                    <option key={team.teamName} value={team.teamName}>
+                      {team.teamName}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-lg font-semibold">Seed 2</label>
               <select
                 name="seed2"
@@ -1005,19 +1126,6 @@ const UpdateBetsPage: React.FC = () => {
                 <option value={6}>6</option>
                 <option value={7}>7</option>
                 <option value={8}>8</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold">Conference</label>
-              <select
-                name="conference"
-                value={newSeries.conference}
-                onChange={handleInputNewSeriesChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              >
-                <option value="West">West</option>
-                <option value="East">East</option>
               </select>
             </div>
 
@@ -1054,6 +1162,17 @@ const UpdateBetsPage: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />
             </div>
+            <div>
+              <label className="block text-lg font-semibold">Time</label>
+              <input
+                type="time"
+                name="timeOfStart"
+                value={newSeries.timeOfStart}
+                onChange={handleInputNewSeriesChange}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
+              />
+            </div>
 
             <div className="flex justify-between mt-4">
               <button
@@ -1066,107 +1185,117 @@ const UpdateBetsPage: React.FC = () => {
               <SubmitButton
                 text="Create Series"
                 loading={loading}
-                onClick={handleSubmitNewSeries}
+                onClick={() => {}}
               />
             </div>
           </form>
         )}
         {/* Select Series */}
+        {!showCloseChampionsBets &&
+          !showPlaoffsStageCreation &&
+          !showCreateSeriesForm && (
+            <div className="mb-4">
+              <label
+                htmlFor="selectSeries"
+                className="block text-lg font-semibold"
+              >
+                Select a Series
+              </label>
+              <div className="flex items-center space-x-8 w-full">
+                <select
+                  id="selectSeries"
+                  value={selectedSeries?.id || ""}
+                  onChange={(e) => {
+                    const series = seriesList.find(
+                      (s) => s.id === e.target.value
+                    );
+                    setSelectedSeries(series || null);
+                    setBets(series?.playerMatchupBets || []);
+                  }}
+                  className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                >
+                  <option value="">-- Select Series --</option>
+                  {filteredSeriesList.map((series) => (
+                    <option key={series.id} value={series.id}>
+                      {series.team1} vs {series.team2} ({series.round})
+                    </option>
+                  ))}
+                </select>
+                <Tooltip
+                  title="Filter Series"
+                  slots={{
+                    transition: Zoom,
+                  }}
+                  arrow
+                  placement="right"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-6 cursor-pointer transform transition-transform duration-200 hover:scale-125"
+                    onClick={handleFilterClick}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                    />
+                  </svg>
+                </Tooltip>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleCloseFilter}
+                >
+                  <MenuItem
+                    selected={selectedFilter === "First Round"}
+                    onClick={() => handleFilterSeries("First Round")}
+                  >
+                    {selectedFilter === "First Round" && <CheckIcon />}
+                    First Round
+                  </MenuItem>
 
-        <div className="mb-4">
-          <label htmlFor="selectSeries" className="block text-lg font-semibold">
-            Select a Series
-          </label>
-          <div className="flex items-center space-x-8 w-full">
-            <select
-              id="selectSeries"
-              value={selectedSeries?.id || ""}
-              onChange={(e) => {
-                const series = seriesList.find((s) => s.id === e.target.value);
-                setSelectedSeries(series || null);
-                setBets(series?.playerMatchupBets || []);
-              }}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-            >
-              <option value="">-- Select Series --</option>
-              {filteredSeriesList.map((series) => (
-                <option key={series.id} value={series.id}>
-                  {series.team1} vs {series.team2} ({series.round})
-                </option>
-              ))}
-            </select>
-            <Tooltip
-              title="Filter Series"
-              slots={{
-                transition: Zoom,
-              }}
-              arrow
-              placement="right"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                className="size-6 cursor-pointer transform transition-transform duration-200 hover:scale-125"
-                onClick={handleFilterClick}
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
-                />
-              </svg>
-            </Tooltip>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleCloseFilter}
-            >
-              <MenuItem
-                selected={selectedFilter === "First Round"}
-                onClick={() => handleFilterSeries("First Round")}
-              >
-                {selectedFilter === "First Round" && <CheckIcon />}
-                First Round
-              </MenuItem>
-
-              <MenuItem
-                onClick={() => {
-                  handleFilterSeries("Conference Semifinals");
-                }}
-              >
-                {selectedFilter === "Conference Semifinals" && <CheckIcon />}
-                Conference Semi-Finals
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleFilterSeries("Conference Finals");
-                }}
-              >
-                {selectedFilter === "Conference Finals" && <CheckIcon />}
-                Conference Finals
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleFilterSeries("NBA Finals");
-                }}
-              >
-                {selectedFilter === "NBA Finals" && <CheckIcon />}
-                NBA Finals
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleFilterSeries("All Series");
-                }}
-              >
-                {selectedFilter === "All Series" && <CheckIcon />}
-                All Series
-              </MenuItem>
-            </Menu>
-          </div>
-        </div>
+                  <MenuItem
+                    onClick={() => {
+                      handleFilterSeries("Conference Semifinals");
+                    }}
+                  >
+                    {selectedFilter === "Conference Semifinals" && (
+                      <CheckIcon />
+                    )}
+                    Conference Semi-Finals
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleFilterSeries("Conference Finals");
+                    }}
+                  >
+                    {selectedFilter === "Conference Finals" && <CheckIcon />}
+                    Conference Finals
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleFilterSeries("NBA Finals");
+                    }}
+                  >
+                    {selectedFilter === "NBA Finals" && <CheckIcon />}
+                    NBA Finals
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleFilterSeries("All Series");
+                    }}
+                  >
+                    {selectedFilter === "All Series" && <CheckIcon />}
+                    All Series
+                  </MenuItem>
+                </Menu>
+              </div>
+            </div>
+          )}
         {selectedSeries && (
           <div className="flex justify-center mt-4 space-x-4">
             <button
@@ -1174,6 +1303,12 @@ const UpdateBetsPage: React.FC = () => {
               className="bg-colors-nba-blue text-white p-2 mb-4 rounded-lg hover:opacity-80"
             >
               Update Series Result
+            </button>
+            <button
+              onClick={handleUpdateSeriesTime}
+              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-lg hover:opacity-80"
+            >
+              Update Series Time and Date
             </button>
             <button
               onClick={handleCloseAllBets}
@@ -1188,6 +1323,65 @@ const UpdateBetsPage: React.FC = () => {
               Delete Series
             </button>
           </div>
+        )}
+        {showUpdateSeriesTime && selectedSeries && (
+          <form
+            onSubmit={hadnleSubmitUpdateSeriesTime}
+            className="space-y-4 mt-6 "
+          >
+            <h3 className="text-xl font-semibold mb-4">
+              Enter Series Time and Date
+            </h3>
+            <div>
+              <label className="block text-lg font-semibold">
+                Date of Start
+              </label>
+              <input
+                type="date"
+                name="dateOfStart"
+                value={selectedSeries.dateOfStart ? new Date(selectedSeries.dateOfStart).toISOString().split("T")[0]: ""}
+                onChange={(e) => {
+                  console.log(e.target.value)
+                  setSelectedSeries((prevSeries)=>({
+                    ...prevSeries,
+                    dateOfStart: new Date(e.target.value),
+                  }))
+                }}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+              />
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Time</label>
+              <input
+                type="time"
+                name="timeOfStart"
+                value={selectedSeries.timeOfStart}
+                onChange={(e) => {
+                  console.log(e.target.value)
+                  setSelectedSeries((prevSeries)=>({
+                    ...prevSeries,
+                    timeOfStart: e.target.value,
+                  }))
+                }}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+              />
+            </div>
+            <div className="mt-4 mb-4 flex justify-between">
+              <button
+                type="button"
+                onClick={handleCloseUpdateSeriesTime}
+                className="text-colors-nba-red hover:scale-110 transition-transform"
+              >
+                Close Update Result
+              </button>
+              <SubmitButton
+                text="Update Result"
+                loading={loading}
+                onClick={hadnleSubmitUpdateSeriesTime}
+                disabled={loading }
+              />
+            </div>
+          </form>
         )}
         {showSeriesResultForm && selectedSeries && (
           <form onSubmit={handleSubmitSeriesResult} className="space-y-4 mt-6">
@@ -1248,14 +1442,14 @@ const UpdateBetsPage: React.FC = () => {
         )}
 
         {/* Show existing bets for selected series */}
-        {selectedSeries && !showSeriesResultForm && (
+        {selectedSeries && !showSeriesResultForm && !showUpdateSeriesTime && (
           <>
             <h2 className="text-2xl font-semibold mb-4 mt-4">
               Bets for the selected series
             </h2>
             {bets?.map((bet) => (
               <div
-                key={bet.differential}
+                key={bet.betId}
                 className="mb-4 p-4 border border-gray-300 rounded-lg w-full max-w-full mx-auto"
               >
                 <div className="flex justify-between">
@@ -1296,7 +1490,8 @@ const UpdateBetsPage: React.FC = () => {
           selectedSeries &&
           !isInEdit &&
           !updateResultSelected &&
-          !showSeriesResultForm && (
+          !showSeriesResultForm &&
+          !showUpdateSeriesTime && (
             <div className="flex justify-center mt-4">
               <SubmitButton
                 loading={loading}
@@ -1352,7 +1547,7 @@ const UpdateBetsPage: React.FC = () => {
         )}
         {/* Bet Update Form */}
         {createNewBet && !updateResultSelected && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-lg font-semibold">
                 Matchup Type
@@ -1403,6 +1598,7 @@ const UpdateBetsPage: React.FC = () => {
                 value={selectedBet.differential}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                step="any"
               />
             </div>
 
@@ -1420,7 +1616,44 @@ const UpdateBetsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-lg font-semibold">Categories</label>
+              <FormControl fullWidth>
+                <InputLabel id="categories">Categories</InputLabel>
+                <Select
+                  labelId="categories"
+                  id="categoriesSelection"
+                  multiple
+                  value={selectedBet.categories}
+                  onChange={handleCategoriesSelection}
+                  sx={{
+                    backgroundColor: "white",
+                    borderRadius: "0.5rem",
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: "white", // Ensure that the dropdown input also has a white background
+                    },
+                  }}
+                >
+                  {Object.values(MatchupCategory).map((category) => (
+                    <MenuItem
+                      key={category}
+                      value={category}
+                      sx={{
+                        "&.Mui-selected": {
+                          backgroundColor: "#ccffcc",
+                          color: "black", // Customize the color of the selected item text
+                        },
+                        "&.Mui-selected:hover": {
+                          backgroundColor: "#ccffcc",
+                        },
+                      }}
+                    >
+                      {" "}
+                      {category}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </div>
+            {/* <label className="block text-lg font-semibold">Categories</label>
               <select
                 multiple
                 name="categories"
@@ -1433,10 +1666,9 @@ const UpdateBetsPage: React.FC = () => {
                     {category}
                   </option>
                 ))}
-              </select>
-            </div>
+              </select> */}
 
-            <div className="mt-4">
+            {/* <div className="mt-4">
               <h3 className="text-lg font-semibold">Selected Categories:</h3>
               <ul className="list-disc pl-6">
                 {selectedBet.categories.map((category) => (
@@ -1465,7 +1697,7 @@ const UpdateBetsPage: React.FC = () => {
                   </li>
                 ))}
               </ul>
-            </div>
+            </div> */}
             <div className="flex justify-between mt-4">
               <button
                 type="button"

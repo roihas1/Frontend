@@ -7,6 +7,7 @@ import PageBackground from "../components/Layout/PageBackground";
 import SubmitButton from "../components/form/SubmitButton";
 import InputField from "../components/form/FormInput";
 import { useSuccessMessage } from "../components/successMassageProvider";
+import Logo from '../assets/export/gray_trans.png'
 
 const SignUpPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -64,7 +65,7 @@ const SignUpPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gray-100">
-      <PageBackground imageSrc={NBAlogo} />
+      <PageBackground imageSrc={Logo} />
       <div className="relative bg-gray-100 p-6 rounded-lg shadow-2xl w-full max-w-4xl z-10">
         <h2 className="text-2xl font-bold text-center text-black mb-4">Sign Up</h2>
         <p className="text-sm text-gray-700 mb-6 text-center">

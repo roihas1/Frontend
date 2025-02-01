@@ -15,6 +15,39 @@ interface ChampionsInputProps {
   stage: string;
   setShowInput: () => void;
 }
+const nbaTeamsNicknamesReversed: { [key: string]: string } = {
+  "Atlanta Hawks": "Hawks",
+  "Boston Celtics": "Celtics",
+  "Brooklyn Nets": "Nets",
+  "Charlotte Hornets": "Hornets",
+  "Chicago Bulls": "Bulls",
+  "Cleveland Cavaliers": "Cavs",
+  "Dallas Mavericks": "Mavs",
+  "Denver Nuggets": "Nuggets",
+  "Detroit Pistons": "Pistons",
+  "Golden State Warriors": "Warriors",
+  "Houston Rockets": "Rockets",
+  "Indiana Pacers": "Pacers",
+  "Los Angeles Clippers": "Clippers",
+  "Los Angeles Lakers": "Lakers",
+  "Memphis Grizzlies": "Grizzlies",
+  "Miami Heat": "Heat",
+  "Milwaukee Bucks": "Bucks",
+  "Minnesota Timberwolves": "Timberwolves",
+  "New Orleans Pelicans": "Pelicans",
+  "New York Knicks": "Knicks",
+  "Oklahoma City Thunder": "Thunder",
+  "Orlando Magic": "Magic",
+  "Phoenix Suns": "Suns",
+  "Philadelphia 76ers": "Sixers",
+  "Portland Trail Blazers": "Blazers",
+  "Sacramento Kings": "Kings",
+  "San Antonio Spurs": "Spurs",
+  "Toronto Raptors": "Raptors",
+  "Utah Jazz": "Jazz",
+  "Washington Wizards": "Wizards",
+};
+
 const nbaTeamsNicknames: { [key: string]: string } = {
   Hawks: "Atlanta Hawks",
   Celtics: "Boston Celtics",
@@ -117,7 +150,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     e.preventDefault(); // Prevent the default form submission
 
     // Validate the fields before submitting
-    if (validateFields()) {
+    if (stage === 'Before playoffs' && validateFields()) {
       showError("Please fill in all the required fields.");
       return;
     }
@@ -130,18 +163,18 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
           },
           conferenceFinalGuess: [
             {
-              team1: selectedEasternTeam1,
-              team2: selectedEasternTeam2,
+              team1: nbaTeamsNicknames[selectedEasternTeam1],
+              team2: nbaTeamsNicknames[selectedEasternTeam2],
               conference: "East",
             },
             {
-              team1: selectedWesternTeam1,
-              team2: selectedWesternTeam2,
+              team1: nbaTeamsNicknames[selectedWesternTeam1],
+              team2: nbaTeamsNicknames[selectedWesternTeam2],
               conference: "West",
             },
             {
-              team1: selectedFinalsTeam1,
-              team2: selectedFinalsTeam2,
+              team1: nbaTeamsNicknames[selectedFinalsTeam1],
+              team2: nbaTeamsNicknames[selectedFinalsTeam2],
               conference: "Finals",
             },
           ],
@@ -185,18 +218,18 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         for (const guess of guesses.conferenceFinalGuesses) {
           switch (guess.conference) {
             case "East":
-              setSelectedEasternTeam1(guess.team1);
-              setSelectedEasternTeam2(guess.team2);
+              setSelectedEasternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+              setSelectedEasternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
               setGuessesFilled(true);
               break;
             case "West":
-              setSelectedWesternTeam1(guess.team1);
-              setSelectedWesternTeam2(guess.team2);
+              setSelectedWesternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+              setSelectedWesternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
               setGuessesFilled(true);
               break;
             case "Finals":
-              setSelectedFinalsTeam1(guess.team1);
-              setSelectedFinalsTeam2(guess.team2);
+              setSelectedFinalsTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+              setSelectedFinalsTeam2(nbaTeamsNicknamesReversed[guess.team2]);
               setGuessesFilled(true);
               break;
           }
@@ -246,10 +279,11 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
+      <h3 className="text-md font-bold text-center text-gray-800">Previous Guesses</h3>
+      <ChampionGuessSummary stage={stage} />
       <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
         stage === "Round 1" || stage === "Round 2" ? `After ${stage}` : stage
       }`}</h3>
-      <ChampionGuessSummary stage={stage} />
       <div className="text-center text-gray-600 text-sm mt-4">
         <p>
           You have until <span className="font-semibold">{startDate}</span> to
@@ -284,7 +318,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   options={easternTeams}
                   onChange={(e) => {
                     console.log(e.target.name);
-                    setSelectedEasternTeam1(nbaTeamsNicknames[e.target.value]);
+                    setSelectedEasternTeam1(e.target.value);
                   }}
                 />
               </FormControl>
@@ -297,7 +331,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   label="Team 2"
                   options={easternTeams}
                   onChange={(e) =>
-                    setSelectedEasternTeam2(nbaTeamsNicknames[e.target.value])
+                    setSelectedEasternTeam2(e.target.value)
                   }
                 />
               </FormControl>
@@ -320,7 +354,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   label="Team 1"
                   options={westernTeams}
                   onChange={(e) =>
-                    setSelectedWesternTeam1(nbaTeamsNicknames[e.target.value])
+                    setSelectedWesternTeam1(e.target.value)
                   }
                 />
               </FormControl>
@@ -333,7 +367,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   label="Team 2"
                   options={westernTeams}
                   onChange={(e) =>
-                    setSelectedWesternTeam2(nbaTeamsNicknames[e.target.value])
+                    setSelectedWesternTeam2(e.target.value)
                   }
                 />
               </FormControl>
@@ -353,9 +387,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedFinalsTeam1}
                   label="Team 1"
                   onChange={(e) =>
-                    setSelectedFinalsTeam1(nbaTeamsNicknames[e.target.value])
+                    setSelectedFinalsTeam1(e.target.value)
                   }
-                  options={finalsTeams}
+                  options={westernTeams}
                 />
               </FormControl>
 
@@ -366,9 +400,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedFinalsTeam2}
                   label="Team 2"
                   onChange={(e) =>
-                    setSelectedFinalsTeam2(nbaTeamsNicknames[e.target.value])
+                    setSelectedFinalsTeam2(e.target.value)
                   }
-                  options={finalsTeams}
+                  options={easternTeams}
                 />
               </FormControl>
             </div>

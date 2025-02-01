@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
+import PageBackground from "../components/Layout/PageBackground";
+import Logo from '../assets/export/gray_trans.png'
 
 
 const WelcomePage = () => {
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen bg-cover bg-center"
+      className="flex flex-col items-center justify-center min-h-screen bg-center"
     >
+      <PageBackground imageSrc={Logo} />
       <div className="bg-gray-600 bg-opacity-60 text-white text-center p-12 rounded-3xl shadow-2xl max-w-3xl w-full transform transition-all duration-300 hover:scale-105">
+      
         <h1 className="text-5xl font-extrabold text-white mb-6">
           Welcome to the Ultimate NBA Playoffs Betting App!
         </h1>

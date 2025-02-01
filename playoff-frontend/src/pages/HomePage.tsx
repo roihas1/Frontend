@@ -33,6 +33,7 @@ import houstonRocketsLogo from "../assets/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/new_orleans_pelicans_logo.png";
 import PageBackground from "../components/Layout/PageBackground";
 import NBALogo from "../assets/NBALogo.jpg";
+import Logo from '../assets/export/logo_color_trans.png'
 import axiosInstance from "../api/axiosInstance";
 import MobileMatchupList from "../components/MobileHomePage";
 import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
@@ -40,6 +41,7 @@ import ChampionsInput from "../components/ChampionsInput";
 import { useError } from "../components/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
 import { CircularProgress, Typography, Zoom } from "@mui/material";
+import { checkTokenExpiration } from "../types";
 export interface PlayerMatchupBet {
   betId: string;
   seriesId: string;
@@ -51,6 +53,7 @@ export interface PlayerMatchupBet {
   differential: number;
   result: number;
   currentStats: number[];
+  playerGames: number[];
 }
 export interface Series {
   id?: string;
@@ -66,8 +69,9 @@ export interface Series {
   logo1?: string;
   logo2?: string;
   playerMatchupBets?: PlayerMatchupBet[];
-  winnerTeam: number;
   numOfGames: number;
+  timeOfStart: string;
+  lastUpdate: Date;
 }
 // interface ChampionTeamGuess {
 //   id: string;
@@ -215,6 +219,8 @@ const HomePage: React.FC = () => {
           logo1: team1Logo, // If you want to fetch logos, you can add logic here
           logo2: team2Logo,
           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
+          timeOfStart: element.timeOfStart,
+          lastUpdate:element.lastUpdate,
         };
         // Push series into the correct conference array based on the "conference" field
         if (series.conference === "West") {
@@ -284,6 +290,7 @@ const HomePage: React.FC = () => {
       setLoading(false);
     }
   };
+  checkTokenExpiration();
   useEffect(() => {
     if (stage && stage != "Finish") {
       checkIfGuessed();
@@ -295,11 +302,10 @@ const HomePage: React.FC = () => {
       const response = await axiosInstance.get(
         "series/getOverallPoints/allSeries"
       );
-      console.log(response.data);
       setUserPointsPerSeries(response.data);
     } catch (error) {
       showError(`Failed to get user's points.`);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -363,7 +369,7 @@ const HomePage: React.FC = () => {
       placeholderCount = 1;
     } else if (
       (roundName === "Conference Finals" && sortedMatchups.length === 0) ||
-      (roundName === "NBA Finals" && sortedMatchups.length === 0)
+      (roundName === "Finals" && sortedMatchups.length === 0)
     ) {
       placeholderCount = 1;
     }
@@ -371,13 +377,17 @@ const HomePage: React.FC = () => {
       <div
         key={idx}
         className={`bg-white shadow-lg rounded-lg p-2 m-2 max-w-xs mx-auto ${
-          idx == 1 ? "mt-36" : ""
+          idx == 1
+            ? "mt-56"
+            : placeholderCount === 1 && roundName === "Conference Semifinals"
+            ? "mt-48"
+            : "mt-8"
         }`}
       >
         <div className="flex flex-col items-center justify-center rounded-md">
           <div className="relative">
             <img
-              src={NBALogo}
+              src={Logo}
               alt="NBA Logo"
               className="w-14 h-14 object-contain rounded-2xl"
             />
@@ -390,8 +400,8 @@ const HomePage: React.FC = () => {
     ));
 
     const positionToPlace =
-      sortedMatchups[0]?.seed1 === 2 || sortedMatchups[0]?.seed1; // check where to position the placeholder in case there is one series only in semi finals
-
+      sortedMatchups[0]?.seed1 === 1 || sortedMatchups[0]?.seed1 === 8;
+    // check where to position the placeholder in case there is one series only in semi finals
     // If there are matchups, render them
     if (sortedMatchups.length > 0) {
       return (
@@ -399,76 +409,82 @@ const HomePage: React.FC = () => {
           <h3 className="text-sm font-semibold text-gray-500 mb-6 text-center break-words">
             {roundName}
           </h3>
-          {positionToPlace && placeholderCount === 1 && placeholders}
+          {placeholderCount === 1 && !positionToPlace && placeholders}
           <div className="flex flex-col justify-around">
-            {sortedMatchups.map((matchup, idx) => (
-              <div
-                key={idx}
-                className={`mb-6 relative ${
-                  positionToPlace && placeholderCount === 1 ? "mt-36" : ""
-                } ${
-                  placeholderCount === 0 &&
-                  roundName === "Conference Semifinals" &&
-                  idx === 1
-                    ? "mt-36"
-                    : ""
-                }`}
-              >
-                {/* Info Icon Outside of the Border */}
-                {new Date() > new Date(matchup.dateOfStart) && userPointsPerSeries && (
-                  <Tooltip
-                    title="Points per Series"
-                    slots={{
-                      transition: Zoom,
-                    }}
-                    arrow
-                    placement="right"
-                  >
-                    <div className="absolute top-[-22px] left-1/2 transform -translate-x-1/2 w-4 h-4 border-2 border-colors-nba-blue text-colors-nba-blue  p-2 rounded-full flex items-center justify-center text-xs font-semibold">
-                      {userPointsPerSeries[matchup.id]}
-                    </div>
-                  </Tooltip>
-                )}
-                {!isPartialGuess[matchup.id] && (
-                  <div className="absolute top-[-24px]  transform mb-4 ">
+            {sortedMatchups.map((matchup, idx) => {
+              const time = matchup.timeOfStart.split(":");
+              matchup.dateOfStart.setHours(parseInt(time[0]));
+              matchup.dateOfStart.setMinutes(parseInt(time[0]));
+
+              return (
+                <div
+                  key={idx}
+                  className={`mb-6 relative ${
+                    !positionToPlace && placeholderCount === 1 ? "mt-36" : ""
+                  } ${
+                    placeholderCount === 0 &&
+                    roundName === "Conference Semifinals" &&
+                    idx === 1
+                      ? "mt-36"
+                      : ""
+                  }`}
+                >
+                  {/* Info Icon Outside of the Border */}
+                  {new Date() > matchup.dateOfStart && userPointsPerSeries && (
                     <Tooltip
-                      title="Missing guesses"
+                      title="Points per Series"
                       slots={{
                         transition: Zoom,
                       }}
                       arrow
                       placement="right"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        className="size-6"
-                      >
-                        <circle cx="12" cy="12" r="9" fill="#FDB927" />
-                        <path
-                          fill="white"
-                          d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                        />
-                      </svg>
+                      <div className="absolute top-[-22px] left-1/2 transform -translate-x-1/2 w-4 h-4 border-2 border-colors-nba-blue text-colors-nba-blue  p-2 rounded-full flex items-center justify-center text-xs font-semibold">
+                        {userPointsPerSeries[matchup.id]}
+                      </div>
                     </Tooltip>
-                  </div>
-                )}
+                  )}
+                  {!isPartialGuess[matchup.id] && (
+                    <div className="absolute top-[-24px]  transform mb-4 ">
+                      <Tooltip
+                        title="Missing guesses"
+                        slots={{
+                          transition: Zoom,
+                        }}
+                        arrow
+                        placement="left"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="size-6"
+                        >
+                          <circle cx="12" cy="12" r="9" fill="#FDB927" />
+                          <path
+                            fill="white"
+                            d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                          />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                  )}
 
-                {/* Matchup Container with Border */}
-                <div
-                  className={`${
-                    new Date() > new Date(matchup.dateOfStart)
-                      ? "border-2 border-colors-nba-red"
-                      : "border-4 border-colors-select-bet"
-                  } rounded-xl mb-2`}
-                >
-                  {/* NBASeedCard */}
-                  <NBASeedCard series={matchup} />
+                  {/* Matchup Container with Border */}
+                  <div
+                    className={`${
+                      new Date() > matchup.dateOfStart
+                        ? "border-2 border-colors-nba-red"
+                        : "border-4 border-colors-select-bet"
+                    } rounded-xl mb-2`}
+                  >
+                    {/* NBASeedCard */}
+                    <NBASeedCard series={matchup} />
+                  </div>
                 </div>
-              </div>
-            ))}
-            {placeholderCount === 1 && !positionToPlace && placeholders}
+              );
+            })}
+            {placeholderCount === 1 && positionToPlace && placeholders}
           </div>
         </div>
       );
@@ -486,7 +502,7 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="relative z-10 min-h-screen bg-gray-100 p-4">
+    <div className="relative z-10  bg-gray-100 p-4">
       {/* Mobile View */}
       {/* <MobileMatchupList series={series} /> */}
       {loading && (

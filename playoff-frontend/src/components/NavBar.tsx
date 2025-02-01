@@ -5,6 +5,9 @@ import { useLocation, Link, useNavigate } from "react-router-dom"; // Import Lin
 import axiosInstance from "../api/axiosInstance";
 import { useError } from "./ErrorProvider";
 import { useSuccessMessage } from "./successMassageProvider";
+import Logo from "../assets/export/logo_color_trans.png";
+import Cookies from "js-cookie";
+import Title from '../assets/export/title_straight_shadow.png'
 
 const Navbar: React.FC = () => {
   const { role, setRole} = useUser();
@@ -22,7 +25,7 @@ const Navbar: React.FC = () => {
       menu.classList.toggle("hidden");
     }
   };
-  const handleLogout = async () => {
+   const handleLogout = async () => {
     try {
       await axiosInstance.patch("/auth/logout", {
         username: localStorage.getItem("username"),
@@ -30,7 +33,8 @@ const Navbar: React.FC = () => {
       showSuccessMessage("You logout, wait to see you again!");
       localStorage.removeItem('username');
       localStorage.removeItem('role');
-      localStorage.removeItem('token');
+      Cookies.remove('auth_token');
+      Cookies.remove('tokenExipry');
       setRole('');
       navigate("/");
     } catch (error) {
@@ -39,18 +43,18 @@ const Navbar: React.FC = () => {
   };
   const isLoggedIn = localStorage.getItem('username') ? true: false
   return (
-    <nav className="bg-gray-100 border-gray-200 dark:bg-gray-900 relative z-20">
-      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+    <nav className=" bg-gray-100 border-gray-200 border-b-2 shadow-md sticky top-0 dark:bg-gray-900  z-20">
+      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-0">
         {/* Logo Section */}
         <Link
           to="/home"
           className="flex items-center space-x-1 rtl:space-x-reverse"
           style={{ pointerEvents: isLoggedIn ? "auto" : "none", opacity: isLoggedIn ? 1 : 0.5 }}
         >
-          <img src={NBAlogo} className="h-8 rounded-md" alt="NBA Logo" />
-          <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
-            NBA Playoffs
-          </span>
+          <img src={Logo} className="h-20 rounded-md" alt="NBA Logo" />
+          {/* <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"> */}
+            <img src={Title} className="h-16 w-3/5"/>
+          {/* </span> */}
         </Link>
 
         {/* Hamburger Menu Button */}
@@ -82,11 +86,11 @@ const Navbar: React.FC = () => {
 
         {/* Navigation Menu */}
         <div className="hidden w-full md:block md:w-auto" id="navbar-default">
-          <ul className="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-100 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-gray-100 dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+          <ul className="font-medium flex flex-col p-4 md:p-1 mt-4 border border-gray-300 rounded-lg bg-gray-100 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-gray-100 dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
             <li >
               <Link
                 to="/home"
-                className={`block py-2 px-3 rounded md:bg-transparent hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:text-blue-500 ${
+                className={`block py-2 px-3 rounded md:bg-transparent hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:text-blue-500 ${
                   isActive("/home")
                     ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
                     : "text-gray-900"
@@ -100,7 +104,7 @@ const Navbar: React.FC = () => {
             <li>
               <Link
                 to="/leagues"
-                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
                   isActive("/leagues")
                     ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
                     : "text-gray-900"
@@ -112,21 +116,21 @@ const Navbar: React.FC = () => {
             </li>
             <li>
               <Link
-                to="/about"
-                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
-                  isActive("/about")
+                to="/HowtoPlay"
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                  isActive("/HowtoPlay")
                     ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
                     : "text-gray-900"
                 } transition-transform transform hover:scale-105 duration-300 ease-in-out`}
                 style={{ pointerEvents: isLoggedIn ? "auto" : "none", opacity: isLoggedIn ? 1 : 0.5 }}
               >
-                About
+                How to Play?
               </Link>
             </li>
             <li>
               <Link
                 to="/comparing"
-                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                className={`block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
                   isActive("/comparing")
                     ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
                     : "text-gray-900"
@@ -137,10 +141,10 @@ const Navbar: React.FC = () => {
               </Link>
             </li>
             {role === "ADMIN" && (
-              <li className= 'hover:bg-slate-200 hover:opacity-95 rounded-lg'>
+              <li className= 'transition-transform transform hover:scale-105 duration-300 '>
                 <Link
                   to="/updateBets"
-                  className={`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
+                  className={`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent ${
                     isActive("/updateBets")
                       ? "text-colors-nba-blue border-b-2 border-colors-nba-blue font-semibold"
                       : "text-gray-900"
@@ -154,7 +158,7 @@ const Navbar: React.FC = () => {
             <li>
               <button
                 onClick={handleLogout}
-                className="`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent transition-transform transform hover:scale-105 duration-300 ease-in-out  md:hover:text-colors-nba-blue md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
+                className="`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent transition-transform transform hover:scale-105 duration-300 ease-in-out  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
                 disabled ={!isLoggedIn}
                 style={{ pointerEvents: isLoggedIn ? "auto" : "none", opacity: isLoggedIn ? 1 : 0.5 }}
               >
