@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NBAlogo from "../assets/NBALogo.jpg"; // Update with your logo's actual path
 import axiosInstance from "../api/axiosInstance";
@@ -10,7 +10,9 @@ import SubmitButton from "../components/form/SubmitButton";
 import { useSuccessMessage } from "../components/successMassageProvider";
 import { useUser } from "../components/userContext";
 import Cookies from "js-cookie";
-import Logo from '../assets/export/gray_trans.png'
+import Logo from "../assets/export/gray_trans.png";
+import { Divider } from "@mui/material";
+import googleLogo from "../assets/search.png";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -38,13 +40,15 @@ const LoginPage: React.FC = () => {
       // Convert days to seconds
       const expiresInSeconds = days * 24 * 60 * 60;
       Cookies.set("auth_token", accessToken, {
-        expires: expiresInSeconds/(24 * 60 * 60),
+        expires: expiresInSeconds / (24 * 60 * 60),
       });
       localStorage.setItem("username", username);
       // localStorage.setItem("token", accessToken);
       const expiryTime = Date.now() + expiresInSeconds * 1000;
-      
-      Cookies.set("tokenExpiry", expiryTime.toString(), { expires: expiresInSeconds/(24 * 60 * 60) });
+
+      Cookies.set("tokenExpiry", expiryTime.toString(), {
+        expires: expiresInSeconds / (24 * 60 * 60),
+      });
 
       localStorage.setItem("role", userRole);
       setRole(userRole);
@@ -68,6 +72,18 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      // const response = await axiosInstance.get(`/auth/google/login`);
+      window.location.href = `http://localhost:3000/auth/google/login`;
+    } catch (error) {
+      showError(`Failed to login with google. try again later.`);
+      setLoading(false);
+    }finally{
+      setLoading(false);
+    }
+  };
   return (
     <div className="relative min-h-screen  flex items-center justify-center">
       {/* NBA Logo in the background */}
@@ -75,7 +91,7 @@ const LoginPage: React.FC = () => {
 
       {/* Login Form */}
       <AuthCard title="NBA App Login">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 mb-4">
           <FormInput
             id="username"
             label="Username"
@@ -92,7 +108,7 @@ const LoginPage: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <div className="col-span-full flex justify-center">
+          <div className="col-span-full flex justify-center ">
             <SubmitButton
               loading={loading}
               text="Login"
@@ -100,7 +116,8 @@ const LoginPage: React.FC = () => {
             />
           </div>
         </form>
-        <div className="mt-4 text-center">
+
+        <div className=" my-4 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
             <Link
@@ -110,6 +127,14 @@ const LoginPage: React.FC = () => {
               Sign Up
             </Link>
           </p>
+        </div>
+        <Divider className="text-gray-400 text-xs"> or continue with</Divider>
+        <div className=" flex justify-center mt-4">
+          <img
+            src={googleLogo}
+            className="w-10 h-10 border border-gray-300 rounded-xl p-1 cursor-pointer hover:opacity-80"
+            onClick={handleGoogleLogin}
+          ></img>
         </div>
       </AuthCard>
     </div>

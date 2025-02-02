@@ -31,16 +31,13 @@ import orlandoMagicLogo from "../assets/orlando_magic_logo.png";
 import sanAntonioSpursLogo from "../assets/san_antonio_spurs_logo.png";
 import houstonRocketsLogo from "../assets/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/new_orleans_pelicans_logo.png";
-import PageBackground from "../components/Layout/PageBackground";
-import NBALogo from "../assets/NBALogo.jpg";
-import Logo from '../assets/export/logo_color_trans.png'
+import Logo from "../assets/export/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import MobileMatchupList from "../components/MobileHomePage";
 import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
 import ChampionsInput from "../components/ChampionsInput";
 import { useError } from "../components/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
-import { CircularProgress, Typography, Zoom } from "@mui/material";
+import { CircularProgress, Zoom } from "@mui/material";
 import { checkTokenExpiration } from "../types";
 export interface PlayerMatchupBet {
   betId: string;
@@ -220,7 +217,7 @@ const HomePage: React.FC = () => {
           logo2: team2Logo,
           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
           timeOfStart: element.timeOfStart,
-          lastUpdate:element.lastUpdate,
+          lastUpdate: element.lastUpdate,
         };
         // Push series into the correct conference array based on the "conference" field
         if (series.conference === "West") {
@@ -392,7 +389,7 @@ const HomePage: React.FC = () => {
               className="w-14 h-14 object-contain rounded-2xl"
             />
           </div>
-          <p className="text-sm font-bold text-gray-700 mt-2">
+          <p className="text-xs font-bold text-gray-700 mt-2 text-center">
             Waiting for Matchup
           </p>
         </div>

@@ -19,6 +19,7 @@ import ComparingPage from "./pages/ComparingPage";
 import PageBackground from "./components/Layout/PageBackground";
 import Logo from '../src/assets/export/gray_only_ball.png'
 import HowToPlayPage from "./pages/HowToPlayPage";
+import OAuthRedirectPage from "./pages/OauthRedirectPage";
 
 
 
@@ -45,6 +46,7 @@ function App() {
                 <Route path="/leagues" element={<LeaguesPage/>}/>
                 <Route path="/comparing" element= {<ComparingPage/>} />
                 <Route path="/HowtoPlay" element={<HowToPlayPage/>}/>
+                <Route path='/redirect' element={<OAuthRedirectPage/>}/>
               </Routes>
               </main>
               <Footer/>
