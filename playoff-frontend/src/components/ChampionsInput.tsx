@@ -11,7 +11,7 @@ import ChampionGuessSummary from "./ChampionGuessSummary";
 interface ChampionsInputProps {
   west: Series[];
   east: Series[];
-  startDate: string;
+  startDate: Date;
   stage: string;
   setShowInput: () => void;
 }
@@ -286,7 +286,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       }`}</h3>
       <div className="text-center text-gray-600 text-sm mt-4">
         <p>
-          You have until <span className="font-semibold">{startDate}</span> to
+          You have until <span className="font-semibold">{new Date(startDate).toLocaleString('he-IL',{timeZone:"Asia/Jerusalem"})}</span> to
           make your guesses.
         </p>
         {guessesFilled && (

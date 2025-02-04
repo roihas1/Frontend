@@ -72,6 +72,7 @@ const LeaguesPage: React.FC = () => {
           <div className="text-center text-lg text-gray-500">Loading...</div>
         ) : (
           <div className="overflow-x-auto">
+            <div className="max-h-screen overflow-y-auto">
             <table className="min-w-full table-auto border-separate border-spacing-0.5">
               <thead className="bg-colors-nba-blue text-white">
                 <tr>
@@ -141,6 +142,7 @@ const LeaguesPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         )}
       </div>

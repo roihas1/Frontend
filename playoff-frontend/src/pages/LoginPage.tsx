@@ -112,7 +112,7 @@ const LoginPage: React.FC = () => {
             <SubmitButton
               loading={loading}
               text="Login"
-              onClick={handleSubmit}
+              onClick={()=>{}}
             />
           </div>
         </form>

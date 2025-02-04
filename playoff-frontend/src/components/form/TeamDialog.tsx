@@ -44,12 +44,12 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const [guessPercentage, setGuessPercentage] = useState<{
     teamWin: { 1: number; 2: number };
     playerMatchup: { [key: string]: { 1: number; 2: number } };
-  }>({ teamWin: { 1: 0, 2: 0 }, playerMatchup: [] });
+  }>({ teamWin: { 1: 0, 2: 0 }, playerMatchup: {} });
   const time = series.timeOfStart.split(":");
   series.dateOfStart.setHours(parseInt(time[0]));
-  series.dateOfStart.setMinutes(parseInt(time[0]));
+  series.dateOfStart.setMinutes(parseInt(time[1]));
   const isStartDatePassed = new Date() > new Date(series.dateOfStart);
-  // const { role } = useUser();
+  
 
   // Handle team selection
   const handleTeamSelection = (event: React.ChangeEvent<HTMLInputElement>) => {

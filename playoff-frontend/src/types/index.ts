@@ -112,3 +112,50 @@ export interface BestOf7Bet {
       alert("Failed to logout.Please try again later.");
     }
   };
+  export enum PlayerMatchupType {
+    UNDEROVER = "UNDER/OVER",
+    PLAYERMATCHUP = "PLAYERMATCHUP",
+  }
+  
+  // Enum for matchup categories
+  export enum MatchupCategory {
+    POINTS = "Points",
+    REBOUNDS = "Rebounds",
+    ASSISTS = "Assists",
+    STEALS = "Steals",
+    BLOCKS = "Blocks",
+    THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
+    TURNOVERS = "Turnovers",
+  }
+  export const nbaTeamsList = [
+    { teamName: "Atlanta Hawks", conference: "East" },
+    { teamName: "Boston Celtics", conference: "East" },
+    { teamName: "Brooklyn Nets", conference: "East" },
+    { teamName: "Charlotte Hornets", conference: "East" },
+    { teamName: "Chicago Bulls", conference: "East" },
+    { teamName: "Cleveland Cavaliers", conference: "East" },
+    { teamName: "Dallas Mavericks", conference: "West" },
+    { teamName: "Denver Nuggets", conference: "West" },
+    { teamName: "Detroit Pistons", conference: "East" },
+    { teamName: "Golden State Warriors", conference: "West" },
+    { teamName: "Houston Rockets", conference: "West" },
+    { teamName: "Indiana Pacers", conference: "East" },
+    { teamName: "Los Angeles Clippers", conference: "West" },
+    { teamName: "Los Angeles Lakers", conference: "West" },
+    { teamName: "Memphis Grizzlies", conference: "West" },
+    { teamName: "Miami Heat", conference: "East" },
+    { teamName: "Milwaukee Bucks", conference: "East" },
+    { teamName: "Minnesota Timberwolves", conference: "West" },
+    { teamName: "New Orleans Pelicans", conference: "West" },
+    { teamName: "New York Knicks", conference: "East" },
+    { teamName: "Oklahoma City Thunder", conference: "West" },
+    { teamName: "Orlando Magic", conference: "East" },
+    { teamName: "Phoenix Suns", conference: "West" },
+    { teamName: "Philadelphia 76ers", conference: "East" },
+    { teamName: "Portland Trail Blazers", conference: "West" },
+    { teamName: "Sacramento Kings", conference: "West" },
+    { teamName: "San Antonio Spurs", conference: "West" },
+    { teamName: "Toronto Raptors", conference: "East" },
+    { teamName: "Utah Jazz", conference: "West" },
+    { teamName: "Washington Wizards", conference: "East" },
+  ];

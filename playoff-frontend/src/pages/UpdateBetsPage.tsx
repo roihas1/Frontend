@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-
 import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/ErrorProvider";
 import { useSuccessMessage } from "../components/successMassageProvider";
@@ -9,66 +8,20 @@ import CustomSelectInput from "../components/form/CustomSelectInput";
 import {
   FormControl,
   Input,
-  InputAdornment,
   InputLabel,
   Menu,
   MenuItem,
-  OutlinedInput,
   Select,
   SelectChangeEvent,
   Tooltip,
   Zoom,
 } from "@mui/material";
-import { checkTokenExpiration } from "../types";
+import { checkTokenExpiration, MatchupCategory, nbaTeamsList, PlayerMatchupType } from "../types";
+import SelectSeriesDropdown from "../components/SelectSeriesDropdown";
+import ButtonGroup from "../components/ButtonGroup";
+import BetForm from "../components/BetForm";
 
 // Enum for matchup type
-export enum PlayerMatchupType {
-  UNDEROVER = "UNDER/OVER",
-  PLAYERMATCHUP = "PLAYERMATCHUP",
-}
-
-// Enum for matchup categories
-export enum MatchupCategory {
-  POINTS = "Points",
-  REBOUNDS = "Rebounds",
-  ASSISTS = "Assists",
-  STEALS = "Steals",
-  BLOCKS = "Blocks",
-  THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
-  TURNOVERS = "Turnovers",
-}
-export const nbaTeamsList = [
-  { teamName: "Atlanta Hawks", conference: "East" },
-  { teamName: "Boston Celtics", conference: "East" },
-  { teamName: "Brooklyn Nets", conference: "East" },
-  { teamName: "Charlotte Hornets", conference: "East" },
-  { teamName: "Chicago Bulls", conference: "East" },
-  { teamName: "Cleveland Cavaliers", conference: "East" },
-  { teamName: "Dallas Mavericks", conference: "West" },
-  { teamName: "Denver Nuggets", conference: "West" },
-  { teamName: "Detroit Pistons", conference: "East" },
-  { teamName: "Golden State Warriors", conference: "West" },
-  { teamName: "Houston Rockets", conference: "West" },
-  { teamName: "Indiana Pacers", conference: "East" },
-  { teamName: "Los Angeles Clippers", conference: "West" },
-  { teamName: "Los Angeles Lakers", conference: "West" },
-  { teamName: "Memphis Grizzlies", conference: "West" },
-  { teamName: "Miami Heat", conference: "East" },
-  { teamName: "Milwaukee Bucks", conference: "East" },
-  { teamName: "Minnesota Timberwolves", conference: "West" },
-  { teamName: "New Orleans Pelicans", conference: "West" },
-  { teamName: "New York Knicks", conference: "East" },
-  { teamName: "Oklahoma City Thunder", conference: "West" },
-  { teamName: "Orlando Magic", conference: "East" },
-  { teamName: "Phoenix Suns", conference: "West" },
-  { teamName: "Philadelphia 76ers", conference: "East" },
-  { teamName: "Portland Trail Blazers", conference: "West" },
-  { teamName: "Sacramento Kings", conference: "West" },
-  { teamName: "San Antonio Spurs", conference: "West" },
-  { teamName: "Toronto Raptors", conference: "East" },
-  { teamName: "Utah Jazz", conference: "West" },
-  { teamName: "Washington Wizards", conference: "East" },
-];
 
 const UpdateBetsPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
@@ -93,7 +46,7 @@ const UpdateBetsPage: React.FC = () => {
   const [isInEdit, setIsInEdit] = useState<boolean>(false);
   const [showCreateSeriesForm, setShowCreateSeriesForm] =
     useState<boolean>(false);
-  const [showPlaoffsStageCreation, setShowPlayoffsStageCreation] =
+  const [showPlayoffsStageCreation, setShowPlayoffsStageCreation] =
     useState<boolean>(false);
   const [stageName, setStageName] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
@@ -146,10 +99,10 @@ const UpdateBetsPage: React.FC = () => {
     dateOfStart: new Date(), // Default to current date
     numOfGames: 0,
     timeOfStart: "",
+    lastUpdate: new Date(),
   });
   const [showSeriesResultForm, setshowSeriesResultForm] =
     useState<boolean>(false);
-  const [numberOfgames, setNumberOfGames] = useState<number>(0);
   const [wonTeam, setWonTeam] = useState<string>("");
 
   const { showError } = useError();
@@ -174,18 +127,7 @@ const UpdateBetsPage: React.FC = () => {
   useEffect(() => {
     if (selectedSeries) {
       setBets(selectedSeries.playerMatchupBets);
-      setSelectedBet({
-        betId: "", // Temporary value for betId
-        seriesId: selectedSeries?.id || "",
-        typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-        categories: [],
-        fantasyPoints: 2,
-        player1: "",
-        player2: "",
-        differential: 0,
-        result: 0,
-        currentStats: [0, 0],
-      });
+      handleResetSelectedBet();
     }
     const temporaryList = seriesList
       .filter((series) => series.conference === "Finals")
@@ -196,36 +138,13 @@ const UpdateBetsPage: React.FC = () => {
 
   const handleCloseEditBet = () => {
     setIsInEdit(false);
-    setSelectedBet({
-      betId: "", // Temporary value for betId
-      seriesId: selectedSeries?.id || "",
-      typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-      categories: [],
-      fantasyPoints: 2,
-      player1: "",
-      player2: "",
-      differential: 0,
-      result: 0,
-      currentStats: [0, 0],
-    }); // Reset the selected bet when closing
+    handleResetSelectedBet();
     setCreateNewBet(false);
   };
 
   const handleCloseUpdateResult = () => {
     setUpdateResultSelected(false);
-    setSelectedBet({
-      betId: "", // Temporary value for betId
-      seriesId: selectedSeries?.id || "",
-      typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-      categories: [],
-      fantasyPoints: 2,
-      player1: "",
-      player2: "",
-      differential: 0,
-      result: 0,
-      currentStats: [0, 0],
-      playerGames: [0, 0],
-    });
+    handleResetSelectedBet();
   };
   const handleCategoriesSelection = (
     event: SelectChangeEvent<typeof selectedBet.categories>
@@ -281,14 +200,7 @@ const UpdateBetsPage: React.FC = () => {
       }
     }
   };
-  const handleRemoveCategory = (category: MatchupCategory) => {
-    if (selectedBet) {
-      setSelectedBet({
-        ...selectedBet,
-        categories: selectedBet.categories.filter((cat) => cat !== category), // Remove category from the array
-      });
-    }
-  };
+ 
   // Handle bet selection for editing
   const handleBetSelection = (bet: PlayerMatchupBet) => {
     setSelectedBet(bet);
@@ -296,8 +208,22 @@ const UpdateBetsPage: React.FC = () => {
     setCreateNewBet(true);
   };
 
+  const handleResetSelectedBet = () =>{
+    setSelectedBet({
+      betId: "", // Temporary value for betId
+      seriesId: selectedSeries?.id || "",
+      typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
+      categories: [],
+      fantasyPoints: 2,
+      player1: "",
+      player2: "",
+      differential: 0,
+      result: 0,
+      currentStats: [0, 0],
+      playerGames: [0, 0],
+    });
+  }
   // Handle form submission for new or updated bet
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBet) return;
@@ -336,19 +262,7 @@ const UpdateBetsPage: React.FC = () => {
         showSuccessMessage("Bet created successfully!");
       }
 
-      setSelectedBet({
-        betId: "", // Temporary value for betId
-        seriesId: selectedSeries?.id || "",
-        typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-        categories: [],
-        fantasyPoints: 2,
-        player1: "",
-        player2: "",
-        differential: 0,
-        result: 0,
-        currentStats: [0, 0],
-        playerGames: [0, 0],
-      }); // Clear selected bet after submission
+      handleResetSelectedBet(); // Clear selected bet after submission
     } catch (error) {
       console.error(error.response ? error.response.data : error.message);
       showError("Failed to submit the bet.");
@@ -382,19 +296,7 @@ const UpdateBetsPage: React.FC = () => {
 
   // Handle creating a new bet
   const handleCreateNewBet = () => {
-    setSelectedBet({
-      betId: "", // Temporary value for betId
-      seriesId: selectedSeries?.id || "",
-      typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-      categories: [],
-      fantasyPoints: 2,
-      player1: "",
-      player2: "",
-      differential: 0,
-      result: 0,
-      currentStats: [0, 0],
-      playerGames: [0, 0],
-    });
+    handleResetSelectedBet();
     setCreateNewBet(true);
   };
   const handleDeleteBet = async (bet: PlayerMatchupBet) => {
@@ -462,14 +364,6 @@ const UpdateBetsPage: React.FC = () => {
       />
     </svg>
   );
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
-    const { value, name } = e.target;
-    const newDate = new Date(value);
-    setNewSeries((prevState) => ({
-      ...prevState,
-      dateOfStart: newDate, // Store the Date object
-    }));
-  };
 
   const handleInputNewSeriesChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -537,45 +431,8 @@ const UpdateBetsPage: React.FC = () => {
     }
   };
   const handleBetSelectionForUpdateResult = (bet: PlayerMatchupBet) => {
-    console.log(bet.currentStats);
     setUpdateResultSelected(true);
     setSelectedBet(bet);
-  };
-
-  const handleUpdateResult = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log(selectedBet?.result);
-    console.log(typeof selectedBet?.result);
-    if (!selectedBet) {
-      console.error("No selected bet to update.");
-      return;
-    }
-    try {
-      await axiosInstance.patch(
-        `/player-matchup-bet/${selectedBet?.id}/result`,
-        {
-          result: selectedBet?.result,
-        }
-      );
-      setUpdateResultSelected(false);
-      setSelectedBet({
-        betId: "", // Temporary value for betId
-        seriesId: selectedSeries?.id || "",
-        typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-        categories: [],
-        fantasyPoints: 2,
-        player1: "",
-        player2: "",
-        differential: 0,
-        result: 0,
-        currentStats: [0, 0],
-        playerGames: [0, 0],
-      });
-      showSuccessMessage("Matchup Result updated successfully!");
-      setSelectedSeries((prev) => prev);
-    } catch (error) {
-      showError("Failed to update match result.");
-    }
   };
 
   const handleUpdateCurrentStats = async (e: React.FormEvent) => {
@@ -602,19 +459,7 @@ const UpdateBetsPage: React.FC = () => {
               : bet // Keep other bets unchanged
         )
       );
-      setSelectedBet({
-        betId: "", // Temporary value for betId
-        seriesId: selectedSeries?.id || "",
-        typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
-        categories: [],
-        fantasyPoints: 2,
-        player1: "",
-        player2: "",
-        differential: 0,
-        result: 0,
-        currentStats: [0, 0],
-        playerGames: [0, 0],
-      });
+      handleResetSelectedBet();
       showSuccessMessage("Matchup Result updated successfully!");
       setSelectedSeries((prev) => prev);
       console.log(bets);
@@ -635,8 +480,7 @@ const UpdateBetsPage: React.FC = () => {
   const handleCloseUpdateResultSeries = () => {
     setshowSeriesResultForm(false);
   };
-  
-  
+
   const handleSubmitSeriesResult = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -723,19 +567,24 @@ const UpdateBetsPage: React.FC = () => {
     setIsInEdit(true);
     setShowCreateSeriesForm(true);
   };
+  const handleSeriesSelection = (e) => {
+    const series = seriesList.find((s) => s.id === e.target.value);
+    setSelectedSeries(series || null);
+    setBets(series?.playerMatchupBets || []);
+  };
   const hadnleSubmitUpdateSeriesTime = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-       await axiosInstance.patch(`series/${selectedSeries?.id}/updateTime`,{
+      await axiosInstance.patch(`series/${selectedSeries?.id}/updateTime`, {
         dateOfStart: selectedSeries?.dateOfStart,
-        timeOfStart: selectedSeries?.timeOfStart
-       })
-       showSuccessMessage(`Date and Time updated!`)
-       setShowUpdateSeriesTime(false)
+        timeOfStart: selectedSeries?.timeOfStart,
+      });
+      showSuccessMessage(`Date and Time updated!`);
+      setShowUpdateSeriesTime(false);
     } catch (error) {
       showError(`Failed to Update Series Time.`);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -770,43 +619,21 @@ const UpdateBetsPage: React.FC = () => {
           Update Bets
         </h1>
         {/* Button to show the create series form */}
-        <div className="w-full flex justify-center gap-4 my-8">
-          {!showCreateSeriesForm && (
-            <button
-              onClick={handleCreateNewSeries}
-              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
-              disabled={isInEdit || selectedSeries != null}
-            >
-              Create New Series
-            </button>
-          )}
-
-          {!showPlaoffsStageCreation && (
-            <button
-              onClick={() => {
-                setIsInEdit(true);
-                setShowPlayoffsStageCreation(true);
-              }}
-              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
-              disabled={isInEdit || selectedSeries != null}
-            >
-              Create New Champion Bets
-            </button>
-          )}
-
-          {!showCloseChampionsBets && (
-            <button
-              onClick={() => {
-                setIsInEdit(true);
-                setShowCloseChampionsBets(true);
-              }}
-              className="bg-colors-nba-blue text-white p-2 mb-4 rounded-xl hover:opacity-80 w-1/3"
-              disabled={isInEdit || selectedSeries != null}
-            >
-              Close Champions Bets
-            </button>
-          )}
-        </div>
+        <ButtonGroup
+          showCreateSeriesForm={showCreateSeriesForm}
+          showPlayoffsStageCreation={showPlayoffsStageCreation}
+          showCloseChampionsBets={showCloseChampionsBets}
+          isInEdit={isInEdit}
+          handleCreateNewSeries={handleCreateNewSeries}
+          handleCloseChampionsBets={() => {
+            setIsInEdit(true);
+            setShowCloseChampionsBets(true);
+          }}
+          handlePlayoffsStageCreation={() => {
+            setIsInEdit(true);
+            setShowPlayoffsStageCreation(true);
+          }}
+        />
         {showCloseChampionsBets && (
           <form onSubmit={handleCloseChampionsBets}>
             <div className="space-y-4">
@@ -857,7 +684,7 @@ const UpdateBetsPage: React.FC = () => {
             </div>
           </form>
         )}
-        {showPlaoffsStageCreation && (
+        {showPlayoffsStageCreation && (
           <form onSubmit={handleCreateNewStage}>
             <FormControl fullWidth required>
               <InputLabel>Stage</InputLabel>
@@ -1079,14 +906,11 @@ const UpdateBetsPage: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               >
                 <option value="">-- Select First Team Seed --</option>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-                <option value={4}>4</option>
-                <option value={5}>5</option>
-                <option value={6}>6</option>
-                <option value={7}>7</option>
-                <option value={8}>8</option>
+                {[...Array(8).keys()].map((index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {index + 1}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1118,14 +942,11 @@ const UpdateBetsPage: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               >
                 <option value="">-- Select Second Team Seed --</option>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-                <option value={4}>4</option>
-                <option value={5}>5</option>
-                <option value={6}>6</option>
-                <option value={7}>7</option>
-                <option value={8}>8</option>
+                {[...Array(8).keys()].map((index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {index + 1}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1192,108 +1013,85 @@ const UpdateBetsPage: React.FC = () => {
         )}
         {/* Select Series */}
         {!showCloseChampionsBets &&
-          !showPlaoffsStageCreation &&
+          !showPlayoffsStageCreation &&
           !showCreateSeriesForm && (
-            <div className="mb-4">
-              <label
-                htmlFor="selectSeries"
-                className="block text-lg font-semibold"
-              >
-                Select a Series
-              </label>
-              <div className="flex items-center space-x-8 w-full">
-                <select
-                  id="selectSeries"
-                  value={selectedSeries?.id || ""}
-                  onChange={(e) => {
-                    const series = seriesList.find(
-                      (s) => s.id === e.target.value
-                    );
-                    setSelectedSeries(series || null);
-                    setBets(series?.playerMatchupBets || []);
-                  }}
-                  className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-                >
-                  <option value="">-- Select Series --</option>
-                  {filteredSeriesList.map((series) => (
-                    <option key={series.id} value={series.id}>
-                      {series.team1} vs {series.team2} ({series.round})
-                    </option>
-                  ))}
-                </select>
-                <Tooltip
-                  title="Filter Series"
-                  slots={{
-                    transition: Zoom,
-                  }}
-                  arrow
-                  placement="right"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    className="size-6 cursor-pointer transform transition-transform duration-200 hover:scale-125"
-                    onClick={handleFilterClick}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
-                    />
-                  </svg>
-                </Tooltip>
-                <Menu
-                  anchorEl={anchorEl}
-                  open={Boolean(anchorEl)}
-                  onClose={handleCloseFilter}
-                >
-                  <MenuItem
-                    selected={selectedFilter === "First Round"}
-                    onClick={() => handleFilterSeries("First Round")}
-                  >
-                    {selectedFilter === "First Round" && <CheckIcon />}
-                    First Round
-                  </MenuItem>
+            <div className="flex items-center space-x-4 w-full">
+              <SelectSeriesDropdown
+                seriesList={filteredSeriesList}
+                selectedSeries={selectedSeries}
+                handleSeriesSelection={handleSeriesSelection}
+              />
 
-                  <MenuItem
-                    onClick={() => {
-                      handleFilterSeries("Conference Semifinals");
-                    }}
-                  >
-                    {selectedFilter === "Conference Semifinals" && (
-                      <CheckIcon />
-                    )}
-                    Conference Semi-Finals
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      handleFilterSeries("Conference Finals");
-                    }}
-                  >
-                    {selectedFilter === "Conference Finals" && <CheckIcon />}
-                    Conference Finals
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      handleFilterSeries("NBA Finals");
-                    }}
-                  >
-                    {selectedFilter === "NBA Finals" && <CheckIcon />}
-                    NBA Finals
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      handleFilterSeries("All Series");
-                    }}
-                  >
-                    {selectedFilter === "All Series" && <CheckIcon />}
-                    All Series
-                  </MenuItem>
-                </Menu>
-              </div>
+              <Tooltip
+                title="Filter Series"
+                slots={{
+                  transition: Zoom,
+                }}
+                arrow
+                placement="right"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-6 cursor-pointer mt-4 transform transition-transform duration-200 hover:scale-125"
+                  onClick={handleFilterClick}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"
+                  />
+                </svg>
+              </Tooltip>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleCloseFilter}
+              >
+                <MenuItem
+                  selected={selectedFilter === "First Round"}
+                  onClick={() => handleFilterSeries("First Round")}
+                >
+                  {selectedFilter === "First Round" && <CheckIcon />}
+                  First Round
+                </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    handleFilterSeries("Conference Semifinals");
+                  }}
+                >
+                  {selectedFilter === "Conference Semifinals" && <CheckIcon />}
+                  Conference Semi-Finals
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleFilterSeries("Conference Finals");
+                  }}
+                >
+                  {selectedFilter === "Conference Finals" && <CheckIcon />}
+                  Conference Finals
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleFilterSeries("NBA Finals");
+                  }}
+                >
+                  {selectedFilter === "NBA Finals" && <CheckIcon />}
+                  NBA Finals
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleFilterSeries("All Series");
+                  }}
+                >
+                  {selectedFilter === "All Series" && <CheckIcon />}
+                  All Series
+                </MenuItem>
+              </Menu>
             </div>
           )}
         {selectedSeries && (
@@ -1339,13 +1137,19 @@ const UpdateBetsPage: React.FC = () => {
               <input
                 type="date"
                 name="dateOfStart"
-                value={selectedSeries.dateOfStart ? new Date(selectedSeries.dateOfStart).toISOString().split("T")[0]: ""}
+                value={
+                  selectedSeries.dateOfStart
+                    ? new Date(selectedSeries.dateOfStart)
+                        .toISOString()
+                        .split("T")[0]
+                    : ""
+                }
                 onChange={(e) => {
-                  console.log(e.target.value)
-                  setSelectedSeries((prevSeries)=>({
+                  console.log(e.target.value);
+                  setSelectedSeries((prevSeries) => ({
                     ...prevSeries,
                     dateOfStart: new Date(e.target.value),
-                  }))
+                  }));
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />
@@ -1357,11 +1161,11 @@ const UpdateBetsPage: React.FC = () => {
                 name="timeOfStart"
                 value={selectedSeries.timeOfStart}
                 onChange={(e) => {
-                  console.log(e.target.value)
-                  setSelectedSeries((prevSeries)=>({
+                  console.log(e.target.value);
+                  setSelectedSeries((prevSeries) => ({
                     ...prevSeries,
                     timeOfStart: e.target.value,
-                  }))
+                  }));
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />
@@ -1378,7 +1182,7 @@ const UpdateBetsPage: React.FC = () => {
                 text="Update Result"
                 loading={loading}
                 onClick={hadnleSubmitUpdateSeriesTime}
-                disabled={loading }
+                disabled={loading}
               />
             </div>
           </form>
@@ -1386,25 +1190,6 @@ const UpdateBetsPage: React.FC = () => {
         {showSeriesResultForm && selectedSeries && (
           <form onSubmit={handleSubmitSeriesResult} className="space-y-4 mt-6">
             <h3 className="text-xl font-semibold mb-4">Enter Series Result</h3>
-
-            {/* Number of Games */}
-            {/* <div>
-            <label className="block text-lg font-semibold">
-              Number of Games
-            </label>
-            <select
-              name="numberOfGames"
-              value={numberOfgames}
-              onChange={(e) => setNumberOfGames(parseInt(e.target.value))}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-            >
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-            </select>
-          </div> */}
-
             {/* Winning Team */}
             <div>
               <label className="block text-lg font-semibold">
@@ -1547,172 +1332,14 @@ const UpdateBetsPage: React.FC = () => {
         )}
         {/* Bet Update Form */}
         {createNewBet && !updateResultSelected && (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-lg font-semibold">
-                Matchup Type
-              </label>
-              <select
-                name="typeOfMatchup"
-                value={selectedBet?.typeOfMatchup}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              >
-                {Object.values(PlayerMatchupType).map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold">Player 1</label>
-              <input
-                type="text"
-                name="player1"
-                value={selectedBet?.player1}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold">Player 2</label>
-              <input
-                type="text"
-                name="player2"
-                value={selectedBet.player2}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold">
-                Differential (On player 2)
-              </label>
-              <input
-                type="number"
-                name="differential"
-                value={selectedBet.differential}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-                step="any"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold">
-                Fantasy Points
-              </label>
-              <input
-                type="number"
-                name="fantasyPoints"
-                value={selectedBet.fantasyPoints}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-              />
-            </div>
-
-            <div>
-              <FormControl fullWidth>
-                <InputLabel id="categories">Categories</InputLabel>
-                <Select
-                  labelId="categories"
-                  id="categoriesSelection"
-                  multiple
-                  value={selectedBet.categories}
-                  onChange={handleCategoriesSelection}
-                  sx={{
-                    backgroundColor: "white",
-                    borderRadius: "0.5rem",
-                    "& .MuiOutlinedInput-root": {
-                      backgroundColor: "white", // Ensure that the dropdown input also has a white background
-                    },
-                  }}
-                >
-                  {Object.values(MatchupCategory).map((category) => (
-                    <MenuItem
-                      key={category}
-                      value={category}
-                      sx={{
-                        "&.Mui-selected": {
-                          backgroundColor: "#ccffcc",
-                          color: "black", // Customize the color of the selected item text
-                        },
-                        "&.Mui-selected:hover": {
-                          backgroundColor: "#ccffcc",
-                        },
-                      }}
-                    >
-                      {" "}
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-            {/* <label className="block text-lg font-semibold">Categories</label>
-              <select
-                multiple
-                name="categories"
-                value={selectedBet?.categories}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 h-[150px] rounded-lg mt-2"
-              >
-                {Object.values(MatchupCategory).map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select> */}
-
-            {/* <div className="mt-4">
-              <h3 className="text-lg font-semibold">Selected Categories:</h3>
-              <ul className="list-disc pl-6">
-                {selectedBet.categories.map((category) => (
-                  <li key={category} className="flex justify-between">
-                    <span>{category}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(category)}
-                      className="text-colors-nba-red hover:scale-125 transition-transform"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                        className="size-6"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                        />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div> */}
-            <div className="flex justify-between mt-4">
-              <button
-                type="button"
-                onClick={handleCloseEditBet}
-                className="text-colors-nba-red hover:scale-110 transition-transform"
-              >
-                Close Edit Bet
-              </button>
-              <SubmitButton
-                loading={loading}
-                text={loading ? "Updating" : "Update"}
-                onClick={handleSubmit}
-              />
-            </div>
-          </form>
+          <BetForm
+            selectedBet={selectedBet}
+            handleInputChange={handleInputChange}
+            handleCategoriesSelection={handleCategoriesSelection}
+            handleCloseEditBet={handleCloseEditBet}
+            handleSubmit={handleSubmit}
+            loading={loading}
+          />
         )}
       </div>
     </div>

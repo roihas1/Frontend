@@ -1,41 +1,36 @@
 import { Link } from "react-router-dom";
 import PageBackground from "../components/Layout/PageBackground";
-import Logo from '../assets/export/gray_trans.png'
-
+import Logo from '../assets/export/gray_trans.png';
 
 const WelcomePage = () => {
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen bg-center mt-2"
+      className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-t  bg-cover bg-center mt-2"
     >
       <PageBackground imageSrc={Logo} />
-      <div className="bg-gray-600 bg-opacity-60 text-white text-center p-12 rounded-3xl shadow-2xl max-w-3xl w-full transform transition-all duration-300 hover:scale-105">
-      
-        <h1 className="text-5xl font-extrabold text-white mb-6">
-          Welcome to the Beyond the Bracket NBA Playoffs Betting App!
+      <div className="bg-gray-900 bg-opacity-75 text-white text-center p-12 rounded-3xl shadow-2xl max-w-4xl w-full transform transition-all ">
+        <h1 className="text-6xl font-extrabold text-white mb-8">
+          Welcome to Beyond the Bracket!
         </h1>
-        <p className="text-xl mb-8">
-          Experience the excitement of the NBA Playoffs like never before. Place
-          your bets, compete with friends, and see who knows the game best!
+        <p className="text-xl mb-8 font-semibold">
+          Dive into the NBA Playoffs like never before. Place your bets, compete with friends, and see who's the real NBA expert!
         </p>
-        <div className="flex justify-center gap-6 mb-8">
+        <div className="flex justify-center gap-8 mb-8">
           <Link to="/signup">
-            <button className="bg-gradient-to-r from-colors-nba-blue to-colors-nba-red text-white py-3 px-10 rounded-full text-lg font-semibold hover: transform transition-all duration-300 hover:scale-105">
-              Sign Up and Start Winning!
+            <button className="bg-gradient-to-r from-colors-nba-yellow to-colors-nba-red text-white py-4 px-12 rounded-full text-lg font-semibold hover:scale-110 transform transition-all duration-300">
+              Sign Up and Play!
             </button>
           </Link>
           <Link to="/login">
-            <button className="bg-gradient-to-r  from-colors-nba-red to-colors-nba-blue text-white py-3 px-10 rounded-full text-lg font-semibold hover: transform transition-all duration-300 hover:scale-105">
-              Login
+            <button className="bg-gradient-to-r from-colors-nba-blue to-blue-400 text-white py-4 px-12 rounded-full text-lg font-semibold hover:scale-110 transform transition-all duration-300">
+              Login to Join
             </button>
           </Link>
         </div>
-        <p className="text-lg opacity-70 mt-6">
-          Join thousands of fans who are making their NBA Playoffs predictions
-          right now!
+        <p className="text-lg opacity-80 mt-6">
+          Join thousands of NBA fans and make your predictions. Are you ready to prove you're the best?
         </p>
       </div>
-
     </div>
   );
 };

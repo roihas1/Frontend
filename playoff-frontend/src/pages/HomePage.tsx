@@ -33,12 +33,14 @@ import houstonRocketsLogo from "../assets/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/new_orleans_pelicans_logo.png";
 import Logo from "../assets/export/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import { MatchupCategory, PlayerMatchupType } from "./UpdateBetsPage";
+import { MatchupCategory, PlayerMatchupType } from "../types/index";
 import ChampionsInput from "../components/ChampionsInput";
 import { useError } from "../components/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
 import { CircularProgress, Zoom } from "@mui/material";
 import { checkTokenExpiration } from "../types";
+import PageBackground from "../components/Layout/PageBackground";
+import backgroundLogo from '../assets/export/gray_only_ball_trans.png'
 export interface PlayerMatchupBet {
   betId: string;
   seriesId: string;
@@ -126,40 +128,40 @@ const nbaTeams = {
   "Utah Jazz": "Jazz",
   "Washington Wizards": "Wizards",
 };
-
+const logos: Record<string, string> = {
+  atlanta_hawks: atlantaHawksLogo,
+  boston_celtics: bostonCelticsLogo,
+  brooklyn_nets: brooklynNetsLogo,
+  charlotte_hornets: charlotteHornetsLogo,
+  chicago_bulls: chicagoBullsLogo,
+  cleveland_cavaliers: clevelandCavaliersLogo,
+  dallas_mavericks: dallasMavericksLogo,
+  denver_nuggets: denverNuggetsLogo,
+  detroit_pistons: detroitPistonsLogo,
+  golden_state_warriors: goldenStateWarriorsLogo,
+  houston_rockets: houstonRocketsLogo,
+  indiana_pacers: indianaPacersLogo,
+  los_angeles_clippers: losAngelesClippersLogo,
+  los_angeles_lakers: losAngelesLakersLogo,
+  memphis_grizzlies: memphisGrizzliesLogo,
+  miami_heat: miamiHeatLogo,
+  milwaukee_bucks: milwaukeeBucksLogo,
+  minnesota_timberwolves: minnesotaTimberwolvesLogo,
+  new_orleans_pelicans: newOrleansPelicansLogo,
+  new_york_knicks: newYorkKnicksLogo,
+  oklahoma_city_thunder: oklahomaCityThunderLogo,
+  orlando_magic: orlandoMagicLogo,
+  phoenix_suns: phoenixSunsLogo,
+  philadelphia_76ers: philadelphia76ersLogo,
+  portland_trail_blazers: portlandTrailBlazersLogo,
+  sacramento_kings: sacramentoKingsLogo,
+  san_antonio_spurs: sanAntonioSpursLogo,
+  toronto_raptors: torontoRaptorsLogo,
+  utah_jazz: utahJazzLogo,
+  washington_wizards: washingtonWizardsLogo,
+};
 const HomePage: React.FC = () => {
-  const logos: Record<string, string> = {
-    atlanta_hawks: atlantaHawksLogo,
-    boston_celtics: bostonCelticsLogo,
-    brooklyn_nets: brooklynNetsLogo,
-    charlotte_hornets: charlotteHornetsLogo,
-    chicago_bulls: chicagoBullsLogo,
-    cleveland_cavaliers: clevelandCavaliersLogo,
-    dallas_mavericks: dallasMavericksLogo,
-    denver_nuggets: denverNuggetsLogo,
-    detroit_pistons: detroitPistonsLogo,
-    golden_state_warriors: goldenStateWarriorsLogo,
-    houston_rockets: houstonRocketsLogo,
-    indiana_pacers: indianaPacersLogo,
-    los_angeles_clippers: losAngelesClippersLogo,
-    los_angeles_lakers: losAngelesLakersLogo,
-    memphis_grizzlies: memphisGrizzliesLogo,
-    miami_heat: miamiHeatLogo,
-    milwaukee_bucks: milwaukeeBucksLogo,
-    minnesota_timberwolves: minnesotaTimberwolvesLogo,
-    new_orleans_pelicans: newOrleansPelicansLogo,
-    new_york_knicks: newYorkKnicksLogo,
-    oklahoma_city_thunder: oklahomaCityThunderLogo,
-    orlando_magic: orlandoMagicLogo,
-    phoenix_suns: phoenixSunsLogo,
-    philadelphia_76ers: philadelphia76ersLogo,
-    portland_trail_blazers: portlandTrailBlazersLogo,
-    sacramento_kings: sacramentoKingsLogo,
-    san_antonio_spurs: sanAntonioSpursLogo,
-    toronto_raptors: torontoRaptorsLogo,
-    utah_jazz: utahJazzLogo,
-    washington_wizards: washingtonWizardsLogo,
-  };
+ 
   const { showError } = useError();
   const [series, setSeries] = useState<{
     west: Series[];
@@ -172,7 +174,7 @@ const HomePage: React.FC = () => {
   });
   const [showInput, setShowInput] = useState<boolean>(false);
   const [stage, setStage] = useState<string>("");
-  const [stageStartDate, setStageStartDate] = useState<string>("");
+  const [stageStartDate, setStageStartDate] = useState<Date>(new Date());
   const [userPointsPerSeries, setUserPointsPerSeries] = useState<{
     [key: string]: number;
   } | null>(null);
@@ -261,9 +263,13 @@ const HomePage: React.FC = () => {
       let flag = true;
       const stages = response.data;
       for (const round of stages) {
-        if (new Date(round.startDate) > new Date()) {
+        const startDate = new Date(round.startDate);
+        const time = round.timeOfStart.split(":");
+        startDate.setHours(parseInt(time[0]))
+        startDate.setMinutes(parseInt(time[1]))
+        if (new Date(startDate) > new Date()) {
           setStage(round.name);
-          setStageStartDate(round.startDate);
+          setStageStartDate(startDate);
           flag = false;
           break;
         }
@@ -510,6 +516,7 @@ const HomePage: React.FC = () => {
       {/* Desktop View */}
       {!loading && (
         <div className="hidden md:flex justify-center">
+          
           <div className="flex gap-8">
             {showInput && (
               <div className={`flex-none w-full md:w-1/4`}>
