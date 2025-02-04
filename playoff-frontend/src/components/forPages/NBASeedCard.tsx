@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import TeamDialog from "./form/TeamDialog"; // Import the TeamDialog component
-import { Series } from "../pages/HomePage";
+import TeamDialog from "../form/TeamDialog"; // Import the TeamDialog component
+import { Series } from "../../pages/HomePage";
 import NBALogo from "../assets/NBALogo.jpg";
-import { useError } from "./ErrorProvider";
+import { useError } from "../providers&context/ErrorProvider";
 import { CircularProgress } from "@mui/material";
 
 interface NBASeedCardProps {
@@ -74,7 +74,6 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
           className={`flex flex-col items-center cursor-pointer `}
           onClick={openDialog}
         >
-          
           {/* Team 1 */}
           <div
             className={`relative flex items-center w-full  ${

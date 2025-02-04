@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useError } from "../components/ErrorProvider";
+import { useError } from "../components/providers&context/ErrorProvider";
 import NBAlogo from "../assets/NBALogo.jpg";
 import axiosInstance from "../api/axiosInstance";
-import PageBackground from "../components/Layout/PageBackground";
-import SubmitButton from "../components/form/SubmitButton";
+import PageBackground from "../components/common/PageBackground";
+import SubmitButton from "../components/common/SubmitButton";
 import InputField from "../components/form/FormInput";
-import { useSuccessMessage } from "../components/successMassageProvider";
-import Logo from '../assets/export/gray_trans.png'
+import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import Logo from "../assets/export/gray_trans.png";
 
 const SignUpPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -19,7 +19,7 @@ const SignUpPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { showError } = useError();
   const navigate = useNavigate();
-  const {showSuccessMessage} = useSuccessMessage();
+  const { showSuccessMessage } = useSuccessMessage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +59,7 @@ const SignUpPage: React.FC = () => {
       }
     } finally {
       setLoading(false);
-      showSuccessMessage("You are signed up! let's log in")
+      showSuccessMessage("You are signed up! let's log in");
     }
   };
 
@@ -67,12 +67,17 @@ const SignUpPage: React.FC = () => {
     <div className="relative min-h-screen flex items-center justify-center bg-gray-100">
       <PageBackground imageSrc={Logo} />
       <div className="relative bg-gray-100 p-6 rounded-lg shadow-2xl w-full max-w-4xl z-10">
-        <h2 className="text-2xl font-bold text-center text-black mb-4">Sign Up</h2>
+        <h2 className="text-2xl font-bold text-center text-black mb-4">
+          Sign Up
+        </h2>
         <p className="text-sm text-gray-700 mb-6 text-center">
           Enter your details below to create your account and get started
         </p>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
           <InputField
             id="username"
             label="Username"
@@ -121,15 +126,18 @@ const SignUpPage: React.FC = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
-           <div className="col-span-full flex justify-center">
-    <SubmitButton loading={loading} text="Sign Up"  />
-  </div>
+          <div className="col-span-full flex justify-center">
+            <SubmitButton loading={loading} text="Sign Up" />
+          </div>
         </form>
 
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
             Already have an account?{" "}
-            <Link to="/login" className="text-colors-nba-blue hover:text-colors-nba-red">
+            <Link
+              to="/login"
+              className="text-colors-nba-blue hover:text-colors-nba-red"
+            >
               Login
             </Link>
           </p>

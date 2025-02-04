@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useError } from "./ErrorProvider";
-import { useSuccessMessage } from "./successMassageProvider";
-import axiosInstance from "../api/axiosInstance";
+import { useError } from "../providers&context/ErrorProvider";
+import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import axiosInstance from "../../api/axiosInstance";
 import {
   Accordion,
   AccordionDetails,
@@ -64,13 +64,11 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
       <ul>
         {guesses.map((guess) => (
           <li className="font-semibold" key={guess.id}>
-            {guess.conference ? (
-              `${guess.conference} - ${guess.team1} vs ${guess.team2}`
-            ) : guess.team ? (
-              guess.team
-            ) : (
-              guess.player
-            )}
+            {guess.conference
+              ? `${guess.conference} - ${guess.team1} vs ${guess.team2}`
+              : guess.team
+              ? guess.team
+              : guess.player}
           </li>
         ))}
       </ul>
@@ -110,8 +108,15 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
           <div>
             {guesses && (
               <>
-                { stageKey === 'beforePlayoffs' &&   renderGuessSection("Conference Final Guesses", guesses.conferenceFinalGuesses)}
-                {renderGuessSection("Champion Team Guess", guesses.championTeamGuesses)}
+                {stageKey === "beforePlayoffs" &&
+                  renderGuessSection(
+                    "Conference Final Guesses",
+                    guesses.conferenceFinalGuesses
+                  )}
+                {renderGuessSection(
+                  "Champion Team Guess",
+                  guesses.championTeamGuesses
+                )}
                 {renderGuessSection("MVP Guesses", guesses.mvpGuesses)}
               </>
             )}
@@ -123,20 +128,42 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
 
   return (
     <div>
-      {stage === "Round 1" && priorGuesses && renderAccordion(stagesToShow[0], priorGuesses, "beforePlayoffs")}
+      {stage === "Round 1" &&
+        priorGuesses &&
+        renderAccordion(stagesToShow[0], priorGuesses, "beforePlayoffs")}
 
       {stage === "Round 2" && priorGuessesRound2 && (
         <div className="mt-4">
-          {renderAccordion(stagesToShow[0], priorGuessesRound2.beforePlayoffs, "beforePlayoffs")}
-          {renderAccordion(stagesToShow[1], priorGuessesRound2.round1, "round1")}
+          {renderAccordion(
+            stagesToShow[0],
+            priorGuessesRound2.beforePlayoffs,
+            "beforePlayoffs"
+          )}
+          {renderAccordion(
+            stagesToShow[1],
+            priorGuessesRound2.round1,
+            "round1"
+          )}
         </div>
       )}
 
       {stage === "Finish" && priorGuessesRound2 && (
         <div className="mt-4">
-          {renderAccordion(stagesToShow[0], priorGuessesRound2.beforePlayoffs, "beforePlayoffs")}
-          {renderAccordion(stagesToShow[1], priorGuessesRound2.round1, "round1")}
-          {renderAccordion(stagesToShow[2], priorGuessesRound2.round2, "round2")}
+          {renderAccordion(
+            stagesToShow[0],
+            priorGuessesRound2.beforePlayoffs,
+            "beforePlayoffs"
+          )}
+          {renderAccordion(
+            stagesToShow[1],
+            priorGuessesRound2.round1,
+            "round1"
+          )}
+          {renderAccordion(
+            stagesToShow[2],
+            priorGuessesRound2.round2,
+            "round2"
+          )}
         </div>
       )}
     </div>

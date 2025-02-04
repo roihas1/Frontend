@@ -1,5 +1,5 @@
 import React from "react";
-import { Series } from "../pages/HomePage";
+import { Series } from "../../pages/HomePage";
 
 interface SelectSeriesDropdownProps {
   seriesList: Series[];

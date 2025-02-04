@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import NBASeedCard from "../components/NBASeedCard";
+import NBASeedCard from "../components/forPages/NBASeedCard";
 // import { Team } from "../components/form/TeamDialog";
 import bostonCelticsLogo from "../assets/boston_logo.png";
 import losAngelesLakersLogo from "../assets/los_angeles_lakers_logo.png";
@@ -34,13 +34,13 @@ import newOrleansPelicansLogo from "../assets/new_orleans_pelicans_logo.png";
 import Logo from "../assets/export/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
 import { MatchupCategory, PlayerMatchupType } from "../types/index";
-import ChampionsInput from "../components/ChampionsInput";
-import { useError } from "../components/ErrorProvider";
+import ChampionsInput from "../components/forPages/ChampionsInput";
+import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
 import { CircularProgress, Zoom } from "@mui/material";
 import { checkTokenExpiration } from "../types";
-import PageBackground from "../components/Layout/PageBackground";
-import backgroundLogo from '../assets/export/gray_only_ball_trans.png'
+import PageBackground from "../components/common/PageBackground";
+import backgroundLogo from "../assets/export/gray_only_ball_trans.png";
 export interface PlayerMatchupBet {
   betId: string;
   seriesId: string;
@@ -161,7 +161,6 @@ const logos: Record<string, string> = {
   washington_wizards: washingtonWizardsLogo,
 };
 const HomePage: React.FC = () => {
- 
   const { showError } = useError();
   const [series, setSeries] = useState<{
     west: Series[];
@@ -265,8 +264,8 @@ const HomePage: React.FC = () => {
       for (const round of stages) {
         const startDate = new Date(round.startDate);
         const time = round.timeOfStart.split(":");
-        startDate.setHours(parseInt(time[0]))
-        startDate.setMinutes(parseInt(time[1]))
+        startDate.setHours(parseInt(time[0]));
+        startDate.setMinutes(parseInt(time[1]));
         if (new Date(startDate) > new Date()) {
           setStage(round.name);
           setStageStartDate(startDate);
@@ -516,7 +515,6 @@ const HomePage: React.FC = () => {
       {/* Desktop View */}
       {!loading && (
         <div className="hidden md:flex justify-center">
-          
           <div className="flex gap-8">
             {showInput && (
               <div className={`flex-none w-full md:w-1/4`}>

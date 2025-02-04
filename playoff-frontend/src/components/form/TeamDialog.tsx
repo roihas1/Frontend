@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Dialog } from "@headlessui/react";
-import SubmitButton from "./SubmitButton";
+import SubmitButton from "../common/SubmitButton";
 import { Series } from "../../pages/HomePage";
 import axiosInstance from "../../api/axiosInstance";
-import { useError } from "../ErrorProvider";
-import { useSuccessMessage } from "../successMassageProvider";
-import { useUser } from "../userContext";
+import { useError } from "../providers&context/ErrorProvider";
+import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import { useUser } from "../providers&context/userContext";
 import { Tooltip } from "@mui/material";
 
 export interface Team {
@@ -49,7 +49,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   series.dateOfStart.setHours(parseInt(time[0]));
   series.dateOfStart.setMinutes(parseInt(time[1]));
   const isStartDatePassed = new Date() > new Date(series.dateOfStart);
-  
 
   // Handle team selection
   const handleTeamSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,44 +196,46 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
   }, [isOpen, series]);
 
-  const HorizontalBar = ({ first, second, option1, option2}) => {
+  const HorizontalBar = ({ first, second, option1, option2 }) => {
     // Ensure value is between 0 and 100
     const leftWidth = Math.max(0, Math.min(first, 100));
-    console.log(first, second)
+    console.log(first, second);
     return (
       <div className="flex w-full border-spacing-2 border  border-gray-200 rounded-lg p-0.5 h-8">
         <Tooltip title={option1} arrow>
-        <div
-          className={`flex bg-colors-nba-blue rounded-s-md items-center justify-center truncate ${
-            second === 0 ? "rounded-e-md" : ""
-          }`}
-          style={{ width: `${leftWidth}%` }}
-        >
-          {first}%
-        </div>
+          <div
+            className={`flex bg-colors-nba-blue rounded-s-md items-center justify-center truncate ${
+              second === 0 ? "rounded-e-md" : ""
+            }`}
+            style={{ width: `${leftWidth}%` }}
+          >
+            {first}%
+          </div>
         </Tooltip>
-          <Tooltip title={option2} arrow>
-        <div
-          className={`flex items-center justify-center truncate ${
-            first + second == 100 ? "rounded-e-md" : ""
-          } ${leftWidth === 0 ? "rounded-s-md" : ""} `}
-          style={{ width: `${second}%`, backgroundColor: "#539dc9" }}
-        >
-          {second}%
-        </div>
+        <Tooltip title={option2} arrow>
+          <div
+            className={`flex items-center justify-center truncate ${
+              first + second == 100 ? "rounded-e-md" : ""
+            } ${leftWidth === 0 ? "rounded-s-md" : ""} `}
+            style={{ width: `${second}%`, backgroundColor: "#539dc9" }}
+          >
+            {second}%
+          </div>
         </Tooltip>
         {first + second < 100 && (
           <Tooltip title="None" arrow>
-          <div
-            className={` flex items-center rounded-e-md justify-center truncate ${!first  && !second ? "rounded-s-md": ""}`}
-            style={{
-              width: `${100 - leftWidth - second}%`,
-              backgroundColor: "#c8f7ff",
-            }}
-          >
-            {" "}
-            {100 - second - first}%
-          </div>
+            <div
+              className={` flex items-center rounded-e-md justify-center truncate ${
+                !first && !second ? "rounded-s-md" : ""
+              }`}
+              style={{
+                width: `${100 - leftWidth - second}%`,
+                backgroundColor: "#c8f7ff",
+              }}
+            >
+              {" "}
+              {100 - second - first}%
+            </div>
           </Tooltip>
         )}
       </div>
@@ -511,15 +512,20 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                           hh
                       </label> */}
                       <div className="inline-flex items-center justify-between w-full ml-2 p-0.5 text-black bg-white  rounded-lg ">
-                        {isStartDatePassed &&  guessPercentage?.playerMatchup[bet.id] !==
-                          undefined && (
-                          <HorizontalBar
-                            first={guessPercentage?.playerMatchup[bet.id]["1"]}
-                            second={guessPercentage?.playerMatchup[bet.id]["2"]}
-                            option1={bet.player1}
-                            option2={bet.player2}
-                          />
-                        )}
+                        {isStartDatePassed &&
+                          guessPercentage?.playerMatchup[bet.id] !==
+                            undefined && (
+                            <HorizontalBar
+                              first={
+                                guessPercentage?.playerMatchup[bet.id]["1"]
+                              }
+                              second={
+                                guessPercentage?.playerMatchup[bet.id]["2"]
+                              }
+                              option1={bet.player1}
+                              option2={bet.player2}
+                            />
+                          )}
                       </div>
                     </div>
                   </li>

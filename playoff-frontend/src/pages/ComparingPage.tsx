@@ -6,12 +6,11 @@ import {
   FormControl,
   Autocomplete,
   TextField,
-  InputAdornment,
   Tooltip,
   Modal,
   Box,
 } from "@mui/material";
-import { useError } from "../components/ErrorProvider";
+import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
 import { AllSeriesBets, checkTokenExpiration, Guess, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
@@ -444,7 +443,7 @@ const ComparingPage: React.FC = () => {
               if (matchup.guesses.length === 0) {
                 return (
                   <Tooltip
-                  key={index+10}
+                    key={index + 10}
                     title={
                       <Typography className="flex justify-center text-xs">
                         - Looser didn't guess -
@@ -472,7 +471,7 @@ const ComparingPage: React.FC = () => {
               // Render Paper for matchups with guesses
               return (
                 <Tooltip
-                key={index}
+                  key={index}
                   title={
                     <Typography className="flex justify-center text-xs">
                       {matchup.guesses[0].guess === 1

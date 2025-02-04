@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NBAlogo from "../assets/NBALogo.jpg"; // Update with your logo's actual path
 import axiosInstance from "../api/axiosInstance";
-import { useError } from "../components/ErrorProvider";
-import PageBackground from "../components/Layout/PageBackground";
+import { useError } from "../components/providers&context/ErrorProvider";
+import PageBackground from "../components/common/PageBackground";
 import AuthCard from "../components/Layout/AuthCard";
 import FormInput from "../components/form/FormInput";
-import SubmitButton from "../components/form/SubmitButton";
-import { useSuccessMessage } from "../components/successMassageProvider";
-import { useUser } from "../components/userContext";
+import SubmitButton from "../components/common/SubmitButton";
+import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import { useUser } from "../components/providers&context/userContext";
 import Cookies from "js-cookie";
 import Logo from "../assets/export/gray_trans.png";
 import { Divider } from "@mui/material";
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
     } catch (error) {
       showError(`Failed to login with google. try again later.`);
       setLoading(false);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -109,11 +109,7 @@ const LoginPage: React.FC = () => {
             required
           />
           <div className="col-span-full flex justify-center ">
-            <SubmitButton
-              loading={loading}
-              text="Login"
-              onClick={()=>{}}
-            />
+            <SubmitButton loading={loading} text="Login" onClick={() => {}} />
           </div>
         </form>
 

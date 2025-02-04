@@ -4,9 +4,9 @@ import { InputLabel, FormControl, CircularProgress } from "@mui/material";
 import axiosInstance from "../api/axiosInstance";
 import { useSuccessMessage } from "./successMassageProvider";
 import { useError } from "./ErrorProvider";
-import SubmitButton from "./form/SubmitButton";
+import SubmitButton from "./common/SubmitButton";
 import CustomSelectInput from "./form/CustomSelectInput";
-import ChampionGuessSummary from "./ChampionGuessSummary";
+import ChampionGuessSummary from "./forPages/ChampionGuessSummary";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -150,7 +150,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     e.preventDefault(); // Prevent the default form submission
 
     // Validate the fields before submitting
-    if (stage === 'Before playoffs' && validateFields()) {
+    if (stage === "Before playoffs" && validateFields()) {
       showError("Please fill in all the required fields.");
       return;
     }
@@ -267,27 +267,34 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         </h3>
         <ChampionGuessSummary stage={stage} />
         <button
-            type="button"
-            onClick={() => setShowInput()}
-            className="text-colors-nba-red hover:scale-110 transition-transform mt-6"
-          >
-            Collapse Previous Guesses
-          </button>
+          type="button"
+          onClick={() => setShowInput()}
+          className="text-colors-nba-red hover:scale-110 transition-transform mt-6"
+        >
+          Collapse Previous Guesses
+        </button>
       </div>
     );
   }
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
-      <h3 className="text-md font-bold text-center text-gray-800">Previous Guesses</h3>
+      <h3 className="text-md font-bold text-center text-gray-800">
+        Previous Guesses
+      </h3>
       <ChampionGuessSummary stage={stage} />
       <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
         stage === "Round 1" || stage === "Round 2" ? `After ${stage}` : stage
       }`}</h3>
       <div className="text-center text-gray-600 text-sm mt-4">
         <p>
-          You have until <span className="font-semibold">{new Date(startDate).toLocaleString('he-IL',{timeZone:"Asia/Jerusalem"})}</span> to
-          make your guesses.
+          You have until{" "}
+          <span className="font-semibold">
+            {new Date(startDate).toLocaleString("he-IL", {
+              timeZone: "Asia/Jerusalem",
+            })}
+          </span>{" "}
+          to make your guesses.
         </p>
         {guessesFilled && (
           <p className="font-bold text-colors-nba-blue">
@@ -330,9 +337,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedEasternTeam2}
                   label="Team 2"
                   options={easternTeams}
-                  onChange={(e) =>
-                    setSelectedEasternTeam2(e.target.value)
-                  }
+                  onChange={(e) => setSelectedEasternTeam2(e.target.value)}
                 />
               </FormControl>
             </div>
@@ -353,9 +358,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedWesternTeam1}
                   label="Team 1"
                   options={westernTeams}
-                  onChange={(e) =>
-                    setSelectedWesternTeam1(e.target.value)
-                  }
+                  onChange={(e) => setSelectedWesternTeam1(e.target.value)}
                 />
               </FormControl>
 
@@ -366,9 +369,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedWesternTeam2}
                   label="Team 2"
                   options={westernTeams}
-                  onChange={(e) =>
-                    setSelectedWesternTeam2(e.target.value)
-                  }
+                  onChange={(e) => setSelectedWesternTeam2(e.target.value)}
                 />
               </FormControl>
             </div>
@@ -386,9 +387,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   id="FinalsTeam1"
                   value={selectedFinalsTeam1}
                   label="Team 1"
-                  onChange={(e) =>
-                    setSelectedFinalsTeam1(e.target.value)
-                  }
+                  onChange={(e) => setSelectedFinalsTeam1(e.target.value)}
                   options={westernTeams}
                 />
               </FormControl>
@@ -399,9 +398,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   id="FinalsTeam2"
                   value={selectedFinalsTeam2}
                   label="Team 2"
-                  onChange={(e) =>
-                    setSelectedFinalsTeam2(e.target.value)
-                  }
+                  onChange={(e) => setSelectedFinalsTeam2(e.target.value)}
                   options={easternTeams}
                 />
               </FormControl>

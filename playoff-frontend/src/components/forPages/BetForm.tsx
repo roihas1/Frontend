@@ -1,16 +1,24 @@
 import React from "react";
-import { InputLabel, FormControl, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import {
+  InputLabel,
+  FormControl,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+} from "@mui/material";
 
-import SubmitButton from "../components/form/SubmitButton";
+import SubmitButton from "./common/SubmitButton";
 import { PlayerMatchupBet } from "../pages/HomePage";
 import { MatchupCategory, PlayerMatchupType } from "../types";
 
 interface BetFormProps {
   selectedBet: PlayerMatchupBet;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  handleInputChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => void;
   handleCategoriesSelection: (e: SelectChangeEvent<MatchupCategory[]>) => void;
   handleCloseEditBet: () => void;
-  handleSubmit: (e:React.FormEvent) => void;
+  handleSubmit: (e: React.FormEvent) => void;
   loading: boolean;
 }
 
@@ -67,7 +75,9 @@ const BetForm: React.FC<BetFormProps> = ({
 
       {/* Differential */}
       <div>
-        <label className="block text-lg font-semibold">Differential (On player 2)</label>
+        <label className="block text-lg font-semibold">
+          Differential (On player 2)
+        </label>
         <input
           type="number"
           name="differential"
