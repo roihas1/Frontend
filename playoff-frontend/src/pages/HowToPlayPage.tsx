@@ -4,10 +4,53 @@ import {
   Typography,
   AccordionDetails,
   Divider,
+  Box,
+  Modal,
 } from "@mui/material";
-import React from "react";
+import betsExample from "../assets/Examples/Example.png";
+import React, { useState } from "react";
+import champExample from "../assets/Examples/Champ example.png";
 
 const HowToPlayPage: React.FC = () => {
+  const [openImgSeries, setOpenImgSeries] = useState<boolean>(false);
+  const [openImgChamp, setOpenImgChamp] = useState<boolean>(false);
+  const handleOpenImgChamp = () => setOpenImgChamp(true);
+  const handleCloseImgChamp = () => setOpenImgChamp(false);
+  const handleOpenImgSeries = () => setOpenImgSeries(true);
+  const handleCloseImgSeries = () => setOpenImgSeries(false);
+
+  const ImgModal = ({ imgSource, open, handleClose }) => {
+    if (!imgSource) return null; // Ensure the image source exists
+
+    return (
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            bgcolor: "white",
+            boxShadow: 24,
+            p: 2,
+            borderRadius: "8px",
+            outline: "none",
+            maxWidth: "80%",
+            maxHeight: "80%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <img
+            src={imgSource} // Image source from prop
+            alt="Series Bets Explanation"
+            className="max-w-full max-h-full rounded-md"
+          />
+        </Box>
+      </Modal>
+    );
+  };
   return (
     <div className="flex flex-col justify-start  bg-gray-100 space-y-2 pt-4 pb-4">
       <div className="flex justify-center text-2xl font-semibold mb-10">
@@ -41,8 +84,30 @@ const HowToPlayPage: React.FC = () => {
           <AccordionDetails>
             <div>
               <div className="mb-8">
-                <h1 className="text-2xl font-semibold mb-4"> Champions bets</h1>
-
+                <div className="flex justify-between items-center">
+                  <h1 className="text-2xl font-semibold mb-4">
+                    {" "}
+                    Champions bets
+                  </h1>
+                  <div className="shadow-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-10 cursor-pointer text-gray-700 bg-gray-100 p-1 rounded-md"
+                    onClick={handleOpenImgChamp}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+                    />
+                  </svg>
+                  </div>
+                </div>
+                <ImgModal imgSource={champExample} open={openImgChamp} handleClose={handleCloseImgChamp}/>
                 <h2 className="mb-2 ml-8">
                   There are 3 stages for the champions bets, below are the bets
                   in each one:
@@ -84,9 +149,33 @@ const HowToPlayPage: React.FC = () => {
               <Divider sx={{ borderWidth: 1 }} />
               {/* Series Bets Section */}
               <div className="mb-8 ">
-                <h2 className="text-2xl font-semibold mb-4 mt-2">
-                  Series Bets:
-                </h2>
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-semibold mb-4 mt-2">
+                    Series Bets:
+                  </h2>
+                  <div className="shadow-lg">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-10 cursor-pointer text-gray-700 bg-gray-100 p-1 rounded-md"
+                    onClick={handleOpenImgSeries}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+                    />
+                  </svg>
+                  </div>
+                </div>
+                <ImgModal
+                  imgSource={betsExample}
+                  handleClose={handleCloseImgSeries}
+                  open={openImgSeries}
+                />
                 <ul className="list-disc pl-5 space-y-3 ml-8">
                   <li>For each playoff series, you can bet on:</li>
                   <ul className="list-inside list-disc pl-5 space-y-2">
@@ -296,8 +385,8 @@ const HowToPlayPage: React.FC = () => {
                   Series Bets Deadlines
                 </h1>
                 <h3 className="text-md font-semibold mb-2 ml-8">
-                  All bets for a series must be placed before Game 1 schedualed time.
-                  Each series has its own deadline.
+                  All bets for a series must be placed before Game 1 schedualed
+                  time. Each series has its own deadline.
                 </h3>
               </div>
 

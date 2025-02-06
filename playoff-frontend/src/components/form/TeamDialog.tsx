@@ -197,44 +197,51 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   }, [isOpen, series]);
 
   const HorizontalBar = ({ first, second, option1, option2 }) => {
-    // Ensure value is between 0 and 100
+    // Ensure values are valid percentages and sum up correctly
     const leftWidth = Math.max(0, Math.min(first, 100));
-    console.log(first, second);
+    const rightWidth = Math.max(0, Math.min(second, 100 - leftWidth));
+    const noneWidth = 100 - leftWidth - rightWidth;
+  
     return (
-      <div className="flex w-full border-spacing-2 border  border-gray-200 rounded-lg p-0.5 h-8">
+      <div className="flex w-full border border-gray-200 rounded-lg p-0.5 h-8">
+        {/* First Section */}
         <Tooltip title={option1} arrow>
           <div
-            className={`flex bg-colors-nba-blue rounded-s-md items-center justify-center truncate ${
-              second === 0 ? "rounded-e-md" : ""
-            }`}
+            className={`flex bg-colors-nba-blue items-center justify-center truncate 
+              ${rightWidth === 0 && noneWidth === 0 ? "rounded-e-md rounded-s-md" : "rounded-s-md"}`}
             style={{ width: `${leftWidth}%` }}
           >
-            {first}%
+            {leftWidth}%
           </div>
         </Tooltip>
+  
+        {/* Second Section */}
         <Tooltip title={option2} arrow>
           <div
-            className={`flex items-center justify-center truncate ${
-              first + second == 100 ? "rounded-e-md" : ""
-            } ${leftWidth === 0 ? "rounded-s-md" : ""} `}
-            style={{ width: `${second}%`, backgroundColor: "#539dc9" }}
+            className={`flex items-center justify-center truncate 
+              ${leftWidth === 0 ? "rounded-s-md" : ""} 
+              ${noneWidth === 0 ? "rounded-e-md" : ""}`}
+            style={{
+              width: `${rightWidth}%`,
+              backgroundColor: "#539dc9",
+            }}
           >
-            {second}%
+            {rightWidth}%
           </div>
         </Tooltip>
-        {first + second < 100 && (
+  
+        {/* None Section (Remaining Space) */}
+        {noneWidth > 0 && (
           <Tooltip title="None" arrow>
             <div
-              className={` flex items-center rounded-e-md justify-center truncate ${
-                !first && !second ? "rounded-s-md" : ""
-              }`}
+              className={`flex items-center justify-center truncate rounded-e-md 
+                ${leftWidth === 0 && rightWidth === 0 ? "rounded-s-md" : ""}`}
               style={{
-                width: `${100 - leftWidth - second}%`,
+                width: `${noneWidth}%`,
                 backgroundColor: "#c8f7ff",
               }}
             >
-              {" "}
-              {100 - second - first}%
+              {noneWidth}%
             </div>
           </Tooltip>
         )}

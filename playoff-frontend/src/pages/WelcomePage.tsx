@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import PageBackground from "../components/common/PageBackground";
-import Logo from "../assets/export/gray_trans.png";
+import Logo from "../assets/siteLogo/gray_trans.png";
 
 const WelcomePage = () => {
   return (

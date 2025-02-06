@@ -10,9 +10,9 @@ import SubmitButton from "../components/common/SubmitButton";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { useUser } from "../components/providers&context/userContext";
 import Cookies from "js-cookie";
-import Logo from "../assets/export/gray_trans.png";
+import Logo from "../assets/siteLogo/gray_trans.png";
 import { Divider } from "@mui/material";
-import googleLogo from "../assets/search.png";
+import googleLogo from "../assets/logos/search.png";
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("");

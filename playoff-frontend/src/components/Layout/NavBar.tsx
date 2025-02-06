@@ -1,13 +1,12 @@
 import React from "react";
-import NBAlogo from "../assets/NBALogo.jpg";
 import { useUser } from "../providers&context/userContext";
 import { useLocation, Link, useNavigate } from "react-router-dom"; // Import Link from react-router-dom
 import axiosInstance from "../../api/axiosInstance";
 import { useError } from "../providers&context/ErrorProvider";
 import { useSuccessMessage } from "../providers&context/successMassageProvider";
-import Logo from "../assets/export/logo_color_trans.png";
+import Logo from "../../assets/siteLogo/logo_color_trans.png";
 import Cookies from "js-cookie";
-import Title from "../assets/export/title_straight_shadow.png";
+import Title from "../../assets/siteLogo/title_straight_shadow.png";
 import NavLink from "./NavLink";
 
 const Navbar: React.FC = () => {

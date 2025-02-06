@@ -19,13 +19,13 @@ import { SuccessMessageProvider } from "./components/providers&context/successMa
 import { UserProvider } from "./components/providers&context/userContext";
 import UpdateBetsPage from "./pages/UpdateBetsPage";
 // import PageBackground from "./components/Layout/PageBackground";
-// import NBALogo from "./assets/NBALogo.jpg";
+
 import LeaguesPage from "./pages/LeaguesPage";
 import WelcomePage from "./pages/WelcomePage";
 import Footer from "./components/common/Footer";
 import ComparingPage from "./pages/ComparingPage";
 import PageBackground from "./components/common/PageBackground";
-import Logo from "../src/assets/export/gray_only_ball.png";
+import Logo from "../src/assets/siteLogo/gray_only_ball.png";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import OAuthRedirectPage from "./pages/OauthRedirectPage";
 

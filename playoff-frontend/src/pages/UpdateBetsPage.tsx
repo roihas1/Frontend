@@ -654,11 +654,11 @@ const UpdateBetsPage: React.FC = () => {
               />
               <InputLabel> Champion Team</InputLabel>
               <FormControl fullWidth required>
-                <InputLabel>-- Select Champion Team --</InputLabel>
+                <InputLabel>Select Champion Team</InputLabel>
                 <Select
                   id="championTeam"
                   value={championTeam || ""}
-                  label="Champion Team"
+                  label="Select Champion Team"
                   name="Champion Team"
                   onChange={(e) => setChampionTeam(e.target.value)}
                   className="bg-white"

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Series } from "../pages/HomePage"; // Assuming `Series` type is correctly imported
+import { Series } from "../../pages/HomePage"; // Assuming `Series` type is correctly imported
 import { InputLabel, FormControl, CircularProgress } from "@mui/material";
-import axiosInstance from "../api/axiosInstance";
-import { useSuccessMessage } from "./successMassageProvider";
-import { useError } from "./ErrorProvider";
-import SubmitButton from "./common/SubmitButton";
-import CustomSelectInput from "./form/CustomSelectInput";
-import ChampionGuessSummary from "./forPages/ChampionGuessSummary";
+import axiosInstance from "../../api/axiosInstance";
+import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import { useError } from "../providers&context/ErrorProvider";
+import SubmitButton from "../common/SubmitButton";
+import CustomSelectInput from "../form/CustomSelectInput";
+import ChampionGuessSummary from "../forPages/ChampionGuessSummary";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -15,7 +15,7 @@ interface ChampionsInputProps {
   stage: string;
   setShowInput: () => void;
 }
-const nbaTeamsNicknamesReversed: { [key: string]: string } = {
+export const nbaTeamsNicknamesReversed: { [key: string]: string } = {
   "Atlanta Hawks": "Hawks",
   "Boston Celtics": "Celtics",
   "Brooklyn Nets": "Nets",
@@ -48,7 +48,7 @@ const nbaTeamsNicknamesReversed: { [key: string]: string } = {
   "Washington Wizards": "Wizards",
 };
 
-const nbaTeamsNicknames: { [key: string]: string } = {
+export const nbaTeamsNicknames: { [key: string]: string } = {
   Hawks: "Atlanta Hawks",
   Celtics: "Boston Celtics",
   Nets: "Brooklyn Nets",
@@ -205,7 +205,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const fetchUserGuesses = async (stage: string) => {
     try {
       setLoading(true);
-      console.log(stage);
       const response = await axiosInstance.get(
         `/playoffs-stage/userGuesses/${stage}`
       );
@@ -279,9 +278,12 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
-      <h3 className="text-md font-bold text-center text-gray-800">
+      
+      {stage !== "Before playoffs" && (
+       <h3 className="text-md font-bold text-center text-gray-800">
         Previous Guesses
       </h3>
+      )}
       <ChampionGuessSummary stage={stage} />
       <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
         stage === "Round 1" || stage === "Round 2" ? `After ${stage}` : stage
@@ -323,10 +325,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   label="Team 1"
                   value={selectedEasternTeam1}
                   options={easternTeams}
-                  onChange={(e) => {
-                    console.log(e.target.name);
-                    setSelectedEasternTeam1(e.target.value);
-                  }}
+                  onChange={(e) => 
+                    setSelectedEasternTeam1(e.target.value)
+                  }
                 />
               </FormControl>
 
@@ -417,7 +418,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                 <InputLabel>MVP</InputLabel>
                 <CustomSelectInput
                   id="MVP choice"
-                  label="MVP's name"
+                  label="MVP"
                   value={selectedMvp}
                   options={playersList}
                   onChange={(e) => setSelectedMvp(e.target.value)}

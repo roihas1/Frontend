@@ -9,17 +9,21 @@ import {
   Tooltip,
   Modal,
   Box,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  SelectChangeEvent,
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
 import { AllSeriesBets, checkTokenExpiration, Guess, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import { useLocation } from "react-router-dom";
-
-// Data for companies and their engineering levels
-interface ComparingPageProps {
-  secondUserId?: string;
-}
+import ChampColumn from "../components/forPages/ChampColumn";
+import ChampGuessColumn from "../components/forPages/ChampGuessColumn";
+import InstructionPaper from "../components/forPages/ComparisonInstruction";
+import ClearUsersButton from "../components/forPages/ClearUsersButton";
 
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
@@ -46,7 +50,18 @@ const ComparingPage: React.FC = () => {
     [key: string]: string;
   }>({});
   const [open, setOpen] = useState<boolean>(false);
-
+  const [showSeriesSelection, setShowSeriesSelection] = useState<boolean>(true);
+  const [showChampSelection, setShowChampSelection] = useState<boolean>(false);
+  const [comparisonType, setComparisonType] = useState<string>("Series");
+  const [passedStages, setPassedStages] = useState<string[]>([]);
+  const [selectedStage, setSelectedStage] = useState<string>("");
+  const [userChampGuessses, setUserChampGuesses] = useState<{
+    [key: string]: {
+      conferenceFinalGuesses: [];
+      championTeamGuesses: [];
+      mvpGuesses: [];
+    };
+  }>();
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -65,6 +80,7 @@ const ComparingPage: React.FC = () => {
       response.data.map((user: User) => {
         allUsers[user.id] = user;
       });
+
       setUsers(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -72,19 +88,9 @@ const ComparingPage: React.FC = () => {
       setLoading(false);
     }
   };
-  //   const getUsersGuesses = async () => {
-  //     try {
-  //       const response = await axiosInstance.get("/auth/getUserGuesses");
-  //       console.log(response.data);
-  //       setUser(response.data);
-  //     } catch (error) {
-  //       showError(`Failed.`);
-  //     }
-  //   };
   const getAllBetsBySeries = async () => {
     try {
       const response = await axiosInstance.get("/series/getAll/bets");
-
       setAllSeriesBets(response.data);
       const res: { [key: string]: string } = {};
       Object.keys(response.data).forEach((key) => {
@@ -94,10 +100,17 @@ const ComparingPage: React.FC = () => {
           ] = `${response.data[key].team1} vs ${response.data[key].team2} (${response.data[key].round})`;
         }
       });
-
       setSeries(res);
     } catch (error) {
       showError(`Failed.`);
+    }
+  };
+  const fetchStages = async () => {
+    try {
+      const response = await axiosInstance.get(`playoffs-stage/passedStages`);
+      setPassedStages(response.data);
+    } catch (error) {
+      showError(`server error.`);
     }
   };
   const setInitialsComprison = (secondId: string) => {
@@ -113,10 +126,8 @@ const ComparingPage: React.FC = () => {
         ) {
           name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
           series = key;
-          //   console.log(`key:${key}`)
           setSelectedSeries(key);
           setSelectedSeriesName(name);
-
           break;
         }
       }
@@ -126,68 +137,76 @@ const ComparingPage: React.FC = () => {
   };
   checkTokenExpiration();
   useEffect(() => {
-    // console.log(JSON.stringify(allSeriesBets));
     if (secondUserId && currentUser && allSeriesBets) {
       setInitialsComprison(secondUserId);
     }
   }, [allSeriesBets, currentUser, secondUserId]);
+
   useEffect(() => {
     getAllBetsBySeries();
     fetchUsers();
+    fetchStages();
   }, []);
-  {
-    /* rgba(4,163,239,0.31)
-      rgba(0,113,197,0.29)
-      rgb(22,106,234,0.57)
-      rgb(107, 144, 225)
-      rgb(1,130,202,0.318) */
-  }
+
   const opacity = 0.218;
-  const [columnsVisible, setColumnsVisible] = useState([true]);
   const handleOpenModal = () => {
     setOpen(true);
   };
   const handleCloseModal = () => {
     setOpen(false);
   };
-  const handleUserSelection = (userId: string, seriesId?: string) => {
+  const handleUserSelection = async (userId: string, seriesId?: string) => {
     if (Object.keys(selectedUsers).length === 5) {
       showError(
         `Max participents in comparison is 5! Remove at least one user.`
       );
+      return;
     }
-    // Add a new column on the left when a user is selected
     try {
+      const user = users[userId];
+      const name = `${user?.firstName} ${user?.lastName}`;
       if (!(userId in selectedUsers)) {
-        const id = seriesId ? seriesId : selectedSeries;
-        const user = users[userId];
-        const name = `${user?.firstName} ${user?.lastName}`;
-        //   console.log(`name: ${name} id:${id} bets:${JSON.stringify(allSeriesBets)}`)
-        const series = allSeriesBets[id];
-        const bestOf7Guess = series.bestOf7Bet.guesses.filter(
-          (guess) => guess.createdById === userId
-        );
-        const team = series.teamWinBet.guesses.filter(
-          (guess) => guess.createdById === userId
-        );
-        const playerMatchups = series.playerMatchupBets.flatMap((bet) => {
-          const matchingGuesses = bet.guesses.filter(
+        if (showSeriesSelection) {
+          const id = seriesId ? seriesId : selectedSeries;
+          const series = allSeriesBets[id];
+          const bestOf7Guess = series.bestOf7Bet.guesses.filter(
             (guess) => guess.createdById === userId
           );
-          const player1 = bet.player1;
-          const player2 = bet.player2;
-          return { guesses: matchingGuesses, player1, player2 };
-        });
-        setUsersGuesses({
-          ...usersGuesses,
-          [userId]: {
-            bestOf7: bestOf7Guess[0],
-            teamWon: team[0],
-            playerMatchups,
-          },
-        });
-        setSelectedUsers({ ...selectedUsers, [userId]: name });
-        setColumnsVisible([true, ...columnsVisible]);
+          const team = series.teamWinBet.guesses.filter(
+            (guess) => guess.createdById === userId
+          );
+          const playerMatchups = series.playerMatchupBets.flatMap((bet) => {
+            const matchingGuesses = bet.guesses.filter(
+              (guess) => guess.createdById === userId
+            );
+            const player1 = bet.player1;
+            const player2 = bet.player2;
+            return { guesses: matchingGuesses, player1, player2 };
+          });
+          setUsersGuesses({
+            ...usersGuesses,
+            [userId]: {
+              bestOf7: bestOf7Guess[0],
+              teamWon: team[0],
+              playerMatchups,
+            },
+          });
+          setSelectedUsers({ ...selectedUsers, [userId]: name });
+        } else if (showChampSelection) {
+          const response = await axiosInstance.get(
+            `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`
+          );
+
+          setUserChampGuesses({
+            ...userChampGuessses,
+            [userId]: {
+              conferenceFinalGuesses: response.data.conferenceFinalGuesses,
+              championTeamGuesses: response.data.championTeamGuesses,
+              mvpGuesses: response.data.mvpGuesses,
+            },
+          });
+          setSelectedUsers({ ...selectedUsers, [userId]: name });
+        }
       }
     } catch (error) {
       console.log(error);
@@ -214,7 +233,7 @@ const ComparingPage: React.FC = () => {
               backgroundColor: `rgba(107, 144, 225,${opacity})`,
             }}
           >
-            <Typography className="text-md truncate">
+            <Typography className="text-md truncate" sx={{fontSize:'14px'}}>
               Number Of Games <strong>({betsData.bestOf7Bet.result})</strong>
             </Typography>
           </Paper>
@@ -224,7 +243,7 @@ const ComparingPage: React.FC = () => {
         <div>
           <Tooltip
             title={
-              <Typography className="text-md truncate">
+              <Typography className="text-md truncate" >
                 Series Winner{" "}
                 <strong>
                   (
@@ -244,7 +263,7 @@ const ComparingPage: React.FC = () => {
                 backgroundColor: `rgba(107, 144, 225,${opacity})`,
               }}
             >
-              <Typography className="text-md truncate">
+              <Typography className="text-md truncate" sx={{fontSize:'14px'}}>
                 Series Winner{" "}
                 <strong>
                   (
@@ -260,7 +279,7 @@ const ComparingPage: React.FC = () => {
 
         {/* PlayerMatchupBets */}
         <div>
-          <Typography className="text-md" gutterBottom>
+          <Typography className="text-md" gutterBottom sx={{fontSize:'14px'}}>
             Player Matchup Bets
           </Typography>
           {betsData.playerMatchupBets.length > 0 &&
@@ -294,7 +313,7 @@ const ComparingPage: React.FC = () => {
                   placement="top"
                   arrow
                 >
-                  <Typography className="text-xs truncate">
+                  <Typography className="text-xs truncate" sx={{fontSize:'14px'}}>
                     {matchup.player1} vs {matchup.player2} (
                     {matchup.categories.join(" & ")}){" "}
                     <strong>
@@ -337,7 +356,7 @@ const ComparingPage: React.FC = () => {
               {/* <Typography className="text-md" gutterBottom>
               Number Of Games
             </Typography> */}
-              <Typography className={`flex justify-center `} variant="body1">
+              <Typography className={`flex justify-center`} variant="body1" sx={{fontSize:'14px'}}>
                 {guessData.bestOf7.guess}
               </Typography>
             </Paper>
@@ -359,7 +378,7 @@ const ComparingPage: React.FC = () => {
                 backgroundColor: "rgba(0,0,0,0)", // Transparent background
               }}
             >
-              <Typography className="flex truncate justify-center text-xs">
+              <Typography className="flex truncate justify-center text-xs" sx={{fontSize:'14px'}}>
                 - Looser didn't guess -
               </Typography>
             </Paper>
@@ -394,7 +413,7 @@ const ComparingPage: React.FC = () => {
                   alignItems: "center",
                 }}
               >
-                <Typography className="justify-center truncate items-center text-xs">
+                <Typography className="justify-center truncate items-center text-xs" sx={{fontSize:'14px'}}>
                   {guessData.teamWon.guess === 1
                     ? allSeriesBets[selectedSeries].team1
                     : allSeriesBets[selectedSeries].team2}
@@ -419,7 +438,7 @@ const ComparingPage: React.FC = () => {
                 backgroundColor: "rgba(0,0,0,0)", // Transparent background
               }}
             >
-              <Typography className="flex truncate justify-center text-xs">
+              <Typography className="flex truncate justify-center text-xs" sx={{fontSize:'14px'}}>
                 - Looser didn't guess -
               </Typography>
             </Paper>
@@ -433,7 +452,7 @@ const ComparingPage: React.FC = () => {
             arrow
             placement="left"
           >
-            <Typography className="text-md truncate" gutterBottom>
+            <Typography className="text-md truncate" gutterBottom sx={{fontSize:'14px'}}>
               Player Matchups
             </Typography>
           </Tooltip>
@@ -460,7 +479,7 @@ const ComparingPage: React.FC = () => {
                         backgroundColor: "rgba(0,0,0,0)", // Transparent background
                       }}
                     >
-                      <Typography className="flex truncate justify-center text-xs">
+                      <Typography className="flex truncate justify-center text-xs" sx={{fontSize:'14px'}}>
                         - Looser didn't guess -
                       </Typography>
                     </Paper>
@@ -490,12 +509,12 @@ const ComparingPage: React.FC = () => {
                       backgroundColor: `${
                         allSeriesBets[selectedSeries].playerMatchupBets[index]
                           .result === matchup.guesses[0].guess
-                          ? "#ccffcc" // Green if correct
-                          : "rgba(0,0,0,0)" // Transparent if not correct
+                          ? "#ccffcc" 
+                          : "rgba(0,0,0,0)" 
                       }`,
                     }}
                   >
-                    <Typography className="flex justify-center text-xs">
+                    <Typography className="flex justify-center text-xs" sx={{fontSize:'14px'}}>
                       {matchup.guesses[0].guess === 1
                         ? matchup.player1
                         : matchup.player2}
@@ -508,76 +527,6 @@ const ComparingPage: React.FC = () => {
       </div>
     );
   };
-  const InstructionPaper = () => (
-    <Paper
-      sx={{
-        padding: 3,
-        marginBottom: 2,
-        backgroundColor: "#f9fafb", // Lighter background for better contrast
-        maxWidth: "600px",
-        margin: "auto",
-        borderRadius: "8px",
-        boxShadow: 3, // Adding a subtle shadow to make the Paper pop
-      }}
-    >
-      {/* Title */}
-      <Typography
-        className="text-2xl font-semibold text-center mb-4"
-        sx={{
-          fontFamily: '"Inter", sans-serif',
-          fontWeight: 700,
-          color: "#333", // Slightly darker text color for better readability
-        }}
-      >
-        <strong>Welcome to User Comparison Page!</strong>
-      </Typography>
-
-      {/* Instructions Title */}
-      <Typography
-        className="text-lg text-left mb-5"
-        sx={{
-          fontFamily: '"Inter", sans-serif',
-          fontWeight: 600,
-          color: "#4b4b4b", // Slightly lighter than the title
-        }}
-      >
-        Here’s a quick guide to get you started:
-      </Typography>
-
-      {/* Instruction List */}
-      <ul className="text-sm text-left space-y-4">
-        <li>
-          <strong>1. Choose a Series:</strong> Start by selecting a series from
-          the "Select Series" dropdown. This is where your comparison journey
-          begins!
-        </li>
-        <li>
-          <strong>2. Pick Users to Compare:</strong> Once you’ve selected a
-          series, it’s time to choose users to compare:
-          <ul className="text-sm list-disc pl-6 space-y-2 mt-2">
-            <li>
-              <strong>Top Users:</strong> You can quickly pick from the
-              top-ranked users in the "Top 5" chart.
-            </li>
-            <li>
-              <strong>Search Users:</strong> Want to compare someone else?
-              Simply search for their name using the search bar!
-            </li>
-          </ul>
-        </li>
-        <li>
-          <strong>3. See the Comparison:</strong> After choosing at least one
-          user, you’ll see detailed insights into their predictions and
-          performance.
-        </li>
-        <li>
-          <strong>4. Remove Users if Needed:</strong> If you want to clean up
-          your comparison, just click on the close icon next to any user’s name
-          to remove them.
-        </li>
-      </ul>
-    </Paper>
-  );
 
   const getFantasyPoints = (userId: string) => {
     const user = users[userId];
@@ -599,37 +548,81 @@ const ComparingPage: React.FC = () => {
       />
     </svg>
   );
+  const handleChangeType = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setComparisonType(event.target.value);
+    switch (event.target.value) {
+      case "Champ":
+        setShowChampSelection(true);
+        setSelectedUsers({});
+        setShowSeriesSelection(false);
+        break;
+      case "Series":
+        setShowSeriesSelection(true);
+        setSelectedUsers({});
+        setShowChampSelection(false);
+        break;
+    }
+  };
+  const handleStageSelection = async (event: SelectChangeEvent<string>) => {
+    setSelectedStage(event.target.value);
+  };
+  const handleClearSelectedUsers = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.preventDefault();
+    setSelectedUsers({});
+  };
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <div className="flex flex-row items-center ">
-        <h1 className="text-2xl font-semibold underline mb-2">
-          Users comparison
-        </h1>
-        <Tooltip
-          title={
-            <Typography className="flex justify-center text-xs">
-              Instruction
-            </Typography>
-          }
-          arrow
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            className="size-6 ml-12 hover:cursor-pointer "
-            onClick={handleOpenModal}
+      <div className="flex w-full justify-between items-center px-8">
+        <div className="flex justify-start">
+          <FormControl>
+            <FormLabel>Comparison type</FormLabel>
+            <RadioGroup row value={comparisonType} onChange={handleChangeType}>
+              <FormControlLabel
+                value="Series"
+                control={<Radio size="small" color="default" />}
+                label="Series"
+              />
+              <FormControlLabel
+                value="Champ"
+                control={<Radio size="small" color="default" />}
+                label="Champ"
+              />
+            </RadioGroup>
+          </FormControl>
+        </div>
+        <div className="flex items-center mx-auto space-x-2">
+          <h1 className="text-2xl font-semibold underline mb-2">
+            Users comparison
+          </h1>
+          <Tooltip
+            title={
+              <Typography className="flex justify-center text-xs">
+                Instruction
+              </Typography>
+            }
+            arrow
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-            />
-          </svg>
-        </Tooltip>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="size-6 ml-12 hover:cursor-pointer "
+              onClick={handleOpenModal}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+              />
+            </svg>
+          </Tooltip>
+          <div className="w-32" />
+        </div>
         <Modal open={open} onClose={handleCloseModal}>
           <Box
             sx={{
@@ -653,7 +646,7 @@ const ComparingPage: React.FC = () => {
 
       {/* Custom Select for Users */}
       <div className="flex justify-between items-center mb-4 w-full ">
-        {series && (
+        {showSeriesSelection && series && (
           <div className="w-1/4 truncate mb-4 ml-8 mt-2 pt-2 ">
             <FormControl fullWidth>
               <InputLabel>Select Series</InputLabel>
@@ -671,6 +664,20 @@ const ComparingPage: React.FC = () => {
                   }
                 }}
                 options={Object.values(series)}
+              />
+            </FormControl>
+          </div>
+        )}
+        {showChampSelection && passedStages && (
+          <div className="w-1/4 truncate mb-4 ml-8 mt-2 pt-2 ">
+            <FormControl fullWidth variant="outlined">
+              <InputLabel className="px-2">Select Champ Stage</InputLabel>
+              <CustomSelectInput
+                id="1"
+                value={selectedStage}
+                label="Select Champ Stage"
+                onChange={handleStageSelection}
+                options={passedStages}
               />
             </FormControl>
           </div>
@@ -697,7 +704,7 @@ const ComparingPage: React.FC = () => {
                         value={userId}
                         className="rounded-2xl p-1 w-32  text-md truncate border-slate-200 text-black opacity-1 border-2 hover:bg-slate-200"
                         onClick={(e) => handleUserSelection(e.target.value)}
-                        disabled={!selectedSeries}
+                        disabled={!selectedSeries && !selectedStage}
                       >
                         {userId === currentUser?.id
                           ? "You"
@@ -729,43 +736,48 @@ const ComparingPage: React.FC = () => {
                         },
                       }}
                       label="Search Users"
-                      // slotProps={{
-                      //   input: {
-                      //     ...params.InputProps,
-                      //     endAdornment: (
-                      //       <InputAdornment position="end">
-                      //         <SearchIcon /> {/* Replace with any icon */}
-                      //       </InputAdornment>
-                      //     ),
-                      //   },
-                      // }}
                     />
                     <SearchIcon />
                   </div>
                 )}
               ></Autocomplete>
             </div>
+            {Object.keys(selectedUsers).length > 0 && (
+            <div className="flex items-center ">
+              <ClearUsersButton onClick={handleClearSelectedUsers} />
+            </div>
+          )}
           </div>
         )}
       </div>
-      {!selectedSeries && !selectedSeriesName && <InstructionPaper />}
-      {selectedSeriesName && (
-        <h1 className="text-2xl font-semibold text-black mb-10 text-center shadow-md p-4 rounded-2xl ">
-          {selectedSeriesName}
-        </h1>
+      {!selectedSeries && !selectedSeriesName && !selectedStage && (
+        <InstructionPaper />
       )}
+      {showSeriesSelection && selectedSeriesName && (
+        <div className="relative flex w-full justify-center mb-10 items-center">
+          {/* Centered Series Title */}
+          <h1 className="text-2xl font-semibold text-black  text-center shadow-md p-4 rounded-2xl">
+            {selectedSeriesName}
+          </h1>
+        </div>
+      )}
+
       <div className="flex w-full pl-8">
         {/* BetColumn */}
-        <div className="w-1/4  mt-12">
-          {allSeriesBets && allSeriesBets[selectedSeries] ? (
+        <div className="w-1/5  mt-12">
+          {showSeriesSelection &&
+          allSeriesBets &&
+          allSeriesBets[selectedSeries] ? (
             <BetColumn betsData={allSeriesBets[selectedSeries]} />
+          ) : showChampSelection && selectedStage ? (
+            <ChampColumn />
           ) : (
-            <Typography></Typography>
+            <div />
           )}
         </div>
 
-        {/* Column visibility toggling */}
-        <div className="flex flex-row space-x-4 w-1/2 mx-8 justify-start">
+        {/* Guesses column */}
+        <div className="flex flex-row space-x-6 w-3/5 mx-8 justify-start">
           {Object.keys(selectedUsers).map((userId, index) => {
             const userName = `${users[userId].firstName} ${users[userId].lastName}`;
             const firstName = users[userId].firstName;
@@ -801,6 +813,7 @@ const ComparingPage: React.FC = () => {
                     </div>
                   </Tooltip>
                   <p className="p-2">{getFantasyPoints(userId)}Pts</p>
+
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -819,11 +832,19 @@ const ComparingPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col">
-                  <GuessColumn guessData={usersGuesses[userId]} />
+                  {showSeriesSelection && usersGuesses?.[userId] ? (
+                    <GuessColumn guessData={usersGuesses[userId]} />
+                  ) : userChampGuessses?.[userId] ? (
+                    <ChampGuessColumn guessData={userChampGuessses[userId]} />
+                  ) : (
+                    <p>No champion guess data available</p> // Placeholder for undefined data
+                  )}
                 </div>
               </div>
             );
           })}
+
+          
         </div>
       </div>
     </div>

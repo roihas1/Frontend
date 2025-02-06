@@ -24,7 +24,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
         type="button"
         onClick={onClick1}
         className="text-colors-nba-red hover:scale-110 transition-transform"
-        disabled={disabled}
+       
       >
         {text1}
       </button>

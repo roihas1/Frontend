@@ -7,7 +7,7 @@ import PageBackground from "../components/common/PageBackground";
 import SubmitButton from "../components/common/SubmitButton";
 import InputField from "../components/form/FormInput";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
-import Logo from "../assets/export/gray_trans.png";
+import Logo from "../assets/siteLogo/gray_trans.png";
 
 const SignUpPage: React.FC = () => {
   const [username, setUsername] = useState("");

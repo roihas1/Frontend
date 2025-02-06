@@ -7,9 +7,9 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 
-import SubmitButton from "./common/SubmitButton";
-import { PlayerMatchupBet } from "../pages/HomePage";
-import { MatchupCategory, PlayerMatchupType } from "../types";
+import SubmitButton from "../common/SubmitButton";
+import { PlayerMatchupBet } from '../../types/index';
+import { MatchupCategory, PlayerMatchupType } from "../../types/index";
 
 interface BetFormProps {
   selectedBet: PlayerMatchupBet;

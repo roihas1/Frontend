@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import TeamDialog from "../form/TeamDialog"; // Import the TeamDialog component
 import { Series } from "../../pages/HomePage";
-import NBALogo from "../assets/NBALogo.jpg";
+import NBALogo from "../../assets/logos/NBALogo.jpg";
 import { useError } from "../providers&context/ErrorProvider";
 import { CircularProgress } from "@mui/material";
 
@@ -84,7 +84,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
           >
             {/* Left column for win count with background color */}
             <div className="w-1/4 flex justify-center items-center bg-blue-100 rounded-lg py-1">
-              <div className="text-lg font-bold text-blue-600 px-2">
+              <div className="text-md font-bold text-blue-600 px-2">
                 {seriesScore[0]} {/* Display wins for team 1 */}
               </div>
             </div>
@@ -120,8 +120,8 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
           >
             {/* Left column for win count with background color */}
             <div className="w-1/4 flex justify-center items-center bg-blue-100 rounded-lg py-2">
-              <div className="text-lg font-bold text-blue-600">
-                {seriesScore[1]} {/* Display wins for team 2 */}
+              <div className="text-md font-bold text-blue-600">
+                {seriesScore[1]} 
               </div>
             </div>
 
