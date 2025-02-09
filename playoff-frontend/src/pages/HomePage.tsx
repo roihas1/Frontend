@@ -33,7 +33,7 @@ import houstonRocketsLogo from "../assets/logos/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/logos/new_orleans_pelicans_logo.png";
 import Logo from "../assets/siteLogo/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import { MatchupCategory, PlayerMatchupType } from "../types/index";
+import { MatchupCategory, PlayerMatchupBet, PlayerMatchupType } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
@@ -41,19 +41,19 @@ import { CircularProgress, Zoom } from "@mui/material";
 import { checkTokenExpiration } from "../types";
 import PageBackground from "../components/common/PageBackground";
 import backgroundLogo from "../assets/siteLogo/gray_only_ball_trans.png";
-export interface PlayerMatchupBet {
-  betId: string;
-  seriesId: string;
-  typeOfMatchup: PlayerMatchupType;
-  categories: MatchupCategory[];
-  fantasyPoints: number;
-  player1: string;
-  player2: string;
-  differential: number;
-  result: number;
-  currentStats: number[];
-  playerGames: number[];
-}
+// export interface PlayerMatchupBet {
+//   id: string;
+//   seriesId: string;
+//   typeOfMatchup: PlayerMatchupType;
+//   categories: MatchupCategory[];
+//   fantasyPoints: number;
+//   player1: string;
+//   player2: string;
+//   differential: number;
+//   result: number;
+//   currentStats: number[];
+//   playerGames: number[];
+// }
 export interface Series {
   id?: string;
   team1: string;
@@ -68,6 +68,7 @@ export interface Series {
   logo1?: string;
   logo2?: string;
   playerMatchupBets?: PlayerMatchupBet[];
+  spontaneousBets?:PlayerMatchupBet[];
   numOfGames: number;
   timeOfStart: string;
   lastUpdate: Date;

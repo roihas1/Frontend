@@ -25,6 +25,7 @@ export interface BestOf7Bet {
   export interface PlayerMatchupBet {
     id: string;
     typeOfMatchup: string;
+    seriesId: string;
     categories: string[];
     fantasyPoints: number;
     player1: string;
@@ -32,8 +33,16 @@ export interface BestOf7Bet {
     differential: number;
     result: number | null;
     currentStats: number[];
-    guesses: Guess[];
+    playerGames: number[];
+    guesses?: Guess[];
   }
+  
+
+  export interface SpontaneousBet extends PlayerMatchupBet {
+    startTime?: Date | string; 
+    gameNumber?: number;
+  }
+  
   
   export interface SeriesBets {
     team1: string;

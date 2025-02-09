@@ -3,7 +3,7 @@ import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import SubmitButton from "../components/common/SubmitButton";
-import { Series, PlayerMatchupBet } from "./HomePage";
+import { Series } from "./HomePage";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import {
   FormControl,
@@ -20,12 +20,15 @@ import {
   checkTokenExpiration,
   MatchupCategory,
   nbaTeamsList,
+  PlayerMatchupBet,
   PlayerMatchupType,
+  SpontaneousBet,
 } from "../types";
 import SelectSeriesDropdown from "../components/forPages/SelectSeriesDropdown";
 import ButtonGroup from "../components/forPages/ButtonGroup";
 import BetForm from "../components/forPages/BetForm";
 import ActionButtons from "../components/forPages/ActionButtons";
+import BetsTabs from "../components/forPages/betsTabs";
 
 // Enum for matchup type
 
@@ -33,8 +36,12 @@ const UpdateBetsPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
   const [bets, setBets] = useState<PlayerMatchupBet[]>([]);
-  const [selectedBet, setSelectedBet] = useState<PlayerMatchupBet>({
-    betId: "", // Temporary value for betId
+  const [spontaneousBets, setSpontaneousBets] = useState<SpontaneousBet[]>(
+    []
+  );
+  const [isSpontaneousBet, setIsSpontaneousBet] = useState<boolean>(false);
+  const [selectedBet, setSelectedBet] = useState<PlayerMatchupBet | SpontaneousBet>({
+    id: "", // Temporary value for betId
     seriesId: selectedSeries?.id || "",
     typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
     categories: [],
@@ -45,6 +52,8 @@ const UpdateBetsPage: React.FC = () => {
     result: 0,
     currentStats: [0, 0],
     playerGames: [0, 0],
+    startTime: "", 
+    gameNumber: 0
   });
   const [player1Stat, setPlayer1Stat] = useState<number>(0);
   const [player2Stat, setPlayer2Stat] = useState<number>(0);
@@ -65,6 +74,9 @@ const UpdateBetsPage: React.FC = () => {
   );
   const [filteredSeriesList, setFilteredSeriesList] = useState<Series[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("");
+  
+  const [startDateSpontaneous, setStartDateSpontaneous] = useState<string>("");
+  const [startTimeSpontaneous, setStartTimeSpontaneous] = useState<string>("");
 
   const handleFilterClick = (event: React.MouseEvent<SVGSVGElement>) => {
     setAnchorEl(event.currentTarget); // Opens the dropdown
@@ -132,7 +144,8 @@ const UpdateBetsPage: React.FC = () => {
   // Fetch bets for the selected series
   useEffect(() => {
     if (selectedSeries) {
-      setBets(selectedSeries.playerMatchupBets);
+      setBets(selectedSeries?.playerMatchupBets ?? []);
+      setSpontaneousBets(selectedSeries?.spontaneousBets ?? []);
       handleResetSelectedBet();
     }
     const temporaryList = seriesList
@@ -165,6 +178,25 @@ const UpdateBetsPage: React.FC = () => {
       ...selectedBet,
       categories: [...selectedCategories], // Prevent duplicates
     });
+  };
+  const handleGameNumberSelection = (event: SelectChangeEvent<string>) => {
+    const { value } = event.target;
+    console.log(value);
+    console.log(typeof value);
+    setSelectedBet({
+      ...selectedBet,
+      gameNumber: parseInt(value),
+    });
+  };
+  const handleDateAndTimeSelection = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    event.preventDefault();
+    if (event.target.type === "date") {
+      setStartDateSpontaneous(event.target.value);
+    } else {
+      setStartTimeSpontaneous(event.target.value);
+    }
   };
 
   // Handle form field changes for the selected bet
@@ -208,7 +240,7 @@ const UpdateBetsPage: React.FC = () => {
   };
 
   // Handle bet selection for editing
-  const handleBetSelection = (bet: PlayerMatchupBet) => {
+  const handleBetSelection = (bet: PlayerMatchupBet|SpontaneousBet) => {
     setSelectedBet(bet);
     setIsInEdit(true);
     setCreateNewBet(true);
@@ -216,7 +248,7 @@ const UpdateBetsPage: React.FC = () => {
 
   const handleResetSelectedBet = () => {
     setSelectedBet({
-      betId: "", // Temporary value for betId
+      id: "", // Temporary value for betId
       seriesId: selectedSeries?.id || "",
       typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
       categories: [],
@@ -236,7 +268,34 @@ const UpdateBetsPage: React.FC = () => {
 
     setLoading(true);
     try {
-      if (selectedBet.id) {
+      if (isSpontaneousBet) {
+        const time = startTimeSpontaneous.split(":");
+        const startDate = new Date(startDateSpontaneous);
+        startDate.setHours(parseInt(time[0]));
+        startDate.setMinutes(parseInt(time[1]));
+
+        const response = await axiosInstance.post(`/spontaneous-bet`, {
+          categories: selectedBet.categories,
+          fantasyPoints: selectedBet.fantasyPoints,
+          player1: selectedBet.player1,
+          player2: selectedBet.player2,
+          differential: selectedBet.differential,
+          typeOfMatchup: selectedBet.typeOfMatchup,
+          seriesId: selectedSeries?.id,
+          startTime: startDate,
+          gameNumber: "gameNumber" in selectedBet ? selectedBet.gameNumber: 0,
+        });
+        if (selectedBet.id) {
+          setSpontaneousBets((prevBets) =>
+            prevBets.map((bet) =>
+              bet.id === response.data.id ? { ...bet, ...selectedBet } : bet
+            )
+          );
+        } else {
+          setSpontaneousBets((prevBets) => [...prevBets, response.data]);
+        }
+        showSuccessMessage("Bet created successfully!");
+      } else if (selectedBet.id) {
         const response = await axiosInstance.patch(
           `/player-matchup-bet/${selectedBet.id}/update`,
           {
@@ -302,14 +361,26 @@ const UpdateBetsPage: React.FC = () => {
 
   // Handle creating a new bet
   const handleCreateNewBet = () => {
+    setIsSpontaneousBet(false);
     handleResetSelectedBet();
     setCreateNewBet(true);
   };
-  const handleDeleteBet = async (bet: PlayerMatchupBet) => {
+  const handleCreateNewSpontaneousBet = () => {
+    handleResetSelectedBet();
+    setCreateNewBet(true);
+    setIsSpontaneousBet(true);
+  };
+  const handleDeleteBet = async (bet: PlayerMatchupBet|SpontaneousBet , isSpontaneous: boolean) => {
     if (window.confirm("Are you sure you want to delete this bet?")) {
       try {
+        if(isSpontaneous){
+          await axiosInstance.delete(`/spontaneous-bet/${bet.id}/delete`);
+          setSpontaneousBets(spontaneousBets.filter((b)=>b.id != bet.id))
+        }
+        else{
         await axiosInstance.delete(`/player-matchup-bet/${bet.id}/delete`);
         setBets(bets.filter((b) => b.id !== bet.id));
+        }
         showSuccessMessage("Bet deleted successfully!");
       } catch (error) {
         showError("Failed to delete the bet.");
@@ -378,7 +449,6 @@ const UpdateBetsPage: React.FC = () => {
 
     // If the field is 'dateOfStart', convert the value to a Date object
     if (name === "dateOfStart" && value) {
-      console.log(value);
       const newDate = new Date(value);
       setNewSeries((prevState) => ({
         ...prevState,
@@ -1171,41 +1241,15 @@ const UpdateBetsPage: React.FC = () => {
             <h2 className="text-2xl font-semibold mb-4 mt-4">
               Bets for the selected series
             </h2>
-            {bets?.map((bet) => (
-              <div
-                key={bet.betId}
-                className="mb-4 p-4 border border-gray-300 rounded-lg w-full max-w-full mx-auto"
-              >
-                <div className="flex justify-between">
-                  <span className="p-4">
-                    {bet.player1} vs {bet.player2}
-                  </span>
-                  <div className="flex space-x-2">
-                    <button
-                      type="button"
-                      onClick={() => handleBetSelection(bet)}
-                      className="text-colors-nba-blue border-2 border-colors-nba-blue rounded-2xl shadow-lg p-1  hover:text-blue-700 hover:opacity-60"
-                    >
-                      Edit Bet
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleBetSelectionForUpdateResult(bet)}
-                      className="text-colors-nba-blue border-2 border-colors-nba-blue rounded-2xl shadow-lg p-1 hover:text-blue-700 hover:opacity-60"
-                    >
-                      Update Result
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteBet(bet)}
-                      className="text-red-500 border-2 border-colors-nba-red rounded-2xl shadow-lg p-1 hover:text-red-700 hover:opacity-60"
-                    >
-                      Delete Bet
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <BetsTabs
+              bets={bets}
+              spontaneousBets={spontaneousBets}
+              handleBetSelection={handleBetSelection}
+              handleBetSelectionForUpdateResult={
+                handleBetSelectionForUpdateResult
+              }
+              handleDeleteBet={handleDeleteBet}
+            />
           </>
         )}
 
@@ -1216,11 +1260,18 @@ const UpdateBetsPage: React.FC = () => {
           !updateResultSelected &&
           !showSeriesResultForm &&
           !showUpdateSeriesTime && (
-            <div className="flex justify-center mt-4">
+            <div className="flex justify-center space-x-2 mt-4">
               <SubmitButton
                 loading={loading}
                 text="Create New Bet"
                 onClick={handleCreateNewBet}
+                disabled={bets.length >= 6}
+              />
+
+              <SubmitButton
+                loading={loading}
+                text="Create New Spontaneous Bet"
+                onClick={handleCreateNewSpontaneousBet}
                 disabled={bets.length >= 6}
               />
             </div>
@@ -1269,7 +1320,12 @@ const UpdateBetsPage: React.FC = () => {
             handleCategoriesSelection={handleCategoriesSelection}
             handleCloseEditBet={handleCloseEditBet}
             handleSubmit={handleSubmit}
+            handleGameNumberSelection={handleGameNumberSelection}
             loading={loading}
+            isSpontaneous={isSpontaneousBet}
+            startDate={startDateSpontaneous}
+            startTime={startTimeSpontaneous}
+            handleDateAndTimeSelection={handleDateAndTimeSelection}
           />
         )}
       </div>
