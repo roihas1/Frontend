@@ -144,7 +144,36 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       !selectedChampion
     );
   };
-
+  const handleEastFinalsTeamSelection = (team: string, numTeam: number) => {
+    console.log(team, numTeam)
+    if (
+      (team === selectedEasternTeam2 && numTeam === 1) ||
+      (team === selectedEasternTeam1 && numTeam === 2)
+    ) {
+      showError(`Can not Select the Same Team`);
+    } else {
+      if (numTeam === 1) {
+        setSelectedEasternTeam1(team);
+      } else {
+        setSelectedEasternTeam2(team);
+      }
+    }
+  };
+  const handleWestFinalsTeamSelection = (team: string, numTeam: number) => {
+    console.log(team, numTeam)
+    if (
+      (team === selectedWesternTeam2 && numTeam === 1) ||
+      (team === selectedWesternTeam1 && numTeam === 2)
+    ) {
+      showError(`Can not Select the Same Team`);
+    } else {
+      if (numTeam === 1) {
+        setSelectedWesternTeam1(team);
+      } else {
+        setSelectedWesternTeam2(team);
+      }
+    }
+  };
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent the default form submission
@@ -278,11 +307,10 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
-      
       {stage !== "Before playoffs" && (
-       <h3 className="text-md font-bold text-center text-gray-800">
-        Previous Guesses
-      </h3>
+        <h3 className="text-md font-bold text-center text-gray-800">
+          Previous Guesses
+        </h3>
       )}
       <ChampionGuessSummary stage={stage} />
       <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
@@ -325,8 +353,8 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   label="Team 1"
                   value={selectedEasternTeam1}
                   options={easternTeams}
-                  onChange={(e) => 
-                    setSelectedEasternTeam1(e.target.value)
+                  onChange={(e) =>
+                    handleEastFinalsTeamSelection(e.target.value, 1)
                   }
                 />
               </FormControl>
@@ -338,7 +366,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedEasternTeam2}
                   label="Team 2"
                   options={easternTeams}
-                  onChange={(e) => setSelectedEasternTeam2(e.target.value)}
+                  onChange={(e) => handleEastFinalsTeamSelection(e.target.value, 2)}
                 />
               </FormControl>
             </div>
@@ -359,7 +387,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedWesternTeam1}
                   label="Team 1"
                   options={westernTeams}
-                  onChange={(e) => setSelectedWesternTeam1(e.target.value)}
+                  onChange={(e) =>handleWestFinalsTeamSelection(e.target.value, 1)}
                 />
               </FormControl>
 
@@ -370,7 +398,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
                   value={selectedWesternTeam2}
                   label="Team 2"
                   options={westernTeams}
-                  onChange={(e) => setSelectedWesternTeam2(e.target.value)}
+                  onChange={(e) => handleWestFinalsTeamSelection(e.target.value, 2)}
                 />
               </FormControl>
             </div>

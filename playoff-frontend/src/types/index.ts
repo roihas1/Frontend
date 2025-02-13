@@ -53,6 +53,7 @@ export interface BestOf7Bet {
     bestOf7Bet: BestOf7Bet;
     teamWinBet: TeamWinBet;
     playerMatchupBets: PlayerMatchupBet[];
+    spontaneousBets: SpontaneousBet[];
   }
   
   export interface AllSeriesBets {

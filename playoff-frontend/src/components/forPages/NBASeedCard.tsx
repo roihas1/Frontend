@@ -7,9 +7,10 @@ import { CircularProgress } from "@mui/material";
 
 interface NBASeedCardProps {
   series: Series | undefined;
+  userPoints:number;
 }
 
-const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
+const NBASeedCard: React.FC<NBASeedCardProps> = ({ series, userPoints }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [seriesScore, setSeriesScore] = useState<number[]>([]);
   const { showError } = useError();
@@ -149,6 +150,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series }) => {
         isOpen={isDialogOpen}
         series={series}
         closeDialog={closeDialog}
+        userPoints={userPoints}
       />
     </div>
   );

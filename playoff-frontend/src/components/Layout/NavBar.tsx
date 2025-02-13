@@ -104,17 +104,18 @@ const Navbar: React.FC = () => {
               isLoggedIn={isLoggedIn}
             />
 
-            <NavLink
-              to="/HowToPlay"
-              title="How to Play?"
-              isActive={isActive("/HowtoPlay")}
-              isLoggedIn={isLoggedIn}
-            />
+           
 
             <NavLink
               to="/comparing"
               title="Comparison"
               isActive={isActive("/comparing")}
+              isLoggedIn={isLoggedIn}
+            />
+             <NavLink
+              to="/HowToPlay"
+              title="How to Play?"
+              isActive={isActive("/HowToPlay")}
               isLoggedIn={isLoggedIn}
             />
 

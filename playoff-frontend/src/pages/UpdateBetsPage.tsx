@@ -36,11 +36,11 @@ const UpdateBetsPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
   const [bets, setBets] = useState<PlayerMatchupBet[]>([]);
-  const [spontaneousBets, setSpontaneousBets] = useState<SpontaneousBet[]>(
-    []
-  );
+  const [spontaneousBets, setSpontaneousBets] = useState<SpontaneousBet[]>([]);
   const [isSpontaneousBet, setIsSpontaneousBet] = useState<boolean>(false);
-  const [selectedBet, setSelectedBet] = useState<PlayerMatchupBet | SpontaneousBet>({
+  const [selectedBet, setSelectedBet] = useState<
+    PlayerMatchupBet | SpontaneousBet
+  >({
     id: "", // Temporary value for betId
     seriesId: selectedSeries?.id || "",
     typeOfMatchup: PlayerMatchupType.PLAYERMATCHUP,
@@ -52,8 +52,8 @@ const UpdateBetsPage: React.FC = () => {
     result: 0,
     currentStats: [0, 0],
     playerGames: [0, 0],
-    startTime: "", 
-    gameNumber: 0
+    startTime: "",
+    gameNumber: 0,
   });
   const [player1Stat, setPlayer1Stat] = useState<number>(0);
   const [player2Stat, setPlayer2Stat] = useState<number>(0);
@@ -74,7 +74,7 @@ const UpdateBetsPage: React.FC = () => {
   );
   const [filteredSeriesList, setFilteredSeriesList] = useState<Series[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("");
-  
+
   const [startDateSpontaneous, setStartDateSpontaneous] = useState<string>("");
   const [startTimeSpontaneous, setStartTimeSpontaneous] = useState<string>("");
 
@@ -240,7 +240,7 @@ const UpdateBetsPage: React.FC = () => {
   };
 
   // Handle bet selection for editing
-  const handleBetSelection = (bet: PlayerMatchupBet|SpontaneousBet) => {
+  const handleBetSelection = (bet: PlayerMatchupBet | SpontaneousBet) => {
     setSelectedBet(bet);
     setIsInEdit(true);
     setCreateNewBet(true);
@@ -283,7 +283,7 @@ const UpdateBetsPage: React.FC = () => {
           typeOfMatchup: selectedBet.typeOfMatchup,
           seriesId: selectedSeries?.id,
           startTime: startDate,
-          gameNumber: "gameNumber" in selectedBet ? selectedBet.gameNumber: 0,
+          gameNumber: "gameNumber" in selectedBet ? selectedBet.gameNumber : 0,
         });
         if (selectedBet.id) {
           setSpontaneousBets((prevBets) =>
@@ -370,16 +370,18 @@ const UpdateBetsPage: React.FC = () => {
     setCreateNewBet(true);
     setIsSpontaneousBet(true);
   };
-  const handleDeleteBet = async (bet: PlayerMatchupBet|SpontaneousBet , isSpontaneous: boolean) => {
+  const handleDeleteBet = async (
+    bet: PlayerMatchupBet | SpontaneousBet,
+    isSpontaneous: boolean
+  ) => {
     if (window.confirm("Are you sure you want to delete this bet?")) {
       try {
-        if(isSpontaneous){
+        if (isSpontaneous) {
           await axiosInstance.delete(`/spontaneous-bet/${bet.id}/delete`);
-          setSpontaneousBets(spontaneousBets.filter((b)=>b.id != bet.id))
-        }
-        else{
-        await axiosInstance.delete(`/player-matchup-bet/${bet.id}/delete`);
-        setBets(bets.filter((b) => b.id !== bet.id));
+          setSpontaneousBets(spontaneousBets.filter((b) => b.id != bet.id));
+        } else {
+          await axiosInstance.delete(`/player-matchup-bet/${bet.id}/delete`);
+          setBets(bets.filter((b) => b.id !== bet.id));
         }
         showSuccessMessage("Bet deleted successfully!");
       } catch (error) {
@@ -517,28 +519,47 @@ const UpdateBetsPage: React.FC = () => {
     const updateStats = [...selectedBet.currentStats];
     updateStats[0] += player1Stat;
     updateStats[1] += player2Stat;
+    const spontaneous =
+      spontaneousBets.filter((bet) => bet.id === selectedBet.id).length > 0
+        ? true
+        : false;
+    console.log(spontaneous)
     try {
-      await axiosInstance.patch(
-        `/player-matchup-bet/${selectedBet?.id}/update`,
-        {
+      if (spontaneous) {
+        await axiosInstance.patch(`spontaneous-bet/${selectedBet?.id}/update`, {
           currentStats: updateStats,
-        }
-      );
+        });
+        setSpontaneousBets((prevBets) =>
+          prevBets.map(
+            (bet) =>
+              bet.id === selectedBet.id
+                ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
+                : bet 
+          )
+        );
+      } else {
+        await axiosInstance.patch(
+          `/player-matchup-bet/${selectedBet?.id}/update`,
+          {
+            currentStats: updateStats,
+          }
+        );
+
+        setBets((prevBets) =>
+          prevBets.map(
+            (bet) =>
+              bet.id === selectedBet.id
+                ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
+                : bet // Keep other bets unchanged
+          )
+        );
+      }
       setUpdateResultSelected(false);
       setPlayer1Stat(0);
       setPlayer2Stat(0);
-      setBets((prevBets) =>
-        prevBets.map(
-          (bet) =>
-            bet.betId === selectedBet.betId
-              ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
-              : bet // Keep other bets unchanged
-        )
-      );
       handleResetSelectedBet();
       showSuccessMessage("Matchup Result updated successfully!");
       setSelectedSeries((prev) => prev);
-      console.log(bets);
     } catch (error) {
       showError("Failed to update match result.");
     }
@@ -1109,6 +1130,7 @@ const UpdateBetsPage: React.FC = () => {
                   "All Series",
                 ].map((filter) => (
                   <MenuItem
+                    key={filter}
                     selected={selectedFilter === filter}
                     onClick={() => handleFilterSeries(filter)}
                   >

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
 import { useNavigate } from "react-router-dom";
-import { Tooltip, Zoom } from "@mui/material";
+import { FormControl, FormLabel, InputLabel, MenuItem, Select, SelectChangeEvent, Tooltip, Zoom } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 
 interface User {
@@ -16,6 +16,7 @@ const LeaguesPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User>();
+  const [offset, setOffset] = useState<number>(0);
   const [nextCursor, setNextCursor] = useState<
     | {
         points: number;
@@ -32,15 +33,15 @@ const LeaguesPage: React.FC = () => {
   >(undefined);
   const navigate = useNavigate();
   const { showError } = useError();
-  const [limit, setLimit] = useState<number>(3);
+  const [limit, setLimit] = useState<number>(5);
 
   // Fetch user data
   const fetchUsers = async (
     cursor?: { points: number; id: string },
-    prevCursor?: { points: number; id: string }
+    prevCursor?: { points: number; id: string },
+    newLimit?: number,
   ) => {
-    console.log("cursor", cursor);
-    console.log("prev", prevCursor);
+
     try {
       const response = await axiosInstance.get("/auth/standings", {
         params: {
@@ -48,14 +49,18 @@ const LeaguesPage: React.FC = () => {
           cursorId: cursor?.id,
           prevCursorPoints: prevCursor?.points,
           prevCursorId: prevCursor?.id,
-          limit,
+          limit: newLimit? newLimit : limit,
         },
       });
-      // const response = await axiosInstance.get("/auth");
-      console.log(response.data);
+
       setUsers(response.data.data);
       setNextCursor(response.data.nextCursor);
       setPrevCursor(response.data.prevCursor);
+      if (cursor) {
+        setOffset((prevOffset) => prevOffset + limit); // Moving forward
+      } else if (prevCursor) {
+        setOffset((prevOffset) => Math.max(prevOffset - limit, 0)); // Moving backward
+      }
     } catch (error) {
       console.error("Error fetching users:", error);
       showError(`Server error.`);
@@ -63,6 +68,10 @@ const LeaguesPage: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleLimitSelection =  async (e: SelectChangeEvent<number>)=>{
+    setLimit(Number(e.target.value));
+    fetchUsers(undefined,undefined,Number(e.target.value))
+  }
 
   const fetchUser = async () => {
     setLoading(true);
@@ -89,8 +98,9 @@ const LeaguesPage: React.FC = () => {
   // Assign ranks
   const usersWithRank = users.map((user, index) => ({
     ...user,
-    rank: index + 1,
+    rank: offset + index + 1,
   }));
+  
 
   // Fetch data when the page loads
   useEffect(() => {
@@ -99,10 +109,10 @@ const LeaguesPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen ">
-      <div className="p-8 max-w-7xl mx-auto flex-1 bg-white rounded-lg shadow-lg">
+    <div className="flex flex-col ">
+      <div className="p-8 max-w-7xl mx-auto  bg-white rounded-lg shadow-lg">
         <h1 className="text-4xl font-semibold mb-8 text-center text-colors-nba-blue">
-          Leagues Ranking
+        Ranking
         </h1>
         {loading ? (
           <div className="text-center text-lg text-gray-500">Loading...</div>
@@ -205,7 +215,24 @@ const LeaguesPage: React.FC = () => {
                 </svg>
                 Previous
               </button>
+              <FormControl>
+                <Select
+                 labelId="limit"
+                 id="limitSelection"
+                 value={limit}
+                 onChange={handleLimitSelection}
+                 sx={{
+                  borderRadius: "1rem"
+                 }}
+                >
+                  <MenuItem key={5} value={5}>5</MenuItem>
+                  <MenuItem key={10} value={10}>10</MenuItem>
+                  <MenuItem key={20} value={20}>20</MenuItem>
+                  <MenuItem key={50} value={50}>50</MenuItem>
 
+                  
+                </Select>
+              </FormControl>
               <button
                 className="flex gap-2 items-center px-4 py-2 bg-colors-nba-blue text-white rounded-md disabled:opacity-50"
                 onClick={() => fetchUsers(nextCursor)}

@@ -33,7 +33,7 @@ import houstonRocketsLogo from "../assets/logos/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/logos/new_orleans_pelicans_logo.png";
 import Logo from "../assets/siteLogo/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import { MatchupCategory, PlayerMatchupBet, PlayerMatchupType } from "../types/index";
+import { MatchupCategory, PlayerMatchupBet, PlayerMatchupType, SpontaneousBet } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
@@ -68,7 +68,7 @@ export interface Series {
   logo1?: string;
   logo2?: string;
   playerMatchupBets?: PlayerMatchupBet[];
-  spontaneousBets?:PlayerMatchupBet[];
+  spontaneousBets?:SpontaneousBet[];
   numOfGames: number;
   timeOfStart: string;
   lastUpdate: Date;
@@ -199,7 +199,7 @@ const HomePage: React.FC = () => {
       };
       const response = await axiosInstance.get("/series");
       const seriesData = response.data; // Assuming the response is an array of series
-
+      console.log(seriesData);
       seriesData.forEach((element: Series) => {
         // console.log(element);
         const team1Logo = logos[element.team1.toLowerCase().replace(/ /g, "_")];
@@ -220,6 +220,7 @@ const HomePage: React.FC = () => {
           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
           timeOfStart: element.timeOfStart,
           lastUpdate: element.lastUpdate,
+          spontaneousBets:element.spontaneousBets,
         };
         // Push series into the correct conference array based on the "conference" field
         if (series.conference === "West") {
@@ -482,7 +483,7 @@ const HomePage: React.FC = () => {
                     } rounded-xl mb-2`}
                   >
                     {/* NBASeedCard */}
-                    <NBASeedCard series={matchup} />
+                    <NBASeedCard series={matchup} userPoints={userPointsPerSeries?.[matchup.id ?? ""] ?? 0} />
                   </div>
                 </div>
               );

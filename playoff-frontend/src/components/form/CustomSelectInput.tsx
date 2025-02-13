@@ -58,27 +58,7 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
       }}
       disabled={isDisabled}
     >
-      <MenuItem disabled>Select {label}</MenuItem>
-      {/* {searchBar && (
-         <TextField
-         fullWidth
-         variant="outlined"
-         label="Search"
-         value={searchQuery}
-         onChange={(e) => setSearchQuery(e.target.value)}
-         sx={{ marginBottom: "8px" }}
-         size="small"
-         onClick={handleSearchClick}
-       />
-      )}
-      {optionsForCompare && searchBar && 
-        filteredOptions(optionsForCompare).map((option) => (
-          <MenuItem key={option.name} value={option.id}>
-            {option.name}
-          </MenuItem>
-        ))
-      }
- */}
+      <MenuItem disabled>{options?.length === 0 ? label :"Select"} </MenuItem>
 
       {/* If 'options' is passed */}
       {options &&
