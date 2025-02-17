@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FormControl, FormLabel, InputLabel, MenuItem, Select, SelectChangeEvent, Tooltip, Zoom } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 
@@ -17,6 +17,8 @@ const LeaguesPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User>();
   const [offset, setOffset] = useState<number>(0);
+  const location = useLocation();
+  const league = location.state?.league;
   const [nextCursor, setNextCursor] = useState<
     | {
         points: number;
@@ -35,7 +37,6 @@ const LeaguesPage: React.FC = () => {
   const { showError } = useError();
   const [limit, setLimit] = useState<number>(5);
 
-  // Fetch user data
   const fetchUsers = async (
     cursor?: { points: number; id: string },
     prevCursor?: { points: number; id: string },
@@ -50,6 +51,7 @@ const LeaguesPage: React.FC = () => {
           prevCursorPoints: prevCursor?.points,
           prevCursorId: prevCursor?.id,
           limit: newLimit? newLimit : limit,
+          leagueId:league.id,
         },
       });
 
@@ -60,6 +62,9 @@ const LeaguesPage: React.FC = () => {
         setOffset((prevOffset) => prevOffset + limit); // Moving forward
       } else if (prevCursor) {
         setOffset((prevOffset) => Math.max(prevOffset - limit, 0)); // Moving backward
+      }
+      else{
+        setOffset(0)
       }
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -87,19 +92,16 @@ const LeaguesPage: React.FC = () => {
   };
 
   const handleUserClick = (user: User) => {
-    navigate("/comparing", { state: { secondUserId: user.id } });
+    navigate("/comparing", { state: { secondUserId: user.id, league: league } });
   };
-
-  // Sort users by totalPoints and assign ranks
-  // const sortedUsers = [...users].sort(
-  //   (a, b) => b.fantasyPoints - a.fantasyPoints
-  // );
 
   // Assign ranks
   const usersWithRank = users.map((user, index) => ({
     ...user,
     rank: offset + index + 1,
   }));
+  
+
   
 
   // Fetch data when the page loads

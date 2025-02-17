@@ -199,9 +199,7 @@ const HomePage: React.FC = () => {
       };
       const response = await axiosInstance.get("/series");
       const seriesData = response.data; // Assuming the response is an array of series
-      console.log(seriesData);
       seriesData.forEach((element: Series) => {
-        // console.log(element);
         const team1Logo = logos[element.team1.toLowerCase().replace(/ /g, "_")];
         const team2Logo = logos[element.team2.toLowerCase().replace(/ /g, "_")];
         const series: Series = {

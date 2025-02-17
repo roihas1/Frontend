@@ -28,6 +28,8 @@ import PageBackground from "./components/common/PageBackground";
 import Logo from "../src/assets/siteLogo/gray_only_ball.png";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import OAuthRedirectPage from "./pages/OauthRedirectPage";
+import LeaguesSelectionPage from "./pages/LeagueSelectionPage";
+import ManageLeague from "./pages/ManageLeaguePage";
 
 function App() {
   return (
@@ -45,10 +47,12 @@ function App() {
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/signup" element={<SignUpPage />} />
                   <Route path="/updateBets" element={<UpdateBetsPage />} />
-                  <Route path="/leagues" element={<LeaguesPage />} />
+                  <Route path="/leagues" element={<LeaguesSelectionPage />} />
+                  <Route path="/league" element={<LeaguesPage />} />
                   <Route path="/comparing" element={<ComparingPage />} />
                   <Route path="/HowtoPlay" element={<HowToPlayPage />} />
                   <Route path="/redirect" element={<OAuthRedirectPage />} />
+                  <Route path="/manageLeague" element={<ManageLeague />} />
                 </Routes>
               </main>
               <Footer />

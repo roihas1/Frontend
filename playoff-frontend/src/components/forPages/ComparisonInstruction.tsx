@@ -1,4 +1,3 @@
-
 import { Paper, Typography } from "@mui/material";
 
 const InstructionPaper = () => (
@@ -18,26 +17,25 @@ const InstructionPaper = () => (
       className="text-xl font-semibold text-center mb-4"
       sx={{ fontFamily: '"Inter", sans-serif', fontWeight: 700, color: "#333" }}
     >
-      <strong>How to Compare Users</strong>
+      <strong>Let the Matchup Begin! 🏆</strong>
     </Typography>
 
     {/* Instructions */}
     <ul className="text-sm text-left space-y-3">
       <li>
-        <strong>1. Select a Series or Switch to Championship:</strong> Use the "Select Series" dropdown to compare a playoff matchup.  
-        To compare championship predictions, switch to "Champ" at the top.
+        <strong>1. Pick Your Battle ⚔️:</strong> Select a playoff series and a league to compare users from.
       </li>
       <li>
-        <strong>2. Choose Users:</strong> Pick from the Top 5 leaderboard or use the search bar.
+        <strong>2. Choose Your Rivals 👥:</strong> Use the search bar to find them.
       </li>
       <li>
-        <strong>3. View & Compare Predictions:</strong> Analyze series results, championship picks, and fantasy points.
+        <strong>3. Pick Your Betting Style 🎯:</strong> Compare Series Bets or Championship Picks. If you go with Series, choose between **Regular** and **Spontaneous** bets.
       </li>
       <li>
-        <strong>4. Remove Users:</strong> Click "X" next to a user's name to remove them.
+        <strong>4. Watch the Showdown 📊:</strong> See who made the boldest predictions and how their scores stack up!
       </li>
       <li>
-        <strong>5. Understanding Scores:</strong> Points are awarded based on correct predictions. Scores update after each game.
+        <strong>5. Adjust Your Squad 🚀:</strong> Want to swap someone out? Just hit the "X" next to their name.
       </li>
     </ul>
   </Paper>

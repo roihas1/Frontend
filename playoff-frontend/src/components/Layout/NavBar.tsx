@@ -16,8 +16,14 @@ const Navbar: React.FC = () => {
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
 
-  const isActive = (path: string) =>
-    location.pathname === path || location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    const leaguesPaths = ["/leagues", "/league", "/manageLeague"];
+    return (
+      location.pathname === path ||
+      location.pathname.startsWith(path) ||
+      (leaguesPaths.includes(path) && (location.pathname.startsWith("/league") || location.pathname.startsWith("/manage")))
+    );
+  };
 
   const toggleMenu = () => {
     const menu = document.getElementById("navbar-default");

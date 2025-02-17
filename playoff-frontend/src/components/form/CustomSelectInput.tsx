@@ -40,7 +40,7 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
     <Select
       id={id}
       value={value || ""}
-      label={label}
+      label={"Select" +label}
       name={label}
       onChange={onChange}
       open={open}

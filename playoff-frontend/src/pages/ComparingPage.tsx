@@ -26,6 +26,7 @@ import ChampColumn from "../components/forPages/ChampColumn";
 import ChampGuessColumn from "../components/forPages/ChampGuessColumn";
 import InstructionPaper from "../components/forPages/ComparisonInstruction";
 import ClearUsersButton from "../components/forPages/ClearUsersButton";
+import { League } from "./LeagueSelectionPage";
 
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
@@ -51,6 +52,7 @@ const ComparingPage: React.FC = () => {
   };
   const location = useLocation();
   const secondUserId = location.state?.secondUserId;
+  const league = location.state?.league;
   const [currentUser, setCurrentUser] = useState<User>();
   const [usersGuesses, setUsersGuesses] = useState<{
     [key: string]: {
@@ -70,6 +72,8 @@ const ComparingPage: React.FC = () => {
   const [betsType, setBetsType] = useState<string>("Regular");
   const [passedStages, setPassedStages] = useState<string[]>([]);
   const [selectedStage, setSelectedStage] = useState<string>("");
+  const [leagues, setLeagues] = useState<League[]>([]);
+  const [selectedLeague, setSelectedLeague] = useState<League>();
   const [userChampGuessses, setUserChampGuesses] = useState<{
     [key: string]: {
       conferenceFinalGuesses: [];
@@ -83,20 +87,40 @@ const ComparingPage: React.FC = () => {
       const response = await axiosInstance.get("/auth");
       const responseUser = await (await axiosInstance.get("/auth/user")).data;
       setCurrentUser(responseUser);
-      const sortedUsers = response.data.sort(
-        (a, b) => b.fantasyPoints - a.fantasyPoints
-      );
-      const users: { [key: string]: string } = {};
-      sortedUsers.slice(0, 5).map((user: User) => {
-        users[user.id] = `${user.firstName} ${user.lastName}`;
-      });
-      setSuggestedUsers(users);
-      const allUsers: { [key: string]: User } = {};
-      response.data.map((user: User) => {
-        allUsers[user.id] = user;
-      });
+      // const sortedUsers = response.data.sort(
+      //   (a, b) => b.fantasyPoints - a.fantasyPoints
+      // );
+      // const users: { [key: string]: string } = {};
+      // sortedUsers.slice(0, 5).map((user: User) => {
+      //   users[user.id] = `${user.firstName} ${user.lastName}`;
+      // });
+      // setSuggestedUsers(users);
+      // const allUsers: { [key: string]: User } = {};
+      // response.data.map((user: User) => {
+      //   allUsers[user.id] = user;
+      // });
 
-      setUsers(allUsers);
+      // setUsers(allUsers);
+  
+      if (league !== undefined && league?.name !== "Overall") {
+        const response = await axiosInstance.get(
+          `/private-league/${league?.id}`
+        );
+        const allUsers: { [key: string]: User } = {};
+        response.data.map((user: User) => {
+          allUsers[user.id] = user;
+        });
+        setSelectedLeague(league);
+        setUsers(allUsers);
+      } else if (league !== undefined) {
+        const allUsers: { [key: string]: User } = {};
+        response.data.map((user: User) => {
+          allUsers[user.id] = user;
+        });
+        setLeagues([...leagues, league]);
+        setSelectedLeague(league);
+        setUsers(allUsers);
+      } 
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -130,7 +154,7 @@ const ComparingPage: React.FC = () => {
     }
   };
   const setInitialsComprison = (secondId: string) => {
-    let series = "";
+    let seriesKey = "";
     let name = "";
     if (!series) {
       showError(`No Series has Ended`);
@@ -144,15 +168,23 @@ const ComparingPage: React.FC = () => {
           )
         ) {
           name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
-          series = key;
+          seriesKey = key;
           setSelectedSeries(key);
           setSelectedSeriesName(name);
           break;
         }
       }
     }
-    handleUserSelection(currentUser?.id, series);
-    handleUserSelection(secondUserId, series);
+    handleUserSelection(currentUser?.id, seriesKey);
+    handleUserSelection(secondUserId, seriesKey);
+  };
+  const fetchLeagues = async () => {
+    try {
+      const response = await axiosInstance.get(`/private-league`);
+      setLeagues(response.data);
+    } catch (error) {
+      showError(`Failed to fetch Leagues`);
+    }
   };
   checkTokenExpiration();
   useEffect(() => {
@@ -165,6 +197,7 @@ const ComparingPage: React.FC = () => {
     getAllBetsBySeries();
     fetchUsers();
     fetchStages();
+    fetchLeagues();
   }, []);
 
   const opacity = 0.218;
@@ -239,7 +272,7 @@ const ComparingPage: React.FC = () => {
       return false;
     } catch (error) {
       console.log(error);
-      // showError(`Failed to to select user`)
+      showError(`Failed to to select user`);
     }
   };
   const removeUser = (obj: { [key: string]: string }, keyToRemove: string) => {
@@ -247,7 +280,9 @@ const ComparingPage: React.FC = () => {
     return newObj;
   };
   const handleRemoveUser = (userId: string) => {
-    setSelectedUsers((prevSelectedUser) => removeUser(prevSelectedUser, userId));
+    setSelectedUsers((prevSelectedUser) =>
+      removeUser(prevSelectedUser, userId)
+    );
   };
 
   // Rows for each column
@@ -669,7 +704,7 @@ const ComparingPage: React.FC = () => {
   const handleBetsType = (event: React.ChangeEvent<HTMLInputElement>) => {
     setBetsType(event.target.value);
   };
-  const handleStageSelection = async (event: SelectChangeEvent<string>) => {
+  const handleStageSelection = (event: SelectChangeEvent<string>) => {
     setSelectedStage(event.target.value);
   };
   const handleClearSelectedUsers = (
@@ -678,33 +713,29 @@ const ComparingPage: React.FC = () => {
     event.preventDefault();
     setSelectedUsers({});
   };
-  const handleSelectionUsers = (users: Array<User>)=>{
-    const ids = users.map((user)=> user.id);
-    console.log(ids)
+  const handleSelectionUsers = (users: Array<User>) => {
+    const ids = users.map((user) => user.id);
 
-    if ( ids.length > Object.keys(selectedUsers).length){
-      for (const id of ids){
-        if(!(id in selectedUsers)){
-          if(selectedSeries || selectedStage){
-          handleUserSelection(id);
-          }
-          else{
-            showError(`Choose Series or Stage First!`)
+    if (ids.length > Object.keys(selectedUsers).length) {
+      for (const id of ids) {
+        if (!(id in selectedUsers)) {
+          if (selectedSeries || selectedStage) {
+            handleUserSelection(id);
+          } else {
+            showError(`Choose Series or Stage First!`);
           }
         }
       }
-    }
-    else {
-      for( const id of Object.keys(selectedUsers)){
-        if (!ids.includes(id)){
-          handleRemoveUser(id)
-          console.log(id)
+    } else {
+      for (const id of Object.keys(selectedUsers)) {
+        if (!ids.includes(id)) {
+          handleRemoveUser(id);
+     
         }
-        
       }
     }
     // for( const id of ids){
-      
+
     //   if ( !(id in selectedUsers) && ids.length > Object.keys(selectedUsers).length){
     //     handleUserSelection(id);
     //   }
@@ -714,8 +745,25 @@ const ComparingPage: React.FC = () => {
     //     handleRemoveUser(id);
     //   }
     // }
-    
-  }
+  };
+  const handleLeagueSelection = async (event: SelectChangeEvent<string>) => {
+    setSelectedUsers({});
+    const foundLeague = leagues.filter((l) => l.name === event.target.value);
+    setSelectedLeague(foundLeague[0]);
+    try {
+      const response = await axiosInstance.get(
+        `/private-league/${foundLeague[0].id}/users`
+      );
+      const allUsers: { [key: string]: User } = {};
+      response.data.map((user: User) => {
+        allUsers[user.id] = user;
+      });
+
+      setUsers(allUsers);
+    } catch (error) {
+      showError(`Server error.`);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center space-y-4">
@@ -790,7 +838,7 @@ const ComparingPage: React.FC = () => {
 
       <div className="flex justify-between items-center mb-4 w-full ">
         {showSeriesSelection && series && (
-          <div className="w-1/4 truncate mb-4 ml-8 mt-2 pt-2 ">
+          <div className="w-1/5 truncate mb-4 ml-8 mt-2 pt-2 ">
             <FormControl fullWidth>
               <InputLabel>Select Series</InputLabel>
               <CustomSelectInput
@@ -816,7 +864,7 @@ const ComparingPage: React.FC = () => {
           </div>
         )}
         {showChampSelection && passedStages && (
-          <div className="w-1/4 truncate mb-4 ml-8 mt-2 pt-2 ">
+          <div className="w-1/5 truncate mb-4 ml-8 mt-2 pt-2 ">
             <FormControl fullWidth variant="outlined">
               <InputLabel className="px-2">Select Champ Stage</InputLabel>
               <CustomSelectInput
@@ -829,69 +877,35 @@ const ComparingPage: React.FC = () => {
             </FormControl>
           </div>
         )}
+        {leagues && (
+          <div className="w-1/5 truncate mb-4 mx-8 mt-2 pt-2 ">
+            <FormControl fullWidth>
+              <InputLabel>Select League</InputLabel>
+              <CustomSelectInput
+                id="league"
+                value={selectedLeague?.name ?? ""}
+                label={leagues.length === 0 ? "- No Leagues -" : "Leagues"}
+                onChange={handleLeagueSelection}
+                options={leagues.map((league) => league.name)}
+              />
+            </FormControl>
+          </div>
+        )}
         {users && (
-          <div className="flex space-x-5 w-3/5  items-center mb-2 mr-6">
-            {/* <h3 className="w-12 font-semibold underline">Top 5:</h3>
-            <div className="grid grid-cols-3 w-1/2 gap-1">
-              {suggestedUsers &&
-                Object.keys(suggestedUsers).map((userId) => (
-                  <div key={userId} className="flex flex-row">
-                    <Tooltip
-                      title={
-                        <Typography>
-                          {userId === currentUser?.id
-                            ? "You"
-                            : suggestedUsers[userId]}
-                        </Typography>
-                      }
-                      arrow
-                      placement="right"
-                    >
-                      <button
-                        value={userId}
-                        className="rounded-2xl p-1 w-32  text-md truncate border-slate-200 text-black opacity-1 border-2 hover:bg-slate-200"
-                        onClick={(e) => {
-                          if (!selectedSeries && !selectedStage) {
-                            handleDisabledClick(e);
-                          } else {
-                            handleUserSelection(e.currentTarget.value);
-                          }
-                        }}
-                      >
-                        {userId === currentUser?.id
-                          ? "You"
-                          : suggestedUsers[userId]}
-                      </button>
-                    </Tooltip>
-                    <Popover
-                      open={Boolean(anchorEl)}
-                      anchorEl={anchorEl}
-                      onClose={handleClose}
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "center",
-                      }}
-                      transformOrigin={{
-                        vertical: "top",
-                        horizontal: "center",
-                      }}
-                    >
-                      <Typography sx={{ p: 2, fontSize: "16px" }}>
-                        Please select a series or stage first!
-                      </Typography>
-                    </Popover>
-                  </div>
-                ))}
-            </div> */}
+          <div className="flex space-x-5 w-2/5  items-center mb-2 mr-6">
             <div className="w-3/4 items-start ">
               <Autocomplete
-                multiple 
+                multiple
                 options={Object.values(users)}
                 disableCloseOnSelect
                 getOptionLabel={(option) =>
                   `${option.firstName} ${option.lastName}`
                 }
-                value={Object.keys(selectedUsers).map((id) => Object.values(users).find((user) => user.id === id)!).filter(Boolean)}
+                value={Object.keys(selectedUsers)
+                  .map(
+                    (id) => Object.values(users).find((user) => user.id === id)!
+                  )
+                  .filter(Boolean)}
                 onChange={(event, newValues) => handleSelectionUsers(newValues)}
                 renderOption={(props, option, { selected }) => (
                   <li {...props} key={option.id}>
