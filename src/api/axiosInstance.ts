@@ -2,7 +2,7 @@ import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 import Cookies from 'js-cookie';
 const axiosInstance = axios.create({
-  baseURL: 'http://playoff-backend:3000/', // Replace with your backend URL
+  baseURL: `${import.meta.env.VITE_BASE_URL}`, // Replace with your backend URL
 });
 axiosInstance.interceptors.request.use(config => {
     const token = Cookies.get('auth_token')

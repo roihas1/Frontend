@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-import PageBackground from "../components/common/PageBackground";
+// import PageBackground from "../components/common/PageBackground";
 import SubmitButton from "../components/common/SubmitButton";
 import InputField from "../components/form/FormInput";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import Logo from "../assets/siteLogo/gray_trans.png";
 import { AxiosError } from "axios";
+import AuthCard from "../components/Layout/AuthCard";
 
 const SignUpPage: React.FC = () => {
   const [username, setUsername] = useState("");
@@ -44,9 +45,9 @@ const SignUpPage: React.FC = () => {
       setEmail("");
       setConfirmPassword("");
       navigate("/login"); // Redirect to login page after successful sign-up
+      showSuccessMessage("You are signed up! Let's log in.");
     } catch (err) {
-      const error = err as AxiosError<{ message?: string }>; // Explicitly cast
-
+      const error = err as AxiosError<{ message?: string }>;
       if (error.response) {
         showError(
           "Failed to sign up: " +
@@ -59,89 +60,82 @@ const SignUpPage: React.FC = () => {
       }
     } finally {
       setLoading(false);
-      showSuccessMessage("You are signed up! let's log in");
     }
   };
 
   return (
-    <div className="relative flex items-center justify-center bg-gray-100">
-      <PageBackground imageSrc={Logo} />
-      <div className="relative bg-gray-100 p-6 rounded-lg shadow-2xl w-full max-w-4xl z-10">
-        <h2 className="text-2xl font-bold text-center text-black mb-4">
-          Sign Up
-        </h2>
-        <p className="text-sm text-gray-700 mb-6 text-center">
-          Enter your details below to create your account and get started
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-        >
-          <InputField
-            id="username"
-            label="Username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <InputField
-            id="email"
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <InputField
-            id="firstName"
-            label="First Name"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-          />
-          <InputField
-            id="lastName"
-            label="Last Name"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            required
-          />
-          <InputField
-            id="password"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <InputField
-            id="confirmPassword"
-            label="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          <div className="col-span-full flex justify-center">
-            <SubmitButton loading={loading} text="Sign Up" />
-          </div>
-        </form>
+    <div className="flex items-center justify-center  w-full bg-gray-100">
+      {/* Left Side: Sign Up Form */}
+      <div className="w-3/5 flex flex-col items-center justify-center ">
+        <AuthCard title="Sign Up" description="Enter your details below to create your account and get started">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InputField
+              id="username"
+              label="Username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <InputField
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <InputField
+              id="firstName"
+              label="First Name"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+            />
+            <InputField
+              id="lastName"
+              label="Last Name"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+            <InputField
+              id="password"
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <InputField
+              id="confirmPassword"
+              label="Confirm Password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+            <div className="col-span-full flex justify-center">
+              <SubmitButton loading={loading} text="Sign Up" />
+            </div>
+          </form>
+        </AuthCard>
 
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account or want to Login with google?{" "}
-            <Link
-              to="/login"
-              className="text-colors-nba-blue hover:text-colors-nba-red"
-            >
+            Already have an account or want to sign up with google?{" "}
+            <Link to="/login" className="text-colors-nba-blue hover:text-colors-nba-red">
               Login
             </Link>
           </p>
         </div>
+      </div>
+
+      {/* Right Side: Bigger Logo */}
+      <div className="w-3/5 flex items-center justify-center">
+        <img src={Logo} alt="NBA Logo" className="w-4/5 max-w-2xl" />
       </div>
     </div>
   );

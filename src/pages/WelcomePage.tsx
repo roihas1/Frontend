@@ -4,9 +4,9 @@ import Logo from "../assets/siteLogo/gray_trans.png";
 
 const WelcomePage = () => {
   return (
-    <div className="flex flex-col items-center justify-center  bg-gradient-to-t  bg-cover bg-center mt-2">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-t bg-cover bg-center">
       <PageBackground imageSrc={Logo} />
-      <div className="bg-gray-900 bg-opacity-75 text-white text-center p-12 rounded-3xl shadow-2xl max-w-4xl w-full transform transition-all ">
+      <div className="bg-gray-900 bg-opacity-75 text-white text-center p-12 rounded-3xl shadow-2xl max-w-4xl w-full transform transition-all">
         <h1 className="text-6xl font-extrabold text-white mb-8">
           Welcome to Beyond the Bracket!
         </h1>
