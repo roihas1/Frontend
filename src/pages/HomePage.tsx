@@ -33,11 +33,7 @@ import houstonRocketsLogo from "../assets/logos/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/logos/new_orleans_pelicans_logo.png";
 import Logo from "../assets/siteLogo/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import {
-  BestOf7Bet,
-  PlayerMatchupBet,
-  SpontaneousBet,
-} from "../types/index";
+import { BestOf7Bet, PlayerMatchupBet, SpontaneousBet } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
@@ -77,31 +73,32 @@ export interface Series {
   timeOfStart: string;
   lastUpdate: Date;
 }
-// interface ChampionTeamGuess {
-//   id: string;
-//   fantasyPoints: number;
-//   team: string;
-// }
-// interface ConferenceFinalGuess {
-//   id: string;
-//   fantasyPoints: number;
-//   team1: string;
-//   team2: string;
-//   conference: "West" | "East" | "Finals";
-// }
-// interface MVPGuess {
-//   id: string;
-//   fantasyPoints: number;
-//   player: string;
-// }
-// interface Stage {
-//   championTeamGuess: ChampionTeamGuess;
-//   conferenceFinalGuess: ConferenceFinalGuess;
-//   mvpGuess: MVPGuess;
-//   name: string;
-//   startDate: Date;
-// }
-const nbaTeams:{ [key: string]: string } = {
+interface ChampionTeamGuess {
+  id: string;
+  fantasyPoints: number;
+  team: string;
+}
+interface ConferenceFinalGuess {
+  id: string;
+  fantasyPoints: number;
+  team1: string;
+  team2: string;
+  conference: "West" | "East" | "Finals";
+}
+interface MVPGuess {
+  id: string;
+  fantasyPoints: number;
+  player: string;
+}
+interface Stage {
+  championTeamGuess: ChampionTeamGuess;
+  conferenceFinalGuess: ConferenceFinalGuess;
+  mvpGuess: MVPGuess;
+  name: string;
+  startDate: Date;
+  timeOfStart: string;
+}
+const nbaTeams: { [key: string]: string } = {
   "Atlanta Hawks": "Hawks",
   "Boston Celtics": "Celtics",
   "Brooklyn Nets": "Nets",
@@ -186,64 +183,61 @@ const HomePage: React.FC = () => {
     [key: string]: boolean;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const getSeries = async () => {
-    setLoading(true);
-    try {
-      const updatedSeries: {
-        west: Series[];
-        east: Series[];
-        finals: Series[];
-      } = {
-        west: [],
-        east: [],
-        finals: [],
-      };
-      // const capitalize = (str: string) => {
-      //   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-      // };
-      const response = await axiosInstance.get("/series");
-      const seriesData = response.data; // Assuming the response is an array of series
-      seriesData.forEach((element: Series) => {
-        const team1Logo = logos[element.team1.toLowerCase().replace(/ /g, "_")];
-        const team2Logo = logos[element.team2.toLowerCase().replace(/ /g, "_")];
-        const series: Series = {
-          id: element.id,
-          team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
-          team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
-          dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
-          bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
-          teamWinBetId: element.teamWinBetId || "",
-          conference: element.conference,
-          round: element.round,
-          seed1: element.seed1,
-          seed2: element.seed2,
-          logo1: team1Logo, // If you want to fetch logos, you can add logic here
-          logo2: team2Logo,
-          playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
-          timeOfStart: element.timeOfStart,
-          lastUpdate: element.lastUpdate,
-          spontaneousBets: element.spontaneousBets,
-          numOfGames: element.numOfGames,
-        };
-        // Push series into the correct conference array based on the "conference" field
-        if (series.conference === "West") {
-          updatedSeries.west.push(series);
-        } else if (series.conference === "East") {
-          updatedSeries.east.push(series);
-        } else {
-          updatedSeries.finals.push(series);
-        }
-      });
+  // const getSeries = async () => {
+  //   try {
+  //     const updatedSeries: {
+  //       west: Series[];
+  //       east: Series[];
+  //       finals: Series[];
+  //     } = {
+  //       west: [],
+  //       east: [],
+  //       finals: [],
+  //     };
+  //     // const capitalize = (str: string) => {
+  //     //   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  //     // };
+  //     const response = await axiosInstance.get("/series");
+  //     const seriesData = response.data; // Assuming the response is an array of series
+  //     seriesData.forEach((element: Series) => {
+  //       const team1Logo = logos[element.team1.toLowerCase().replace(/ /g, "_")];
+  //       const team2Logo = logos[element.team2.toLowerCase().replace(/ /g, "_")];
+  //       const series: Series = {
+  //         id: element.id,
+  //         team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
+  //         team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
+  //         dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
+  //         bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
+  //         teamWinBetId: element.teamWinBetId || "",
+  //         conference: element.conference,
+  //         round: element.round,
+  //         seed1: element.seed1,
+  //         seed2: element.seed2,
+  //         logo1: team1Logo, // If you want to fetch logos, you can add logic here
+  //         logo2: team2Logo,
+  //         playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
+  //         timeOfStart: element.timeOfStart,
+  //         lastUpdate: element.lastUpdate,
+  //         spontaneousBets: element.spontaneousBets,
+  //         numOfGames: element.numOfGames,
+  //       };
+  //       // Push series into the correct conference array based on the "conference" field
+  //       if (series.conference === "West") {
+  //         updatedSeries.west.push(series);
+  //       } else if (series.conference === "East") {
+  //         updatedSeries.east.push(series);
+  //       } else {
+  //         updatedSeries.finals.push(series);
+  //       }
+  //     });
 
-      setSeries(updatedSeries);
-    } catch (err) {
-      console.error("Error fetching series data:", err);
-      showError("Error fetching series data");
-      setLoading(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setSeries(updatedSeries);
+  //   } catch (err) {
+  //     console.error("Error fetching series data:", err);
+  //     showError("Error fetching series data");
+  //     setLoading(false);
+  //   }
+  // };
   const checkIfGuessed = async () => {
     try {
       const response = await axiosInstance.get(`/playoffs-stage/checkGuess/`, {
@@ -261,40 +255,37 @@ const HomePage: React.FC = () => {
   const hideInputAfterSubmit = () => {
     setShowInput(false);
   };
-  const getPlayoffsStage = async () => {
-    try {
-      const response = await axiosInstance.get("/playoffs-stage");
-      let flag = true;
-      const stages = response.data;
-      for (const round of stages) {
-        const startDate = new Date(round.startDate);
-        const time = round.timeOfStart.split(":");
-        startDate.setHours(parseInt(time[0]));
-        startDate.setMinutes(parseInt(time[1]));
-        if (new Date(startDate) > new Date()) {
-          setStage(round.name);
-          setStageStartDate(startDate);
-          flag = false;
-          break;
-        }
-      }
-      if (flag) {
-        setStage("Finish");
-      }
-    } catch (error) {
-      console.log(error);
-      showError("Server Error.");
-    }
-  };
+  // const getPlayoffsStage = async () => {
+  //   try {
+  //     const response = await axiosInstance.get("/playoffs-stage");
+  //     let flag = true;
+  //     const stages = response.data;
+  //     for (const round of stages) {
+  //       const startDate = new Date(round.startDate);
+  //       const time = round.timeOfStart.split(":");
+  //       startDate.setHours(parseInt(time[0]));
+  //       startDate.setMinutes(parseInt(time[1]));
+  //       if (new Date(startDate) > new Date()) {
+  //         setStage(round.name);
+  //         setStageStartDate(startDate);
+  //         flag = false;
+  //         break;
+  //       }
+  //     }
+  //     if (flag) {
+  //       setStage("Finish");
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //     showError("Server Error.");
+  //   }
+  // };
   const checkIfGuessSeriesBetting = async () => {
-    setLoading(true);
     try {
       const response = await axiosInstance.get(`series/isUserGuessed/All`);
       setIspartialGuess(response.data);
     } catch (error) {
       showError(`Failed to check guesses ${error}`);
-    } finally {
-      setLoading(false);
     }
   };
   checkTokenExpiration();
@@ -303,26 +294,111 @@ const HomePage: React.FC = () => {
       checkIfGuessed();
     }
   }, [stage]);
-  const getUserPointsPerSeries = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get(
-        "series/getOverallPoints/allSeries"
-      );
-      setUserPointsPerSeries(response.data);
-    } catch (error) {
-      showError(`Failed to get user's points.`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const getUserPointsPerSeries = async () => {
+  //   try {
+  //     const response = await axiosInstance.get(
+  //       "series/getOverallPoints/allSeries"
+  //     );
+  //     setUserPointsPerSeries(response.data);
+  //   } catch {
+  //     showError(`Failed to get user's points.`);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   getUserPointsPerSeries();
+  // }, []);
+  // useEffect(() => {
+  //   const fetchData = async ()=>{
+  //     await Promise.all([ getSeries(),getPlayoffsStage(),checkIfGuessSeriesBetting(),getUserPointsPerSeries()])
+  //   }
+  //   // getSeries();
+    // getPlayoffsStage();
+  //   // checkIfGuessSeriesBetting();
+  //   setLoading(true);
+  //   fetchData();
+  //   setLoading(false);
+  // }, []);
   useEffect(() => {
-    getUserPointsPerSeries();
-  }, []);
-  useEffect(() => {
-    getSeries();
-    getPlayoffsStage();
-    checkIfGuessSeriesBetting();
+    const fetchData = async () => {
+      setLoading(true); 
+
+      try {
+       
+        const [seriesData, playoffsStageData, userPointsData, guessData] =
+          await Promise.all([
+            axiosInstance.get("/series"),
+            axiosInstance.get("/playoffs-stage"),
+            axiosInstance.get("series/getOverallPoints/allSeries"),
+            axiosInstance.get("series/isUserGuessed/All"),
+          ]);
+
+   
+        const updatedSeries: { west: Series[]; east: Series[]; finals: Series[] } = {
+          west: [],
+          east: [],
+          finals: [],
+        };
+        
+        seriesData.data.forEach((element: Series) => {
+          return updatedSeries[element.conference.toLowerCase() as keyof typeof updatedSeries].push({
+            id: element.id,
+            team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
+            team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
+            dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
+            bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
+            teamWinBetId: element.teamWinBetId || "",
+            conference: element.conference,
+            round: element.round,
+            seed1: element.seed1,
+            seed2: element.seed2,
+            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")], // If you want to fetch logos, you can add logic here
+            logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")],
+            playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
+            timeOfStart: element.timeOfStart,
+            lastUpdate: element.lastUpdate,
+            spontaneousBets: element.spontaneousBets,
+            numOfGames: element.numOfGames,
+          });
+        });
+
+        setSeries(updatedSeries);
+        setUserPointsPerSeries(userPointsData.data);
+        setIspartialGuess(guessData.data);
+
+        const upcomingStage = playoffsStageData.data.find((round:Stage) => {
+          const startDate = new Date(round.startDate);
+          const time = round.timeOfStart.split(":");
+          startDate.setHours(parseInt(time[0]));
+          startDate.setMinutes(parseInt(time[1]));
+          return startDate > new Date();
+        });
+
+        if (upcomingStage) {
+          setStage(upcomingStage.name);
+          setStageStartDate(new Date(upcomingStage.startDate));
+        } else {
+          setStage("Finish");
+        }
+
+
+        if (upcomingStage?.name && upcomingStage.name !== "Finish") {
+          const checkGuessResponse = await axiosInstance.get(
+            "/playoffs-stage/checkGuess/",
+            {
+              params: { stage: upcomingStage.name },
+            }
+          );
+          setShowInput(checkGuessResponse.data);
+        }
+      } catch {
+        showError("Error fetching data.");
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchData();
   }, []);
 
   const sortMatchups = (matchups: Series[]) => {
@@ -481,7 +557,7 @@ const HomePage: React.FC = () => {
                   <div
                     className={`${
                       new Date() > matchup.dateOfStart
-                        ? "border-2 border-colors-nba-red"
+                        ? "border-4 border-colors-nba-red"
                         : "border-4 border-colors-select-bet"
                     } rounded-xl mb-2 `}
                   >
@@ -511,139 +587,139 @@ const HomePage: React.FC = () => {
       </div>
     );
   };
+  if (loading) {
+    <div className="flex justify-center">
+      <CircularProgress />
+    </div>;
+  }
 
   return (
     <div className="relative z-10  bg-gray-100 p-4">
       {/* Mobile View */}
       {/* <MobileMatchupList series={series} /> */}
-      {loading && (
-        <div className="flex justify-center">
-          <CircularProgress />
-        </div>
-      )}
+
       {/* Desktop View */}
-      {!loading && (
-        <div className="hidden md:flex justify-center">
-          <div className="flex gap-8">
-            {showInput && (
-              <div className={`flex-none w-full md:w-1/4`}>
-                <ChampionsInput
-                  west={series.west}
-                  east={series.east}
-                  startDate={stageStartDate}
-                  stage={stage}
-                  setShowInput={hideInputAfterSubmit}
-                />
-              </div>
-            )}
-            {!showInput && (
-              <div
-                className="flex-none md:w-10 relative cursor-pointer h-10"
-                onClick={() => setShowInput(true)}
-              >
-                <Tooltip
-                  title="Champions betting"
-                  slots={{
-                    transition: Zoom,
-                  }}
-                  arrow
-                  sx={{
-                    "& .MuiTooltip-tooltip": {
-                      backgroundColor: "#1D428A", // Tooltip background color
-                      color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
-                    },
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    className="size-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                    />
-                  </svg>
-                </Tooltip>
-              </div>
-            )}
-            {/* Western Conference */}
-            <div>
-              <h2 className="text-lg font-semibold text-center mb-4">
-                Western Conference
-              </h2>
-              <div className="flex gap-16 relative z-10">
-                <Round
-                  matchups={series.west.filter(
-                    (elem) => elem.round === "First Round"
-                  )}
-                  roundName="First Round"
-                  className="h-[450px]"
-                />
-                <Round
-                  matchups={series.west.filter(
-                    (elem) => elem.round === "Conference Semifinals"
-                  )}
-                  roundName="Conference Semifinals"
-                  className="h-[450px] mt-20"
-                />
-                <Round
-                  matchups={series.west.filter(
-                    (elem) => elem.round === "Conference Finals"
-                  )}
-                  roundName="Conference Finals"
-                  className="h-[450px] mt-52"
-                />
-              </div>
-            </div>
 
-            {/* NBA Finals */}
-            <div className="flex flex-col items-center justify-center mt-64 relative z-10">
-              <h2 className="text-lg font-semibold mb-4">NBA Finals</h2>
-
-              <Round
-                matchups={series.finals}
-                roundName="Finals"
-                className="h-[450px] mt-2"
+      <div className="hidden md:flex justify-center">
+        <div className="flex gap-8">
+          {showInput && (
+            <div className={`flex-none w-full md:w-1/4`}>
+              <ChampionsInput
+                west={series.west}
+                east={series.east}
+                startDate={stageStartDate}
+                stage={stage}
+                setShowInput={hideInputAfterSubmit}
               />
             </div>
+          )}
+          {!showInput && (
+            <div
+              className="flex-none md:w-10 relative cursor-pointer h-10"
+              onClick={() => setShowInput(true)}
+            >
+              <Tooltip
+                title="Champions betting"
+                slots={{
+                  transition: Zoom,
+                }}
+                arrow
+                sx={{
+                  "& .MuiTooltip-tooltip": {
+                    backgroundColor: "#1D428A", // Tooltip background color
+                    color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
+                  },
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                  />
+                </svg>
+              </Tooltip>
+            </div>
+          )}
+          {/* Western Conference */}
+          <div>
+            <h2 className="text-lg font-semibold text-center mb-4">
+              Western Conference
+            </h2>
+            <div className="flex gap-16 relative z-10">
+              <Round
+                matchups={series.west.filter(
+                  (elem) => elem.round === "First Round"
+                )}
+                roundName="First Round"
+                className="h-[450px]"
+              />
+              <Round
+                matchups={series.west.filter(
+                  (elem) => elem.round === "Conference Semifinals"
+                )}
+                roundName="Conference Semifinals"
+                className="h-[450px] mt-20"
+              />
+              <Round
+                matchups={series.west.filter(
+                  (elem) => elem.round === "Conference Finals"
+                )}
+                roundName="Conference Finals"
+                className="h-[450px] mt-52"
+              />
+            </div>
+          </div>
 
-            {/* Eastern Conference */}
-            <div>
-              <h2 className="text-lg font-semibold text-center mb-4">
-                Eastern Conference
-              </h2>
-              <div className="flex gap-16 relative z-10">
-                <Round
-                  matchups={series.east.filter(
-                    (elem) => elem.round === "Conference Finals"
-                  )}
-                  roundName="Conference Finals"
-                  className="h-[450px] mt-52"
-                />
-                <Round
-                  matchups={series.east.filter(
-                    (elem) => elem.round === "Conference Semifinals"
-                  )}
-                  roundName="Conference Semifinals"
-                  className="h-[450px] mt-20"
-                />
-                <Round
-                  matchups={series.east.filter(
-                    (elem) => elem.round === "First Round"
-                  )}
-                  roundName="First Round"
-                  className="h-[450px]"
-                />
-              </div>
+          {/* NBA Finals */}
+          <div className="flex flex-col items-center justify-center mt-64 relative z-10">
+            <h2 className="text-lg font-semibold mb-4">NBA Finals</h2>
+
+            <Round
+              matchups={series.finals}
+              roundName="Finals"
+              className="h-[450px] mt-2"
+            />
+          </div>
+
+          {/* Eastern Conference */}
+          <div>
+            <h2 className="text-lg font-semibold text-center mb-4">
+              Eastern Conference
+            </h2>
+            <div className="flex gap-16 relative z-10">
+              <Round
+                matchups={series.east.filter(
+                  (elem) => elem.round === "Conference Finals"
+                )}
+                roundName="Conference Finals"
+                className="h-[450px] mt-52"
+              />
+              <Round
+                matchups={series.east.filter(
+                  (elem) => elem.round === "Conference Semifinals"
+                )}
+                roundName="Conference Semifinals"
+                className="h-[450px] mt-20"
+              />
+              <Round
+                matchups={series.east.filter(
+                  (elem) => elem.round === "First Round"
+                )}
+                roundName="First Round"
+                className="h-[450px]"
+              />
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
