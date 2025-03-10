@@ -227,25 +227,27 @@ const LeaguesSelectionPage: React.FC = () => {
       <Dialog
         open={modalOpen}
         onClose={handleCloseModal}
-        maxWidth="sm"
-        fullWidth
+        aria-labelledby="league-dialog"
+        aria-describedby="league-dialog-description"
+        className="flex justify-center items-center w-full"
       >
-        <DialogContent sx={{ padding: 0 }}>
+        <DialogContent className=" sm:max-w-sm md:max-w-md lg:max-w-lg bg-white rounded-lg shadow-lg p-4 sm:p-6 relative">
           {/* Header */}
-          <div className="bg-blue-900 text-white px-4 py-2 flex justify-between items-center">
-            <span className="text-lg font-bold">
+          <div className="bg-colors-nba-blue text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
+            <span className="text-sm md:text-lg font-bold">
               {selectedLeague?.name || "League"}
             </span>
             <IconButton
               onClick={handleCloseModal}
-              className="bg-colors-nba-red "
+              className="absolute "
               size="large"
             >
               <Close
                 sx={{
                   color: "white",
                   backgroundColor: "#C8102E",
-                  borderRadius: "0.5rem",
+                  borderRadius: "50%",
+                  padding: "2px",
                 }}
                 fontSize="inherit"
               />
@@ -253,34 +255,37 @@ const LeaguesSelectionPage: React.FC = () => {
           </div>
 
           {/* Modal Content */}
-          {selectedLeague && (
-            <button
-              className="w-1/2 text-xl bg-colors-nba-yellow hover:opacity-80 p-2 rounded-lg text-black shadow-md font-semibold"
-              onClick={() => handleLeagueClick(selectedLeague)}
-            >
-              Standings
-            </button>
-          )}
-
-          {selectedLeague?.admin?.id === currentUser?.id && selectedLeague && (
-            <button
-              className="w-1/2 text-xl bg-colors-nba-yellow hover:opacity-80 p-2 rounded-lg text-black shadow-md font-semibold"
-              onClick={() => handleManageLeague(selectedLeague)}
-            >
-              Manage League
-            </button>
-          )}
-
-          {selectedLeague?.name !== "Overall" &&
-            selectedLeague?.admin?.id !== currentUser?.id &&
-            selectedLeague && (
+          <div className="flex flex-col items-center space-y-4 mt-4">
+            {selectedLeague && (
               <button
-                className="w-1/2 text-xl bg-colors-nba-yellow hover:opacity-80 p-2 rounded-lg text-black shadow-md font-semibold"
-                onClick={() => handleLeaveLeague(selectedLeague)}
+                className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-yellow hover:opacity-80 py-2 rounded-lg text-black shadow-md font-semibold"
+                onClick={() => handleLeagueClick(selectedLeague)}
               >
-                Leave League
+                Standings
               </button>
             )}
+
+            {selectedLeague?.admin?.id === currentUser?.id &&
+              selectedLeague && (
+                <button
+                  className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-yellow hover:opacity-80 py-2 rounded-lg text-black shadow-md font-semibold"
+                  onClick={() => handleManageLeague(selectedLeague)}
+                >
+                  Manage League
+                </button>
+              )}
+
+            {selectedLeague?.name !== "Overall" &&
+              selectedLeague?.admin?.id !== currentUser?.id &&
+              selectedLeague && (
+                <button
+                  className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-red hover:bg-red-700 py-2 rounded-lg text-white shadow-md font-semibold"
+                  onClick={() => handleLeaveLeague(selectedLeague)}
+                >
+                  Leave League
+                </button>
+              )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

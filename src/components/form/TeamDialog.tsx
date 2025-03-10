@@ -41,60 +41,74 @@ export const HorizontalBar: React.FC<HorizontalBarProps> = ({
     leftWidth >= rightWidth && leftWidth >= noneWidth;
   const rightPercetangeDisplay =
     rightWidth > leftWidth && rightWidth > noneWidth;
+
   return (
-    <div className="flex w-full border border-gray-200 rounded-lg p-0.5 h-8">
-      {/* First Section */}
-      <Tooltip title={option1} arrow>
-        <div
-          className={`flex bg-colors-nba-blue items-center justify-center truncate 
-            ${
-              rightWidth < 1 && noneWidth < 1
-                ? "rounded-e-md rounded-s-md"
-                : "rounded-s-md"
-            }`}
-          style={{ width: `${leftWidth}%`, color: "white" }}
-        >
-          {leftPercetangeDisplay ? `${leftWidth.toFixed(1)}%` : ""}
-        </div>
-      </Tooltip>
-
-      {/* Second Section */}
-      <Tooltip title={option2} arrow>
-        <div
-          className={`flex items-center justify-center truncate 
-            ${leftWidth < 1 ? "rounded-s-md" : ""} 
-            ${noneWidth < 1 ? "rounded-e-md" : ""}`}
-          style={{
-            width: `${rightWidth}%`,
-            backgroundColor: "#539dc9",
-            color: "white",
-          }}
-        >
-          {rightPercetangeDisplay ? `${rightWidth.toFixed(1)}%` : ""}
-        </div>
-      </Tooltip>
-
-      {/* None Section (Remaining Space) */}
-      {noneWidth > 0 && (
-        <Tooltip title="None" arrow>
+    <div className="flex flex-col sm:flex-row items-center w-full">
+      <div className="flex w-full border border-gray-200 rounded-lg p-0.5 h-8">
+        {/* First Section */}
+        <Tooltip title={option1} arrow>
           <div
-            className={`flex items-center justify-center truncate rounded-e-md 
-              ${leftWidth < 1 && rightWidth < 1 ? "rounded-s-md" : ""}`}
-            style={{
-              width: `${noneWidth}%`,
-              backgroundColor: "#c8f7ff",
-              color: "black",
-            }}
+            className={`flex items-center justify-center truncate bg-colors-nba-blue 
+              ${
+                rightWidth < 1 && noneWidth < 1
+                  ? "rounded-e-md rounded-s-md"
+                  : "rounded-s-md"
+              }`}
+            style={{ width: `${leftWidth}%`, color: "white" }}
           >
-            {!rightPercetangeDisplay && !leftPercetangeDisplay
-              ? `${noneWidth.toFixed(1)}%`
-              : ""}
+            {leftPercetangeDisplay && (
+              <span className=" hidden sm:inline text-s">
+                {leftWidth.toFixed(1)}%
+              </span>
+            )}
+            {leftPercetangeDisplay && (
+              <span className="sm:hidden">
+                {option1} ({leftWidth.toFixed(1)}%)
+              </span>
+            )}
           </div>
         </Tooltip>
-      )}
+
+        {/* Second Section */}
+        <Tooltip title={option2} arrow>
+          <div
+            className={`flex items-center justify-center truncate bg-[#539dc9]
+              ${leftWidth < 1 ? "rounded-s-md" : ""} 
+              ${noneWidth < 1 ? "rounded-e-md" : ""}`}
+            style={{ width: `${rightWidth}%`, color: "white" }}
+          >
+            {rightPercetangeDisplay && (
+              <span className="hidden sm:inline text-s ">
+                {rightWidth.toFixed(1)}%
+              </span>
+            )}
+            {rightPercetangeDisplay && (
+              <span className=" sm:hidden ">
+                {option2} ({rightWidth.toFixed(1)}%)
+              </span>
+            )}
+          </div>
+        </Tooltip>
+
+        {/* None Section (Remaining Space) */}
+        {noneWidth > 0 && (
+          <Tooltip title="None" arrow>
+            <div
+              className={`flex items-center justify-center truncate bg-[#c8f7ff] rounded-e-md
+                ${leftWidth < 1 && rightWidth < 1 ? "rounded-s-md" : ""}`}
+              style={{ width: `${noneWidth}%`, color: "black" }}
+            >
+              {!rightPercetangeDisplay &&
+                !leftPercetangeDisplay &&
+                `${noneWidth.toFixed(1)}%`}
+            </div>
+          </Tooltip>
+        )}
+      </div>
     </div>
   );
 };
+
 interface TeamDialogProps {
   isOpen: boolean;
   series: Series;
@@ -145,7 +159,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const createDateExpiration = () => {
     const dateExpiration: { [key: string]: boolean } = {};
     const spontaneousBets = series.spontaneousBets;
-  
+
     spontaneousBets?.forEach((bet) => {
       if (bet.startTime) {
         dateExpiration[bet.id] = new Date(bet.startTime) < new Date();
@@ -153,10 +167,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
         dateExpiration[bet.id] = false; // Default to false if no start time is set
       }
     });
-  
+
     return dateExpiration;
   };
-  
+
   const spontaneousExpiration: { [key: string]: boolean } =
     createDateExpiration();
   const intialTabCheck = (expirations: { [key: string]: boolean }) => {
@@ -338,7 +352,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           );
 
           setGuessPercentage(response.data);
-        } catch (error) {
+        } catch {
           showError(`Failed to get percentage.`);
         } finally {
           setLoading(false);
@@ -388,7 +402,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
       {/* Centered Panel */}
       <div className="fixed inset-0 flex items-center justify-center ">
-        <Dialog.Panel className="bg-white rounded-3xl w-full max-w-5xl p-4 relative max-h-[90vh] overflow-y-auto">
+        <Dialog.Panel className="bg-white rounded-3xl w-full max-w-lg sm:max-w-5xl p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto">
           {/* Close Button */}
           <button
             type="button"
@@ -421,34 +435,54 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             Series bets
           </Dialog.Title>
 
-          <div className="flex justify-center mb-4 space-x-10 items-center">
+          <div className="flex flex-col sm:flex-row justify-center items-center mb-4 space-y-4 sm:space-y-0 sm:space-x-10">
+            {/* Team 1 Logo */}
             <img
               src={series.logo1}
               alt={`${series.logo1} logo`}
-              className="h-20 object-contain"
+              className="h-16 sm:h-20 object-contain"
             />
+            {!isStartDatePassed && (
+              <p className=" hidden text-xs sm:inline sm:text-sm font-medium text-gray-600 text-center sm:text-left">
+                <strong>Series start date:</strong>{" "}
+                {new Date(series.dateOfStart).toLocaleString("he-IL", {
+                  timeZone: "Asia/Jerusalem",
+                })}
+              </p>
+            )}
 
             {isStartDatePassed && (
-              <div className="text-center text-lg font-semibold text-gray-700 bg-colors-nba-blue bg-opacity-40 px-4 py-2 rounded-lg shadow-md ">
-                The series has started!{" "}
+              <div
+                className="text-center text-gray-700 bg-colors-nba-blue bg-opacity-40 px-4 py-2 rounded-lg shadow-md 
+                 text-sm sm:text-lg leading-snug sm:leading-normal order-1 sm:order-none w-full sm:w-auto"
+              >
+                <p className="font-semibold">The series has started!</p>
+
                 {numOfSpontaneousBets === 0 ? (
-                  <p>Bets are now closed.</p>
+                  <p className="text-xs sm:text-base">Bets are now closed.</p>
                 ) : (
                   <br />
                 )}
-                Last update:{" "}
-                {new Date(series.lastUpdate).toLocaleString("he-IL", {
-                  timeZone: "Asia/Jerusalem",
-                })}
-                <br />
-                Points gained: {userPoints}
+
+                <p className="text-xs sm:text-base mt-1">
+                  <span className="font-semibold">Last update:</span>{" "}
+                  {new Date(series.lastUpdate).toLocaleString("he-IL", {
+                    timeZone: "Asia/Jerusalem",
+                  })}
+                </p>
+
+                <p className="text-xs sm:text-base mt-1">
+                  <span className="font-semibold">Points gained:</span>{" "}
+                  {userPoints}
+                </p>
               </div>
             )}
 
+            {/* Team 2 Logo */}
             <img
               src={series.logo2}
               alt={`${series.logo2} logo`}
-              className="h-20 object-contain"
+              className="h-16 sm:h-20 object-contain"
             />
           </div>
 
@@ -473,13 +507,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             </div>
 
             {/* Team Selection with Radio Buttons */}
-            <h4 className="text-lg font-semibold mb-2 flex justify-center">
+            <h4 className="text-lg font-semibold mb-2 text-center">
               Choose the winner of the series
             </h4>
-            <ul className="space-x-4 w-full ">
-              <li className="flex justify-between">
+
+            <ul className="space-y-4">
+              <li className="flex flex-col sm:flex-row items-center bg-white p-3 rounded-lg shadow-md border border-gray-200">
                 {/* Team 1 Selection */}
-                <div className="flex items-center md:w-full space-x-4">
+                <div className="relative w-full">
                   <input
                     type="radio"
                     id="team1"
@@ -487,27 +522,33 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     value={1}
                     className="hidden peer"
                     onChange={handleTeamSelection}
-                    onClick={() => setSelectedTeam(-1)}
                     checked={selectedTeam === 1}
                     disabled={isStartDatePassed}
                   />
                   <label
                     htmlFor="team1"
-                    className={`inline-flex items-center justify-between w-full p-5 text-black bg-white border border-gray-200 rounded-lg ${
-                      !isStartDatePassed ? "cursor-pointer" : ""
-                    } dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:border-colors-nba-blue peer-checked:bg-colors-select-bet peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700`}
+                    className={`block p-3 border rounded-lg text-center transition-all duration-200 w-full sm:w-full
+          peer-checked:bg-colors-selected-bet peer-checked:border-colors-nba-blue hover:cursor-pointer
+          ${
+            selectedTeam === 1
+              ? "bg-colors-select-bet border-colors-nba-blue text-gray-900"
+              : "border-gray-300 bg-gray-100 text-gray-900"
+          }  relative`}
                   >
-                    <div className="block">
-                      <div className="w-full text-lg font-semibold">
-                        {series.team1}
-                      </div>
-                      <div className="w-full">Seed #{series.seed1}</div>
-                    </div>
+                    <p className="font-semibold">{series.team1}</p>
+                    <p className="text-sm">Seed #{series.seed1}</p>
+
+                    {/* Green Dot if Team 1 is Leading */}
+                    {isStartDatePassed &&
+                      guessPercentage?.teamWin["1"] >
+                        guessPercentage?.teamWin["2"] && (
+                        <span className="absolute top-1/2 right-2 transform -translate-y-1/2 w-3 h-3 bg-green-500 rounded-full" />
+                      )}
                   </label>
                 </div>
 
                 {/* Team 2 Selection */}
-                <div className="flex items-center md:w-full space-x-4">
+                <div className="relative w-full">
                   <input
                     type="radio"
                     id="team2"
@@ -515,35 +556,43 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     value={2}
                     className="hidden peer"
                     onChange={handleTeamSelection}
-                    onClick={() => setSelectedTeam(-1)}
                     checked={selectedTeam === 2}
                     disabled={isStartDatePassed}
                   />
                   <label
                     htmlFor="team2"
-                    className={`inline-flex items-center justify-between w-full p-5 text-black bg-white border border-gray-200 rounded-lg ${
-                      !isStartDatePassed ? "cursor-pointer" : ""
-                    } dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-500 peer-checked:border-colors-nba-blue peer-checked:bg-colors-select-bet peer-checked:text-colors-nba-blue hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700`}
+                    className={`block p-3 border rounded-lg text-center transition-all duration-200 w-full sm:w-full
+          peer-checked:bg-colors-selected-bet peer-checked:border-colors-nba-blue hover:cursor-pointer
+          ${
+            selectedTeam === 2
+              ? "bg-colors-select-bet border-colors-nba-blue text-gray-900"
+              : "border-gray-300 bg-gray-100 text-gray-900"
+          }  relative`}
                   >
-                    <div className="block">
-                      <div className="w-full text-lg font-semibold">
-                        {series.team2}
-                      </div>
-                      <div className="w-full">Seed #{series.seed2}</div>
-                    </div>
+                    <p className="font-semibold">{series.team2}</p>
+                    <p className="text-sm">Seed #{series.seed2}</p>
+
+                    {/* Green Dot if Team 2 is Leading */}
+                    {isStartDatePassed &&
+                      guessPercentage?.teamWin["1"] <
+                        guessPercentage?.teamWin["2"] && (
+                        <span className="absolute top-1/2 right-2 transform -translate-y-1/2 w-3 h-3 bg-green-500 rounded-full" />
+                      )}
                   </label>
                 </div>
-                <div className="items-center ml-2 md:w-1/4 inline-flex justify-end  text-black bg-white  rounded-lg">
-                  {isStartDatePassed && (
-                    <HorizontalBar
-                      first={guessPercentage?.teamWin["1"]}
-                      second={guessPercentage?.teamWin["2"]}
-                      option1={series.team1}
-                      option2={series.team2}
-                    />
-                  )}
-                </div>
               </li>
+
+              {/* Guess Percentage Bar - Now Below Team Selection */}
+              {isStartDatePassed && (
+                <div className="w-full flex justify-center mt-2">
+                  <HorizontalBar
+                    first={guessPercentage?.teamWin["1"]}
+                    second={guessPercentage?.teamWin["2"]}
+                    option1={series.team1}
+                    option2={series.team2}
+                  />
+                </div>
+              )}
             </ul>
           </div>
 

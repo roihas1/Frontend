@@ -52,9 +52,7 @@ const ComparingPage: React.FC = () => {
   const [isLoadingStages, setIsLoadingStages] = useState(true);
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   const location = useLocation();
-  const [secondUserId] = useState<string>(
-    location.state?.secondUserId
-  );
+  const [secondUserId] = useState<string>(location.state?.secondUserId);
 
   const league = location.state?.league;
   const [currentUser, setCurrentUser] = useState<User>();
@@ -91,6 +89,18 @@ const ComparingPage: React.FC = () => {
   //     setSelectedLeague(location.state.league);
   //   }
   // }, [location.state?.league]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   useEffect(() => {
     if (!isCurrentUserSelected && allSeriesBets) {
       handleUserSelection(currentUser?.id ?? "");
@@ -345,7 +355,7 @@ const ComparingPage: React.FC = () => {
             (guess) => guess.createdById === userId
           );
           const playerMatchups = seriesBets.playerMatchupBets.flatMap((bet) => {
-            const matchingGuesses = (bet?.guesses ?? [] ).filter(
+            const matchingGuesses = (bet?.guesses ?? []).filter(
               (guess) => guess.createdById === userId
             );
             const player1 = bet.player1;
@@ -354,7 +364,7 @@ const ComparingPage: React.FC = () => {
           });
           const spontaneousGuesses = seriesBets.spontaneousBets.flatMap(
             (bet) => {
-              const matchingGuesses = (bet?.guesses??[]).filter(
+              const matchingGuesses = (bet?.guesses ?? []).filter(
                 (guess) => guess.createdById === userId
               );
               const player1 = bet.player1;
@@ -613,6 +623,13 @@ const ComparingPage: React.FC = () => {
         <CircularProgress />
       </div>
     );
+  }
+  if(isMobile){
+    return (
+      <p className="text-center text-gray-700 mt-4">
+        🛑 User comparison is only available on desktop.
+      </p>
+    )
   }
 
   return (

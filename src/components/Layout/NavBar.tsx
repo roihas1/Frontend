@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useUser } from "../providers&context/userContext";
-import { useLocation, Link, useNavigate } from "react-router-dom"; // Import Link from react-router-dom
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
 import { useError } from "../providers&context/ErrorProvider";
 import { useSuccessMessage } from "../providers&context/successMassageProvider";
@@ -12,146 +12,233 @@ import { useAuth } from "../providers&context/AuthContext";
 
 const Navbar: React.FC = () => {
   const { role, setRole } = useUser();
-  const location = useLocation(); // Get current location
+  const location = useLocation();
   const navigate = useNavigate();
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
   const { isLoggedIn, logout } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
     const leaguesPaths = ["/leagues", "/league", "/manageLeague"];
     return (
       location.pathname === path ||
       location.pathname.startsWith(path) ||
-      (leaguesPaths.includes(path) && (location.pathname.startsWith("/league") || location.pathname.startsWith("/manage")))
+      (leaguesPaths.includes(path) &&
+        (location.pathname.startsWith("/league") ||
+          location.pathname.startsWith("/manage")))
     );
   };
 
-  const toggleMenu = () => {
-    const menu = document.getElementById("navbar-default");
-    if (menu) {
-      menu.classList.toggle("hidden");
-    }
-  };
   const handleLogout = async () => {
     try {
       await axiosInstance.patch("/auth/logout", {
         username: localStorage.getItem("username"),
       });
-      showSuccessMessage("You logout, wait to see you again!");
-      // localStorage.removeItem("username");
-      // localStorage.removeItem("role");
-      // Cookies.remove("auth_token");
-      // Cookies.remove("tokenExipry");
-      logout()
+      showSuccessMessage("You logged out, see you again!");
+      logout();
       setRole("");
       navigate("/");
     } catch (error) {
-      showError("Failed to logout.Please try again later.");
+      showError("Failed to log out. Please try again later.");
     }
   };
- 
 
   return (
-    <nav className=" bg-gray-100 border-gray-200 border-b-2 shadow-md sticky top-0 dark:bg-gray-900  z-20">
-      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-0">
-        {/* Logo Section */}
+    <nav className="bg-gray-100 border-b-2 shadow-md  top-0 z-30">
+      <div className="max-w-screen-xl flex items-center justify-between mx-auto px-4 py-2">
+        {/* Logo and Title */}
         <Link
           to="/home"
-          className="flex items-center space-x-1 rtl:space-x-reverse"
+          className="flex items-center space-x-2"
           style={{
             pointerEvents: isLoggedIn ? "auto" : "none",
             opacity: isLoggedIn ? 1 : 0.5,
           }}
         >
-          <img src={Logo} className="h-20 rounded-md" alt="NBA Logo" />
-          {/* <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white"> */}
-          <img src={Title} className="h-16 w-3/5" />
-          {/* </span> */}
+          <img src={Logo} className="h-14 w-auto" alt="NBA Logo" />
+          <img
+            src={Title}
+            className="h-12 w-auto hidden sm:block"
+            alt="Title"
+          />
         </Link>
 
-        {/* Hamburger Menu Button */}
+        {/* Desktop Navigation - Unchanged */}
+        <div className="hidden md:flex space-x-8 items-center">
+          <NavLink
+            to="/home"
+            title="Home"
+            isActive={isActive("/home")}
+            isLoggedIn={isLoggedIn}
+          />
+          <NavLink
+            to="/leagues"
+            title="Leagues"
+            isActive={isActive("/leagues")}
+            isLoggedIn={isLoggedIn}
+          />
+          <NavLink
+            to="/comparing"
+            title="Comparison"
+            isActive={isActive("/comparing")}
+            isLoggedIn={isLoggedIn}
+          />
+          <NavLink
+            to="/HowToPlay"
+            title="How to Play?"
+            isActive={isActive("/HowToPlay")}
+            isLoggedIn={isLoggedIn}
+          />
+          <MissingBets />
+
+          {role === "ADMIN" && (
+            <NavLink
+              to="/updateBets"
+              title="Update Bets"
+              isActive={isActive("/updateBets")}
+              isLoggedIn={isLoggedIn}
+            />
+          )}
+
+          <div className="flex items-center">
+            <button
+              onClick={handleLogout}
+              className="text-red-500 hover:text-red-700 font-medium transition-colors duration-300"
+              disabled={!isLoggedIn}
+              style={{
+                pointerEvents: isLoggedIn ? "auto" : "none",
+                opacity: isLoggedIn ? 1 : 0.5,
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Button */}
         <button
-          data-collapse-toggle="navbar-default"
-          type="button"
-          className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-          aria-controls="navbar-default"
-          aria-expanded="false"
-          onClick={toggleMenu}
+          className="md:hidden p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          <span className="sr-only">Open main menu</span>
-          <svg
-            className="w-5 h-5"
-            aria-hidden="true"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 17 14"
-          >
-            <path
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {isMenuOpen ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
               strokeWidth="2"
-              d="M1 1h15M1 7h15M1 13h15"
-            />
-          </svg>
-        </button>
-
-        {/* Navigation Menu */}
-        <div className="hidden w-full md:block md:w-auto" id="navbar-default">
-          <ul className="font-medium flex flex-col p-4 md:p-1 mt-4 border border-gray-300 rounded-lg bg-gray-100 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-gray-100 dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-            <NavLink
-              to="/home"
-              title="Home"
-              isActive={isActive("/home")}
-              isLoggedIn={isLoggedIn}
-            />
-
-            <NavLink
-              to="/leagues"
-              title="Leagues"
-              isActive={isActive("/leagues")}
-              isLoggedIn={isLoggedIn}
-            />
-
-           
-
-            <NavLink
-              to="/comparing"
-              title="Comparison"
-              isActive={isActive("/comparing")}
-              isLoggedIn={isLoggedIn}
-            />
-             <NavLink
-              to="/HowToPlay"
-              title="How to Play?"
-              isActive={isActive("/HowToPlay")}
-              isLoggedIn={isLoggedIn}
-            />
-            <MissingBets  />
-
-            {role === "ADMIN" && (
-              <NavLink
-                to="/updateBets"
-                title="Update bets"
-                isActive={isActive("/updateBets")}
-                isLoggedIn={isLoggedIn}
+              stroke="currentColor"
+              className="w-7 h-7"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18 18 6M6 6l12 12"
               />
-            )}
-            <li>
-              <button
-                onClick={handleLogout}
-                className="`block py-2 px-3 rounded hover:bg-gray-100 md:hover:bg-transparent transition-transform transform  md:hover:text-colors-nba-blue md:p-1 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent"
-                disabled={!isLoggedIn}
-                style={{
-                  pointerEvents: isLoggedIn ? "auto" : "none",
-                  opacity: isLoggedIn ? 1 : 0.5,
-                }}
-              >
-                Logout
-              </button>
-            </li>
-          </ul>
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-7 h-7"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Mobile Navigation - Slide-in Menu */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-20"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+      <div
+        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-40 transform ${
+          isMenuOpen ? "translate-x-0" : "translate-x-full"
+        } transition-transform duration-300 ease-in-out md:hidden`}
+      >
+        <div className="flex flex-col h-full p-6 space-y-6">
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            className="self-end text-gray-600 text-2xl hover:text-black"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18 18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+
+          <NavLink
+            to="/home"
+            title="🏠 Home"
+            isActive={isActive("/home")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
+          <NavLink
+            to="/leagues"
+            title="🏆 Leagues"
+            isActive={isActive("/leagues")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
+          <NavLink
+            to="/comparing"
+            title="🔍 Comparison"
+            isActive={isActive("/comparing")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
+          <NavLink
+            to="/HowToPlay"
+            title="📖 How to Play?"
+            isActive={isActive("/HowToPlay")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
+          <MissingBets />
+
+          {role === "ADMIN" && (
+            <NavLink
+              to="/updateBets"
+              title="⚙️ Update Bets"
+              isActive={isActive("/updateBets")}
+              isLoggedIn={isLoggedIn}
+              handleUserClick={() => setIsMenuOpen(false)}
+            />
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="text-red-500 text-lg font-bold hover:text-red-700"
+            disabled={!isLoggedIn}
+            style={{
+              pointerEvents: isLoggedIn ? "auto" : "none",
+              opacity: isLoggedIn ? 1 : 0.5,
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
     </nav>

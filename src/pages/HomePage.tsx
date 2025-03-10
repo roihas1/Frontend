@@ -37,7 +37,13 @@ import { BestOf7Bet, PlayerMatchupBet, SpontaneousBet } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
-import { CircularProgress, Zoom } from "@mui/material";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  CircularProgress,
+  Zoom,
+} from "@mui/material";
 import { checkTokenExpiration } from "../types";
 // import PageBackground from "../components/common/PageBackground";
 // import backgroundLogo from "../assets/siteLogo/gray_only_ball_trans.png";
@@ -183,6 +189,7 @@ const HomePage: React.FC = () => {
     [key: string]: boolean;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
+  const [expanded, setExpanded] = useState<string | false>(false);
   // const getSeries = async () => {
   //   try {
   //     const updatedSeries: {
@@ -313,7 +320,7 @@ const HomePage: React.FC = () => {
   //     await Promise.all([ getSeries(),getPlayoffsStage(),checkIfGuessSeriesBetting(),getUserPointsPerSeries()])
   //   }
   //   // getSeries();
-    // getPlayoffsStage();
+  // getPlayoffsStage();
   //   // checkIfGuessSeriesBetting();
   //   setLoading(true);
   //   fetchData();
@@ -321,10 +328,9 @@ const HomePage: React.FC = () => {
   // }, []);
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); 
+      setLoading(true);
 
       try {
-       
         const [seriesData, playoffsStageData, userPointsData, guessData] =
           await Promise.all([
             axiosInstance.get("/series"),
@@ -333,15 +339,20 @@ const HomePage: React.FC = () => {
             axiosInstance.get("series/isUserGuessed/All"),
           ]);
 
-   
-        const updatedSeries: { west: Series[]; east: Series[]; finals: Series[] } = {
+        const updatedSeries: {
+          west: Series[];
+          east: Series[];
+          finals: Series[];
+        } = {
           west: [],
           east: [],
           finals: [],
         };
-        
+
         seriesData.data.forEach((element: Series) => {
-          return updatedSeries[element.conference.toLowerCase() as keyof typeof updatedSeries].push({
+          return updatedSeries[
+            element.conference.toLowerCase() as keyof typeof updatedSeries
+          ].push({
             id: element.id,
             team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
             team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
@@ -366,7 +377,7 @@ const HomePage: React.FC = () => {
         setUserPointsPerSeries(userPointsData.data);
         setIspartialGuess(guessData.data);
 
-        const upcomingStage = playoffsStageData.data.find((round:Stage) => {
+        const upcomingStage = playoffsStageData.data.find((round: Stage) => {
           const startDate = new Date(round.startDate);
           const time = round.timeOfStart.split(":");
           startDate.setHours(parseInt(time[0]));
@@ -381,7 +392,6 @@ const HomePage: React.FC = () => {
           setStage("Finish");
         }
 
-
         if (upcomingStage?.name && upcomingStage.name !== "Finish") {
           const checkGuessResponse = await axiosInstance.get(
             "/playoffs-stage/checkGuess/",
@@ -394,7 +404,7 @@ const HomePage: React.FC = () => {
       } catch {
         showError("Error fetching data.");
       } finally {
-        setLoading(false); 
+        setLoading(false);
       }
     };
 
@@ -587,6 +597,10 @@ const HomePage: React.FC = () => {
       </div>
     );
   };
+  const handleAccordionChange =
+    (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+      setExpanded(isExpanded ? panel : false);
+    };
   if (loading) {
     <div className="flex justify-center">
       <CircularProgress />
@@ -596,7 +610,158 @@ const HomePage: React.FC = () => {
   return (
     <div className="relative z-10  bg-gray-100 p-4">
       {/* Mobile View */}
-      {/* <MobileMatchupList series={series} /> */}
+
+      <div className="md:hidden">
+       
+        {[
+          "NBA Finals",
+          "Conference Finals",
+          "Conference Semifinals",
+          "First Round",
+        ].map((round) => {
+          // Filter conferences that have matchups in this round
+          const conferencesWithMatchups = ["finals", "west", "east"].filter(
+            (conference) =>
+              series[conference as keyof typeof series].some(
+                (matchup) => matchup.round === round
+              )
+          );
+
+          if (conferencesWithMatchups.length === 0) return null; // Skip if no matchups in this round
+
+          return (
+            <div key={round} className="mb-6">
+              {/* Round Title (Skip "NBA Finals" title) */}
+
+              <h3 className="text-lg font-bold text-center bg-gray-300 p-2 rounded-md mb-2">
+                {round}
+              </h3>
+
+              {/* Loop through conferences that have matchups in this round */}
+              {conferencesWithMatchups.map((conference) => {
+                const matchupsInRound = series[
+                  conference as keyof typeof series
+                ].filter((matchup) => matchup.round === round);
+
+                if (matchupsInRound.length === 0) return null; // Skip empty conferences
+
+                const conferenceName =
+                  conference === "west"
+                    ? "Western Conference"
+                    : conference === "east"
+                    ? "Eastern Conference"
+                    : "NBA Finals";
+
+                return (
+                  <div key={conference} className="mb-4">
+                    {/* Conference Title (Skip if it's the NBA Finals) */}
+                    {conference !== "finals" && (
+                      <h4 className="text-md font-semibold text-center bg-gray-200 p-1 rounded-md mb-2">
+                        {conferenceName}
+                      </h4>
+                    )}
+
+                    {matchupsInRound.map((matchup) => (
+                      <Accordion
+                        key={matchup.id}
+                        expanded={expanded === matchup.id}
+                        onChange={handleAccordionChange(matchup.id ?? "")}
+                        className="mb-2"
+                      >
+                        <AccordionSummary
+                          expandIcon={
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="1.5"
+                              stroke="currentColor"
+                              className="size-4"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                              />
+                            </svg>
+                          }
+                          className="bg-gray-200 p-2 rounded-lg flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={matchup.logo1}
+                              alt={matchup.team1}
+                              className="w-14 h-12"
+                            />
+                            <p className="font-semibold">
+                              {matchup.team1} vs {matchup.team2}
+                            </p>
+                            <img
+                              src={matchup.logo2}
+                              alt={matchup.team2}
+                              className="w-14 h-12"
+                            />
+                          </div>
+
+                          {/* Yellow "I" Icon for Missing Bets */}
+                          {!isPartialGuess[matchup.id ?? ""] && (
+                            <Tooltip
+                              title="Missing guesses"
+                              arrow
+                              placement="bottom"
+                              disableHoverListener={true}
+                              disableFocusListener={false}
+                              disableInteractive={false}
+                              enterTouchDelay={0}
+                              leaveTouchDelay={1500}
+                            >
+                              <button
+                                className="p-1 focus:outline-none"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  className="w-5 h-5 text-yellow-500"
+                                >
+                                  <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="9"
+                                    fill="#FDB927"
+                                  />
+                                  <path
+                                    fill="white"
+                                    d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                                  />
+                                </svg>
+                              </button>
+                            </Tooltip>
+                          )}
+                        </AccordionSummary>
+
+                        <AccordionDetails className="bg-white p-4">
+                          {/* Matchup Details */}
+                          <p className="text-sm font-medium text-gray-600">
+                            <strong>Series start date:</strong>{" "}
+                            {new Date(matchup.dateOfStart).toLocaleString()}
+                          </p>
+                          <NBASeedCard
+                            series={matchup}
+                            userPoints={0}
+                            fetchData={() => {}}
+                          />
+                        </AccordionDetails>
+                      </Accordion>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
       {/* Desktop View */}
 

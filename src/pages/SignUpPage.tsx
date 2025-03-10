@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-// import PageBackground from "../components/common/PageBackground";
 import SubmitButton from "../components/common/SubmitButton";
 import InputField from "../components/form/FormInput";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
@@ -11,13 +10,15 @@ import { AxiosError } from "axios";
 import AuthCard from "../components/Layout/AuthCard";
 
 const SignUpPage: React.FC = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  // Adding TypeScript types to state variables
+  const [username, setUsername] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+
   const { showError } = useError();
   const navigate = useNavigate();
   const { showSuccessMessage } = useSuccessMessage();
@@ -64,11 +65,11 @@ const SignUpPage: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center  w-full bg-gray-100">
+    <div className="flex flex-col md:flex-row items-center justify-center  w-full bg-gray-100 p-4 sm:p-8">
       {/* Left Side: Sign Up Form */}
-      <div className="w-3/5 flex flex-col items-center justify-center ">
+      <div className="w-full md:w-3/5 flex flex-col items-center justify-center">
         <AuthCard title="Sign Up" description="Enter your details below to create your account and get started">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <InputField
               id="username"
               label="Username"
@@ -76,6 +77,7 @@ const SignUpPage: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              
             />
             <InputField
               id="email"
@@ -84,6 +86,7 @@ const SignUpPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              
             />
             <InputField
               id="firstName"
@@ -92,6 +95,7 @@ const SignUpPage: React.FC = () => {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
+              
             />
             <InputField
               id="lastName"
@@ -100,6 +104,7 @@ const SignUpPage: React.FC = () => {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
+              
             />
             <InputField
               id="password"
@@ -108,6 +113,7 @@ const SignUpPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              
             />
             <InputField
               id="confirmPassword"
@@ -116,16 +122,17 @@ const SignUpPage: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              
             />
             <div className="col-span-full flex justify-center">
-              <SubmitButton loading={loading} text="Sign Up" />
+              <SubmitButton loading={loading} text="Sign Up" className="w-full sm:w-auto" />
             </div>
           </form>
         </AuthCard>
 
         <div className="mt-4 text-center">
           <p className="text-sm text-gray-600">
-            Already have an account or want to sign up with google?{" "}
+            Already have an account or want to sign up with Google?{" "}
             <Link to="/login" className="text-colors-nba-blue hover:text-colors-nba-red">
               Login
             </Link>
@@ -133,9 +140,9 @@ const SignUpPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Side: Bigger Logo */}
-      <div className="w-3/5 flex items-center justify-center">
-        <img src={Logo} alt="NBA Logo" className="w-4/5 max-w-2xl" />
+      {/* Right Side: Logo (Hidden on Mobile) */}
+      <div className="hidden sm:flex w-3/5 items-center justify-center">
+        <img src={Logo} alt="NBA Logo" className="w-4/5 max-w-xs md:max-w-2xl" />
       </div>
     </div>
   );
