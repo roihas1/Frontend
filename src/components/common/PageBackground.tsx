@@ -5,8 +5,8 @@ interface PageBackgroundProps {
 }
 
 const PageBackground: React.FC<PageBackgroundProps> = ({ imageSrc }) => (
-  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0 flex items-center justify-center w-full h-full">
-    <img src={imageSrc} alt="Background" className="w-full max-w-2xl opacity-20 object-contain" />
+  <div className="absolute inset-0 flex items-center justify-center z-0">
+    <img src={imageSrc} alt="Background" className="w-full h-full object-contain opacity-20" />
   </div>
 );
 
