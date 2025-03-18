@@ -13,6 +13,7 @@ import { User } from "../types";
 import { useNavigate } from "react-router-dom";
 import ActionButtons from "../components/forPages/ActionButtons";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import axios from "axios";
 
 export interface League {
   id?: string;
@@ -91,10 +92,16 @@ const LeaguesSelectionPage: React.FC = () => {
       showSuccessMessage(response.data.message);
       setShowJoinLeague(false);
       fetchLeagues();
-    } catch(error) {
-      showError(`Failed to join to a league. ${error.response.data.message}`);
+    } catch (error) {
+      // ✅ Check if the error is an Axios error
+      if (axios.isAxiosError(error) && error.response) {
+        showError(`Failed to join a league. ${error.response.data.message}`);
+      } else {
+        showError(`Failed to join a league. Unexpected error occurred.`);
+      }
     }
   };
+  
   const fetchUser = async () => {
     try {
       const response = await axiosInstance.get("/auth/user");
