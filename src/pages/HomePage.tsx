@@ -376,7 +376,7 @@ const HomePage: React.FC = () => {
         setSeries(updatedSeries);
         setUserPointsPerSeries(userPointsData.data);
         setIspartialGuess(guessData.data);
-
+      
         const upcomingStage = playoffsStageData.data.find((round: Stage) => {
           const startDate = new Date(round.startDate);
           const time = round.timeOfStart.split(":");

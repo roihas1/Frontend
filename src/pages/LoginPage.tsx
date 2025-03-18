@@ -45,6 +45,7 @@ const LoginPage: React.FC = () => {
       Cookies.set("auth_token", accessToken, { expires: expiresInSeconds / (24 * 60 * 60) });
       localStorage.setItem("username", username);
       localStorage.setItem("role", userRole);
+      
       setRole(userRole);
       setIsLoggedIn(true);
       checkAuthStatus();

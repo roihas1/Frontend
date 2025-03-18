@@ -91,8 +91,8 @@ const LeaguesSelectionPage: React.FC = () => {
       showSuccessMessage(response.data.message);
       setShowJoinLeague(false);
       fetchLeagues();
-    } catch {
-      showError(`Failed to join to a league.`);
+    } catch(error) {
+      showError(`Failed to join to a league. ${error.response.data.message}`);
     }
   };
   const fetchUser = async () => {
