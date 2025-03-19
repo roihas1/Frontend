@@ -3,6 +3,8 @@ services:
     container_name: playoff-frontend
     image: roihass/playoff-frontend:latest
     restart: always
+    environment:
+        VITE_BASE_URL: "<api-url>"
     ports:
       - "8080:80" # Exposes frontend on http://localhost:5173
     networks:
