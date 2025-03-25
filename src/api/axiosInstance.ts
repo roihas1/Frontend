@@ -2,8 +2,9 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import "react-toastify/dist/ReactToastify.css";
 
+const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL
 const axiosInstance = axios.create({
-  baseURL: `${import.meta.env.VITE_BASE_URL}`, // Replace with your backend URL
+  baseURL: baseUrl, // Replace with your backend URL
 });
 
 
@@ -36,7 +37,7 @@ const handleLogout = () => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    
+    console.log(config);
     if (isAuthRequest(config.url || "")) {
       return config; // Skip token check for login/signup
     }

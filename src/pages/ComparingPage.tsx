@@ -250,18 +250,13 @@ const ComparingPage: React.FC = () => {
     }
     for (const key of Object.keys(allSeriesBets)) {
       if (new Date(allSeriesBets[key].startDate) < new Date()) {
-        if (
-          allSeriesBets[key].playerMatchupBets.some(
-            (bet) => (bet?.guesses ?? []).length > 0
-          )
-        ) {
           name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
           seriesKey = key;
           setSelectedSeries(key);
           setSelectedSeriesName(name);
           setShowSeriesSelection(true);
           break;
-        }
+        
       }
     }
     if (allSeriesBets && users) {
@@ -347,7 +342,7 @@ const ComparingPage: React.FC = () => {
         if (showSeriesSelection) {
           const id = seriesId ? seriesId : selectedSeries;
           const seriesBets = allSeriesBets[id];
-          console.log(seriesBets.bestOf7Bet);
+          console.log(seriesId,selectedSeries);
           const bestOf7Guess = seriesBets.bestOf7Bet.guesses.filter(
             (guess) => guess.createdById === userId
           );

@@ -1,6 +1,8 @@
 // src/types/index.ts
 import Cookies from "js-cookie";
 import axiosInstance from "../api/axiosInstance";
+
+
 export interface Guess {
     id: string;
     guess: number;
