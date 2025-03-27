@@ -101,7 +101,7 @@ const LeaguesSelectionPage: React.FC = () => {
       }
     }
   };
-  
+
   const fetchUser = async () => {
     try {
       const response = await axiosInstance.get("/auth/user");
@@ -160,9 +160,9 @@ const LeaguesSelectionPage: React.FC = () => {
         </div>
       )}
       {showJoinLeague && (
-        <div className="w-1/3 ">
-          <h3 className="flex justify-center text-2xl font-semibold">
-            Join Leauge
+        <div className="w-1/2 sm:w-1/5">
+          <h3 className="text-center text-xl sm:text-2xl font-semibold mb-4">
+            Join League
           </h3>
           <FormControl fullWidth required>
             <Input
@@ -188,8 +188,8 @@ const LeaguesSelectionPage: React.FC = () => {
         </div>
       )}
       {showCreateNewLeague && (
-        <div className="w-1/3 ">
-          <h3 className="flex justify-center text-2xl font-semibold">
+        <div className="w-1/2 sm:w-1/5 ">
+          <h3 className="text-center text-xl sm:text-2xl font-semibold mb-4">
             Create New League
           </h3>
           <FormControl fullWidth required>

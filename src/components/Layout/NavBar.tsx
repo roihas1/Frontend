@@ -158,7 +158,7 @@ const Navbar: React.FC = () => {
       {/* Mobile Navigation - Slide-in Menu */}
       {isMenuOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-20"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setIsMenuOpen(false)}
         />
       )}

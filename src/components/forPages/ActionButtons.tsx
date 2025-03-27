@@ -19,7 +19,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
   disabled = false,
 }) => {
   return (
-    <div className="flex justify-between mt-4 mb-4">
+    <div className="flex justify-between mt-4 mb-4 space-x-4">
       <button
         type="button"
         onClick={onClick1}
