@@ -274,7 +274,10 @@ const UpdateBetsPage: React.FC = () => {
         const startDate = new Date(startDateSpontaneous);
         startDate.setHours(parseInt(time[0]));
         startDate.setMinutes(parseInt(time[1]));
-
+        if(!("gameNumber" in selectedBet) ){
+          showError("Select game number bigger then 0!")
+          return;
+        }
         const response = await axiosInstance.post(`/spontaneous-bet`, {
           categories: selectedBet.categories,
           fantasyPoints: selectedBet.fantasyPoints,

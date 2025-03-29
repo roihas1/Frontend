@@ -160,7 +160,7 @@ const BetForm: React.FC<BetFormProps> = ({
                 value={
                   "gameNumber" in selectedBet && selectedBet.gameNumber
                     ? selectedBet.gameNumber.toString()
-                    : "1"
+                    : "0"
                 }
                 onChange={handleGameNumberSelection}
                 sx={{
@@ -171,7 +171,7 @@ const BetForm: React.FC<BetFormProps> = ({
                   },
                 }}
               >
-                {Array.from([1, 2, 3, 4, 5, 6, 7]).map((num) => (
+                {Array.from([0,1, 2, 3, 4, 5, 6, 7]).map((num) => (
                   <MenuItem
                     key={num}
                     value={num}

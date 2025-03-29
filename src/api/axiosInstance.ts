@@ -37,7 +37,6 @@ const handleLogout = () => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    console.log(config);
     if (isAuthRequest(config.url || "")) {
       return config; // Skip token check for login/signup
     }
