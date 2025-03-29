@@ -65,7 +65,8 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      window.location.href = `http://localhost:3000/auth/google/login`;
+      const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL
+      window.location.href = `${baseUrl}/auth/google/login`;
     } catch {
       showError(`Failed to login with Google. Try again later.`);
       setLoading(false);
