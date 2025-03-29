@@ -65,7 +65,7 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL
+      // const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL
       window.location.href = `https://beyond-the-bracket.com/auth/google/login`;
     } catch {
       showError(`Failed to login with Google. Try again later.`);
