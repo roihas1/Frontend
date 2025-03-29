@@ -1307,7 +1307,7 @@ const UpdateBetsPage: React.FC = () => {
                 Matchup Result
               </label>
               <label className="block text-lg font-semibold">
-                {selectedBet?.player1}
+                {selectedBet?.player1} (Overall: {selectedBet?.currentStats[0]})
               </label>
               <input
                 type="number"
@@ -1317,7 +1317,7 @@ const UpdateBetsPage: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               ></input>
               <label className="block text-lg font-semibold">
-                {selectedBet?.player2}
+                {selectedBet?.player2} (Overall: {selectedBet?.currentStats[1]})
               </label>
               <input
                 type="number"
