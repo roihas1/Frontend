@@ -3,6 +3,6 @@
 
 
 window.RUNTIME_CONFIG = {
-    VITE_BASE_URL: "$VITE_BASE_URL"
+    VITE_BASE_URL: "https://api.beyond-the-bracket.com/"
   };
   
