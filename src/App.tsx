@@ -19,6 +19,8 @@ import LeaguesSelectionPage from "./pages/LeagueSelectionPage";
 import ManageLeague from "./pages/ManageLeaguePage";
 import { AuthProvider } from "./components/providers&context/AuthContext";
 import { MissingBetsProvider } from "./components/providers&context/MissingBetsContext";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfUsePage from "./pages/TermsOfUsePage";
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
                       <Route path="/HowtoPlay" element={<HowToPlayPage />} />
                       <Route path="/redirect" element={<OAuthRedirectPage />} />
                       <Route path="/manageLeague" element={<ManageLeague />} />
+                      <Route path='/privacyPolicy' element={<PrivacyPolicyPage/>} />
+                      <Route path='/TermsOfuse' element={<TermsOfUsePage/>}/>
                     </Routes>
                   </main>
                   <Footer />
