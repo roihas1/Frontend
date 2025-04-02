@@ -137,6 +137,8 @@ export interface BestOf7Bet {
     BLOCKS = "Blocks",
     THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
     TURNOVERS = "Turnovers",
+    DOUBLE_DOUBLE = 'Double Double',
+    TRIPLE_DOUBLE = 'Triple Double',
   }
   export const nbaTeamsList = [
     { teamName: "Atlanta Hawks", conference: "East" },

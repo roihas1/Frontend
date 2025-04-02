@@ -461,7 +461,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                 {numOfSpontaneousBets === 0 ? (
                   <p className="text-xs sm:text-base">Bets are now closed.</p>
                 ) : (
-                  <br />
+                  <p className="text-xs sm:text-base">Check spontaneous bets</p>
                 )}
 
                 <p className="text-xs sm:text-base mt-1">
@@ -489,7 +489,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           <div className="mt-4 ">
             {/* Dropdown for selecting number of games */}
             <h4 className="text-lg font-semibold mb-2 flex justify-center">
-              Choose the number of games
+              Select the number of games
             </h4>
             <div className="flex justify-center mb-4">
               <select
@@ -508,7 +508,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
             {/* Team Selection with Radio Buttons */}
             <h4 className="text-lg font-semibold mb-2 text-center">
-              Choose the winner of the series
+              Select the winner of the series
             </h4>
 
             <ul className="space-y-4">
@@ -649,6 +649,21 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     ).map((game) => <Tab key={game} label={game} />)}
                 </Tabs>
               </Box>
+
+              <p className="bg-colors-nba-blue bg-opacity-40 shadow-md rounded-lg text-center mx-auto my-4 p-2 w-fit text-sm font-medium text-gray-800">
+                Game start:{" "}
+                {(() => {
+                  const startTime = series.spontaneousBets?.find(
+                    (bet) => bet.gameNumber === gamesTab
+                  )?.startTime;
+                  return startTime
+                    ? new Date(startTime).toLocaleString("he-IL", {
+                        timeZone: "Asia/Jerusalem",
+                      })
+                    : "No time available";
+                })()}
+              </p>
+
               <BetsDisplay
                 bets={
                   series.spontaneousBets?.filter(

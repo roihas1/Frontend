@@ -100,6 +100,12 @@ const Navbar: React.FC = () => {
               isLoggedIn={isLoggedIn}
             />
           )}
+          <NavLink
+            to="/AboutUs"
+            title="About Us"
+            isActive={isActive("/AboutUs")}
+            isLoggedIn={isLoggedIn}
+          />
 
           <div className="flex items-center">
             <button
@@ -227,6 +233,13 @@ const Navbar: React.FC = () => {
               handleUserClick={() => setIsMenuOpen(false)}
             />
           )}
+          <NavLink
+            to="/AboutUs"
+            title="👥 About Us"
+            isActive={isActive("/AboutUs")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
 
           <button
             onClick={handleLogout}

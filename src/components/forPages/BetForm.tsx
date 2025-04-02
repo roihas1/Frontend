@@ -40,6 +40,7 @@ const BetForm: React.FC<BetFormProps> = ({
   startDate,
   startTime,
 }) => {
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Matchup Type */}

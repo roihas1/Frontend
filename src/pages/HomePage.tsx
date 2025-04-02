@@ -41,7 +41,9 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Box,
   CircularProgress,
+  Modal,
   Zoom,
 } from "@mui/material";
 import { checkTokenExpiration } from "../types";
@@ -190,6 +192,8 @@ const HomePage: React.FC = () => {
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<string | false>(false);
+  const [showMobileChampInput, setShowMobileChampInput] =
+    useState<boolean>(false);
   // const getSeries = async () => {
   //   try {
   //     const updatedSeries: {
@@ -376,7 +380,7 @@ const HomePage: React.FC = () => {
         setSeries(updatedSeries);
         setUserPointsPerSeries(userPointsData.data);
         setIspartialGuess(guessData.data);
-      
+
         const upcomingStage = playoffsStageData.data.find((round: Stage) => {
           const startDate = new Date(round.startDate);
           const time = round.timeOfStart.split(":");
@@ -612,7 +616,38 @@ const HomePage: React.FC = () => {
       {/* Mobile View */}
 
       <div className="md:hidden">
-       
+        <div className="flex justify-center">
+        <button
+          className="bg-gray-300 text-md text-center rounded-lg text-black font-semibold shadow-md p-2 mb-4"
+          onClick={() => setShowMobileChampInput(true)}
+        >
+          {" "}
+          Open Champoins Bets
+        </button>
+        </div>
+        <Modal open={showMobileChampInput} onClose={()=> setShowMobileChampInput(false)}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "0",
+            left: "0",
+            bgcolor: "background.paper",
+            p: 4,
+            borderRadius: 2,
+            maxWidth: "100vw",
+            maxHeight: "100vh",
+            overflowY: "auto",
+          }}
+        >
+          <ChampionsInput
+            west={series.west}
+            east={series.east}
+            startDate={stageStartDate}
+            stage={stage}
+            setShowInput={()=> setShowMobileChampInput(false)}
+          />
+        </Box>
+      </Modal>
         {[
           "NBA Finals",
           "Conference Finals",
@@ -691,7 +726,7 @@ const HomePage: React.FC = () => {
                             <img
                               src={matchup.logo1}
                               alt={matchup.team1}
-                              className="w-14 h-12"
+                              className="w-12 h-14"
                             />
                             <p className="font-semibold">
                               {matchup.team1} vs {matchup.team2}
@@ -699,7 +734,7 @@ const HomePage: React.FC = () => {
                             <img
                               src={matchup.logo2}
                               alt={matchup.team2}
-                              className="w-14 h-12"
+                              className="w-12 h-14"
                             />
                           </div>
 

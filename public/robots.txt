@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://beyond-the-bracket.com/sitemap.xml

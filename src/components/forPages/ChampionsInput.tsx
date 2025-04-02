@@ -126,12 +126,28 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     }
   };
   const playersList = [
-    "Lebron James",
-    "Steph Curry",
-    "SGA",
+    "LeBron James",
+    "Stephen Curry",
+    "Shai Gilgeous-Alexander",
     "Nikola Jokic",
-    "Jason Tatum",
+    "Jayson Tatum",
+    "Giannis Antetokounmpo",
+    "Kevin Durant",
+    "Kawhi Leonard",
+    "Anthony Edwards",
+    "Luka Doncic",
+    "Devin Booker",
+    "Jaylen Brown",
+    "Jimmy Butler",
+    "Jamal Murray",
+    "Tyrese Haliburton",
+    "Donovan Mitchell",
+    "Jalen Brunson",
+    "Cade Cunningham",
+    "James Harden",
+    "Amen Thompson",
   ];
+  
   // Validate fields
   const validateFields = () => {
     return (

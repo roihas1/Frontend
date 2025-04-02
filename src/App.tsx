@@ -21,6 +21,7 @@ import { AuthProvider } from "./components/providers&context/AuthContext";
 import { MissingBetsProvider } from "./components/providers&context/MissingBetsContext";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
+import AboutUsPage from "./pages/AboutUsPage";
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
                       <Route path="/manageLeague" element={<ManageLeague />} />
                       <Route path='/privacyPolicy' element={<PrivacyPolicyPage/>} />
                       <Route path='/TermsOfuse' element={<TermsOfUsePage/>}/>
+                      <Route path='/AboutUs' element={<AboutUsPage/>}/>
                     </Routes>
                   </main>
                   <Footer />

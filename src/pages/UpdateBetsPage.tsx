@@ -205,19 +205,24 @@ const UpdateBetsPage: React.FC = () => {
   ) => {
     if (selectedBet) {
       const { name, type, value } = e.target;
-  
+
       // If the input is a select element, cast e.target to HTMLSelectElement
       if (name === "categories" && e.target instanceof HTMLSelectElement) {
         const selectElement = e.target as HTMLSelectElement; // Explicit cast
         const selectedCategories = Array.from(selectElement.options)
           .filter((option) => option.selected)
           .map((option) => option.value as MatchupCategory);
-  
+
         setSelectedBet({
           ...selectedBet,
-          categories: [...new Set([...selectedBet.categories, selectedCategories[0]])],
+          categories: [
+            ...new Set([...selectedBet.categories, selectedCategories[0]]),
+          ],
         });
-      } else if (name === "typeOfMatchup" && e.target instanceof HTMLSelectElement) {
+      } else if (
+        name === "typeOfMatchup" &&
+        e.target instanceof HTMLSelectElement
+      ) {
         const selectElement = e.target as HTMLSelectElement; // Explicit cast
         setSelectedBet({
           ...selectedBet,
@@ -237,14 +242,17 @@ const UpdateBetsPage: React.FC = () => {
       }
     }
   };
-  
-  
 
   // Handle bet selection for editing
   const handleBetSelection = (bet: PlayerMatchupBet | SpontaneousBet) => {
     setSelectedBet(bet);
     setIsInEdit(true);
     setCreateNewBet(true);
+    if ("gameNumber" in bet) {
+      setIsSpontaneousBet(true);
+    } else {
+      setIsSpontaneousBet(false);
+    }
   };
 
   const handleResetSelectedBet = () => {
@@ -274,8 +282,8 @@ const UpdateBetsPage: React.FC = () => {
         const startDate = new Date(startDateSpontaneous);
         startDate.setHours(parseInt(time[0]));
         startDate.setMinutes(parseInt(time[1]));
-        if(!("gameNumber" in selectedBet) ){
-          showError("Select game number bigger then 0!")
+        if (!("gameNumber" in selectedBet)) {
+          showError("Select game number bigger then 0!");
           return;
         }
         const response = await axiosInstance.post(`/spontaneous-bet`, {
@@ -352,7 +360,7 @@ const UpdateBetsPage: React.FC = () => {
         await axiosInstance.patch(`/series/${selectedSeries?.id}/closeBets`);
         showSuccessMessage("Bets closed successfully!");
         setSelectedSeries(null);
-      } catch  {
+      } catch {
         // console.error(error.response ? error.response.data : error.message);
         showError("Failed to close all bets.");
       } finally {
@@ -420,10 +428,9 @@ const UpdateBetsPage: React.FC = () => {
         round: "First Round",
         dateOfStart: new Date(),
         numOfGames: 0,
-        timeOfStart: "",  
-        lastUpdate: new Date(),  
+        timeOfStart: "",
+        lastUpdate: new Date(),
       });
-      
 
       showSuccessMessage("New series created successfully!");
       setShowCreateSeriesForm(false); // Close the form
@@ -1198,10 +1205,14 @@ const UpdateBetsPage: React.FC = () => {
                 }
                 onChange={(e) => {
                   console.log(e.target.value);
-                  setSelectedSeries((prevSeries) => prevSeries ? ({
-                    ...prevSeries,
-                    dateOfStart: new Date(e.target.value),
-                  }) : null);
+                  setSelectedSeries((prevSeries) =>
+                    prevSeries
+                      ? {
+                          ...prevSeries,
+                          dateOfStart: new Date(e.target.value),
+                        }
+                      : null
+                  );
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />
@@ -1214,10 +1225,14 @@ const UpdateBetsPage: React.FC = () => {
                 value={selectedSeries.timeOfStart}
                 onChange={(e) => {
                   console.log(e.target.value);
-                  setSelectedSeries((prevSeries) => prevSeries ? ({
-                    ...prevSeries,
-                    timeOfStart: e.target.value,
-                  }) : null);
+                  setSelectedSeries((prevSeries) =>
+                    prevSeries
+                      ? {
+                          ...prevSeries,
+                          timeOfStart: e.target.value,
+                        }
+                      : null
+                  );
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />

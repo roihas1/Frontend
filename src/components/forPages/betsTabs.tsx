@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Tabs, Tab, Box, Typography } from "@mui/material";
-import { PlayerMatchupBet } from "../../types";
+import { PlayerMatchupBet, SpontaneousBet } from "../../types";
 
 // Define Bet Type
 
@@ -8,7 +8,7 @@ import { PlayerMatchupBet } from "../../types";
 // Props for BetsTabs Component
 interface BetsTabsProps {
   bets: PlayerMatchupBet[];
-  spontaneousBets: PlayerMatchupBet[];
+  spontaneousBets: SpontaneousBet[];
   handleBetSelection: (bet: PlayerMatchupBet) => void;
   handleBetSelectionForUpdateResult: (bet: PlayerMatchupBet) => void;
   handleDeleteBet: (bet: PlayerMatchupBet, isSpontaneous:boolean) => void;
@@ -22,8 +22,14 @@ const BetsTabs: React.FC<BetsTabsProps> = ({
   handleBetSelectionForUpdateResult,
   handleDeleteBet,
 }) => {
-  const [selectedTab, setSelectedTab] = React.useState<number>(0); // 0 for Bets, 1 for Spontaneous Bets
+  const [selectedTab, setSelectedTab] = useState<number>(0); // 0 for Bets, 1 for Spontaneous Bets
+  const [activeGameTab, setActiveGameTab] =useState<number>(0);
 
+ 
+  // Extract unique gameNumbers for spontaneous bets
+  const uniqueGameNumbers = [
+    ...new Set(spontaneousBets?.map((bet) => bet.gameNumber)),
+  ];
   const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
     event.preventDefault();
     setSelectedTab(newValue);
@@ -57,22 +63,46 @@ const BetsTabs: React.FC<BetsTabsProps> = ({
         </Box>
       )}
 
-      {/* Spontaneous Bets Tab Content */}
-      {selectedTab === 1 && (
+       {/* Spontaneous Bets with Game Tabs */}
+       {selectedTab === 1 && (
         <Box className="mt-4">
           {spontaneousBets?.length > 0 ? (
-            spontaneousBets.map((bet) => (
-              <BetCard
-                key={bet.id}
-                bet={bet}
-                handleBetSelection={handleBetSelection}
-                handleBetSelectionForUpdateResult={handleBetSelectionForUpdateResult}
-                handleDeleteBet={handleDeleteBet}
-                isSpontaneous= {true}
-              />
-            ))
+            <>
+              {/* Game Tabs */}
+              <Tabs
+                value={activeGameTab}
+                onChange={(e, newValue) => setActiveGameTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                centered
+                className="mb-4"
+              >
+                {uniqueGameNumbers.map((gameNum, index) => (
+                  <Tab key={gameNum} label={`Game ${gameNum}`} />
+                ))}
+              </Tabs>
+
+              {/* Bets in selected game */}
+              {spontaneousBets
+                .filter(
+                  (bet) =>
+                    bet.gameNumber === uniqueGameNumbers[activeGameTab]
+                )
+                .map((bet) => (
+                  <BetCard
+                    key={bet.id}
+                    bet={bet}
+                    handleBetSelection={handleBetSelection}
+                    handleBetSelectionForUpdateResult={handleBetSelectionForUpdateResult}
+                    handleDeleteBet={handleDeleteBet}
+                    isSpontaneous={true}
+                  />
+                ))}
+            </>
           ) : (
-            <Typography className="text-center text-gray-500 mt-4">No Spontaneous Bets Found</Typography>
+            <Typography className="text-center text-gray-500 mt-4">
+              No Spontaneous Bets Found
+            </Typography>
           )}
         </Box>
       )}
@@ -95,7 +125,7 @@ const BetCard: React.FC<BetCardProps> = ({ bet, handleBetSelection, handleBetSel
     <div className="mb-4 p-4 border border-gray-300 rounded-lg w-full max-w-full mx-auto">
       <div className="flex justify-between">
         <span className="p-4">
-          {bet.player1} vs {bet.player2}
+          {bet.player1} vs {bet.player2} ({bet.categories.join(" & ")})
         </span>
         <div className="flex space-x-2">
           <button
