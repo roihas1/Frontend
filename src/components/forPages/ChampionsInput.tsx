@@ -333,7 +333,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       </div>
     );
   }
-
+  const lastDate = new Date(startDate).toLocaleString("he-IL", {
+    timeZone: "Asia/Jerusalem",
+  })
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
       {stage !== "Before playoffs" && (
@@ -349,9 +351,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         <p>
           You have until{" "}
           <span className="font-semibold">
-            {new Date(startDate).toLocaleString("he-IL", {
-              timeZone: "Asia/Jerusalem",
-            })}
+            {lastDate}
           </span>{" "}
           to make your guesses.
         </p>

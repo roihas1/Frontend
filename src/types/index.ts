@@ -92,7 +92,7 @@ export interface BestOf7Bet {
     teamWinGuesses: TeamWinGuess[];
     playerMatchupGuesses: PlayerMatchupGuess[];
   }
-  
+
   export const checkTokenExpiration = () => {
     
     const tokenExpiry = Cookies.get("tokenExpiry");
@@ -117,6 +117,7 @@ export interface BestOf7Bet {
       localStorage.removeItem('username');
       localStorage.removeItem('role');
       localStorage.removeItem('token');
+      
       
       window.location.href = '/login';
     } catch (error) {

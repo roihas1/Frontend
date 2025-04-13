@@ -6,6 +6,7 @@ import SubmitButton from "../components/common/SubmitButton";
 import { Series } from "./HomePage";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import {
+  CircularProgress,
   FormControl,
   Input,
   InputLabel,
@@ -125,7 +126,7 @@ const UpdateBetsPage: React.FC = () => {
 
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
-  checkTokenExpiration();
+  // checkTokenExpiration();
   // Fetch all series
   useEffect(() => {
     const fetchSeries = async () => {
@@ -270,6 +271,7 @@ const UpdateBetsPage: React.FC = () => {
       playerGames: [0, 0],
     });
   };
+
   // Handle form submission for new or updated bet
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,6 +360,7 @@ const UpdateBetsPage: React.FC = () => {
     ) {
       try {
         await axiosInstance.patch(`/series/${selectedSeries?.id}/closeBets`);
+        // await axiosInstance.patch(`/user-series-points/user/updatePoints/all`);
         showSuccessMessage("Bets closed successfully!");
         setSelectedSeries(null);
       } catch {
@@ -377,6 +380,14 @@ const UpdateBetsPage: React.FC = () => {
     handleResetSelectedBet();
     setCreateNewBet(true);
   };
+  const handleUpdateMissingBets = async ()=>{
+    try{
+      await axiosInstance.patch(`/user-missing-bets/user/updateAllUsers`)
+      showSuccessMessage(`Update all missing bets to all users!`)
+    }catch(error){
+      showError(`Failed to update Missing Bets ${error}`)
+    }
+  }
   const handleCreateNewSpontaneousBet = () => {
     handleResetSelectedBet();
     setCreateNewBet(true);
@@ -720,6 +731,13 @@ const UpdateBetsPage: React.FC = () => {
       setIsInEdit(false);
     }
   };
+    if (loading) {
+      return (
+        <div className="fixed inset-0 z-50 bg-gray-100 bg-opacity-80 flex justify-center items-center">
+          <CircularProgress />
+        </div>
+      );
+    }
 
   return (
     <div className="flex flex-col  ">
@@ -1303,6 +1321,7 @@ const UpdateBetsPage: React.FC = () => {
           !showSeriesResultForm &&
           !showUpdateSeriesTime && (
             <div className="flex justify-center space-x-2 mt-4">
+              <SubmitButton loading={loading} text={"Update Missing Bets"} disabled={false} onClick={handleUpdateMissingBets}/>
               <SubmitButton
                 loading={loading}
                 text="Create New Bet"
@@ -1314,7 +1333,7 @@ const UpdateBetsPage: React.FC = () => {
                 loading={loading}
                 text="Create New Spontaneous Bet"
                 onClick={handleCreateNewSpontaneousBet}
-                disabled={bets.length >= 6}
+                disabled={false}
               />
             </div>
           )}

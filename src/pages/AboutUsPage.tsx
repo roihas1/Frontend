@@ -61,7 +61,7 @@ const AboutUsPage: React.FC = () => {
             </p>
             <div className="flex justify-center gap-4 mt-4">
               <a
-                href="https://www.linkedin.com/in/roy-turisky"
+                href="https://www.linkedin.com/in/roy-turiski"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-blue-700 transition-colors duration-300"

@@ -90,7 +90,6 @@ const Navbar: React.FC = () => {
             isActive={isActive("/HowToPlay")}
             isLoggedIn={isLoggedIn}
           />
-          <MissingBets />
 
           {role === "ADMIN" && (
             <NavLink
@@ -106,7 +105,7 @@ const Navbar: React.FC = () => {
             isActive={isActive("/AboutUs")}
             isLoggedIn={isLoggedIn}
           />
-
+          <MissingBets />
           <div className="flex items-center">
             <button
               onClick={handleLogout}
@@ -222,7 +221,6 @@ const Navbar: React.FC = () => {
             isLoggedIn={isLoggedIn}
             handleUserClick={() => setIsMenuOpen(false)}
           />
-          <MissingBets />
 
           {role === "ADMIN" && (
             <NavLink
@@ -240,7 +238,7 @@ const Navbar: React.FC = () => {
             isLoggedIn={isLoggedIn}
             handleUserClick={() => setIsMenuOpen(false)}
           />
-
+          <MissingBets />
           <button
             onClick={handleLogout}
             className="text-red-500 text-lg font-bold hover:text-red-700"

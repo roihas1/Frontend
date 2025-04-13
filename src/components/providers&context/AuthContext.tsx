@@ -1,7 +1,14 @@
 // src/components/providers&context/AuthContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -12,7 +19,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -25,19 +34,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Initial check on component mount
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+    const handleForceLogout = () => {
+      logout(); 
+    };
 
+    window.addEventListener("forceLogout", handleForceLogout);
+    return () => window.removeEventListener("forceLogout", handleForceLogout);
+  }, []);
+  const queryClient = useQueryClient();
   const logout = () => {
     Cookies.remove("auth_token");
     Cookies.remove("tokenExpiry");
     localStorage.removeItem("username");
     localStorage.removeItem("role");
     setIsLoggedIn(false);
+    queryClient.clear();
     navigate("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, setIsLoggedIn, checkAuthStatus, logout }}>
+    <AuthContext.Provider
+      value={{ isLoggedIn, setIsLoggedIn, checkAuthStatus, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

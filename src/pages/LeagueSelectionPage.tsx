@@ -14,18 +14,19 @@ import { useNavigate } from "react-router-dom";
 import ActionButtons from "../components/forPages/ActionButtons";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface League {
   id?: string;
   name: string;
   code?: string;
   admin?: User;
+  users?: User[];
 }
 
 const LeaguesSelectionPage: React.FC = () => {
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
-  const [privateLeagues, setPrivateLeagues] = useState<League[]>();
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [showCreateNewLeague, setShowCreateNewLeague] =
@@ -34,108 +35,148 @@ const LeaguesSelectionPage: React.FC = () => {
   const [showJoinLeague, setShowJoinLeague] = useState<boolean>(false);
   const [leagueCode, setLeagueCode] = useState<string>("");
   const [leagueName, setLeagueName] = useState<string>("");
+  // const [overallLeague, setOverallLeague] = useState<League | null>(null);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
   const handleOpenModal = (league: League) => {
     setSelectedLeague(league);
     setModalOpen(true);
   };
-  const [overallLeague, setOverallLeague] = useState<League | null>(null);
-  const navigate = useNavigate();
+
   const handleLeagueClick = (league: League) => {
     navigate(`/league`, { state: { league: league } });
   };
+
   const handleManageLeague = (league: League) => {
     navigate(`/manageLeague`, { state: { league: league } });
   };
 
-  // Close modal
   const handleCloseModal = () => {
     setModalOpen(false);
     setSelectedLeague(null);
   };
-  const fetchLeagues = async () => {
-    try {
+
+  const {
+    data: privateLeagues,
+
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["private-leagues"],
+    queryFn: async () => {
       const response = await axiosInstance.get(`/private-league`);
-      setPrivateLeagues(response.data);
-    } catch (error) {
-      showError(`Failed to fetch leagues`);
-    }
-  };
-  const fetchOverallLeague = async () => {
-    try {
-      const response = await axiosInstance.get("/auth/standings");
-      const overall = { name: "Overall", users: response.data };
-      setOverallLeague(overall);
-    } catch (error) {
-      showError(`Failed to fetch overall league`);
-    }
-  };
+      return response.data;
+    },
+    staleTime: 3 * 60 * 1000,
+    gcTime: 3 * 60 * 1000,
+  });
+
   useEffect(() => {
-    fetchLeagues();
-    fetchOverallLeague();
+    if (isError) {
+      showError("Failed to fetch leagues");
+    }
+  }, [isError]);
+
+  const { data: overallUsers, isError: isOverallError } = useQuery({
+    queryKey: ["overall-league"],
+    queryFn: async () => {
+      const response = await axiosInstance.get("/auth/standings");
+      return response.data;
+    },
+    staleTime: 3 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const overallLeague: League | null = overallUsers
+    ? { name: "Overall", users: overallUsers }
+    : null;
+
+  useEffect(() => {
+    if (isOverallError) {
+      showError("Failed to fetch overall league");
+    }
+  }, [isOverallError]);
+
+  useEffect(() => {
+    // fetchOverallLeague();
     fetchUser();
   }, []);
-  const handleCreateNewLeague = () => {
-    setShowCreateNewLeague(true);
-  };
-  const handleShowJoinLeague = () => {
-    setShowJoinLeague(true);
-  };
-  const handleJoinLeague = async () => {
-    if (!leagueCode) {
-      showError(`Must enter a league code`);
-      return;
-    }
-    try {
-      const response = await axiosInstance.post(`/private-league/joinLeague`, {
-        code: leagueCode,
-      });
-      showSuccessMessage(response.data.message);
+
+  const handleCreateNewLeague = () => setShowCreateNewLeague(true);
+  const handleShowJoinLeague = () => setShowJoinLeague(true);
+  const joinLeagueMutation = useMutation({
+    mutationFn: async (code: string) => {
+      const response = await axiosInstance.post(`/private-league/joinLeague`, { code });
+      return response.data;
+    },
+    onSuccess: (data: any) => {
+      showSuccessMessage(data.message);
+      queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
       setShowJoinLeague(false);
-      fetchLeagues();
-    } catch (error) {
-      // ✅ Check if the error is an Axios error
+      setLeagueCode("");
+    },
+    onError: (error: any) => {
       if (axios.isAxiosError(error) && error.response) {
         showError(`Failed to join a league. ${error.response.data.message}`);
       } else {
         showError(`Failed to join a league. Unexpected error occurred.`);
       }
-    }
+    },
+  });
+  const handleJoinLeague = () => {
+    if (!leagueCode) return showError(`Must enter a league code`);
+    joinLeagueMutation.mutate(leagueCode);
   };
+  
+  // const handleJoinLeague = async () => {
+  //   if (!leagueCode) return showError(`Must enter a league code`);
+  //   try {
+  //     const response = await axiosInstance.post(`/private-league/joinLeague`, {
+  //       code: leagueCode,
+  //     });
+  //     showSuccessMessage(response.data.message);
+  //     setShowJoinLeague(false);
+  //     refetch();
+  //   } catch (error) {
+  //     if (axios.isAxiosError(error) && error.response) {
+  //       showError(`Failed to join a league. ${error.response.data.message}`);
+  //     } else {
+  //       showError(`Failed to join a league. Unexpected error occurred.`);
+  //     }
+  //   }
+  // };
 
   const fetchUser = async () => {
     try {
       const response = await axiosInstance.get("/auth/user");
       setCurrentUser(response.data);
     } catch (error) {
-      console.error("Error fetching users:", error);
       showError(`Server error.`);
     }
   };
 
   const handleSubmitNewLeague = async () => {
-    if (!leagueName) {
-      showError(`Must enter a league name`);
-      return;
-    }
+    if (!leagueName) return showError(`Must enter a league name`);
     try {
-      const response = await axiosInstance.post(`/private-league`, {
-        name: leagueName,
-      });
-      setPrivateLeagues((prevState) => [...(prevState ?? []), response.data]);
+      await axiosInstance.post(`/private-league`, { name: leagueName });
       showSuccessMessage(`${leagueName} created.`);
       setShowCreateNewLeague(false);
+
+      await queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
+      await queryClient.refetchQueries({ queryKey: ["private-leagues"] });
     } catch {
       showError(`Failed to create new league.`);
     }
   };
+
   const handleLeaveLeague = async (league: League) => {
     try {
       await axiosInstance.patch(`/private-league/${league?.id}/leaveLeague`);
-      setPrivateLeagues((prevState) =>
-        prevState?.filter((prev) => prev.id !== league?.id)
-      );
       showSuccessMessage(`Leaved the league.`);
       handleCloseModal();
+      await queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
+      await queryClient.refetchQueries({ queryKey: ["private-leagues"] });
     } catch (error) {
       showError(`Failed to leave league.`);
     }

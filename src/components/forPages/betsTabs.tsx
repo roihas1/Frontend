@@ -71,13 +71,13 @@ const BetsTabs: React.FC<BetsTabsProps> = ({
               {/* Game Tabs */}
               <Tabs
                 value={activeGameTab}
-                onChange={(e, newValue) => setActiveGameTab(newValue)}
+                onChange={(_, newValue) => setActiveGameTab(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
                 centered
                 className="mb-4"
               >
-                {uniqueGameNumbers.map((gameNum, index) => (
+                {uniqueGameNumbers.map((gameNum) => (
                   <Tab key={gameNum} label={`Game ${gameNum}`} />
                 ))}
               </Tabs>

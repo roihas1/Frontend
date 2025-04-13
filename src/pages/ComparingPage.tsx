@@ -51,6 +51,7 @@ const ComparingPage: React.FC = () => {
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [isLoadingStages, setIsLoadingStages] = useState(true);
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const location = useLocation();
   const [secondUserId] = useState<string>(location.state?.secondUserId);
 
@@ -93,7 +94,6 @@ const ComparingPage: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-
       setIsMobile(window.innerWidth < 768);
     };
 
@@ -156,89 +156,89 @@ const ComparingPage: React.FC = () => {
     [debouncedSearch]
   );
 
-  const fetchUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const response = await axiosInstance.get("/auth");
-      const responseUser = await (await axiosInstance.get("/auth/user")).data;
-      setCurrentUser(responseUser);
+  // const fetchUsers = async () => {
+  //   setIsLoadingUsers(true);
+  //   try {
+  //     const response = await axiosInstance.get("/auth");
+  //     const responseUser = await (await axiosInstance.get("/auth/user")).data;
+  //     setCurrentUser(responseUser);
 
-      if (league !== undefined && league?.name !== "Overall") {
-        const response = await axiosInstance.get(
-          `/private-league/${league?.id}/users`
-        );
-        const allUsers: { [key: string]: User } = {};
-        response.data.map((user: User) => {
-          allUsers[user.id] = user;
-        });
+  //     if (league !== undefined && league?.name !== "Overall") {
+  //       const response = await axiosInstance.get(
+  //         `/private-league/${league?.id}/users`
+  //       );
+  //       const allUsers: { [key: string]: User } = {};
+  //       response.data.map((user: User) => {
+  //         allUsers[user.id] = user;
+  //       });
 
-        setUsers(allUsers);
-      } else if (league !== undefined) {
-        const allUsers: { [key: string]: User } = {};
-        response.data.map((user: User) => {
-          allUsers[user.id] = user;
-        });
+  //       setUsers(allUsers);
+  //     } else if (league !== undefined) {
+  //       const allUsers: { [key: string]: User } = {};
+  //       response.data.map((user: User) => {
+  //         allUsers[user.id] = user;
+  //       });
 
-        setLeagues((prevState) =>
-          prevState.some((state) => state.name === "Overall")
-            ? prevState
-            : [...prevState, league]
-        );
+  //       setLeagues((prevState) =>
+  //         prevState.some((state) => state.name === "Overall")
+  //           ? prevState
+  //           : [...prevState, league]
+  //       );
 
-        setUsers(allUsers);
-      }
-      // setSelectedLeague(league);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-  const getAllBetsBySeries = useCallback(async () => {
-    setIsLoadingBets(true);
-    try {
-      const response = await axiosInstance.get("/series/getAll/bets");
-      setAllSeriesBets(response.data);
+  //       setUsers(allUsers);
+  //     }
+  //     // setSelectedLeague(league);
+  //   } catch (error) {
+  //     console.error("Error fetching users:", error);
+  //   } finally {
+  //     setIsLoadingUsers(false);
+  //   }
+  // };
+  // const getAllBetsBySeries = useCallback(async () => {
+  //   setIsLoadingBets(true);
+  //   try {
+  //     const response = await axiosInstance.get("/series/getAll/bets");
+  //     setAllSeriesBets(response.data);
 
-      const res: { [key: string]: string } = {};
-      Object.keys(response.data).forEach((key) => {
-        if (new Date(response.data[key].startDate) < new Date()) {
-          res[
-            key
-          ] = `${response.data[key].team1} vs ${response.data[key].team2} (${response.data[key].round})`;
-        }
-      });
-      setSeries(res);
-    } catch (error) {
-      showError("Failed.");
-    } finally {
-      setIsLoadingBets(false);
-    }
-  }, [showError]);
+  //     const res: { [key: string]: string } = {};
+  //     Object.keys(response.data).forEach((key) => {
+  //       if (new Date(response.data[key].startDate) < new Date()) {
+  //         res[
+  //           key
+  //         ] = `${response.data[key].team1} vs ${response.data[key].team2} (${response.data[key].round})`;
+  //       }
+  //     });
+  //     setSeries(res);
+  //   } catch (error) {
+  //     showError("Failed.");
+  //   } finally {
+  //     setIsLoadingBets(false);
+  //   }
+  // }, [showError]);
 
-  const fetchStages = async () => {
-    setIsLoadingStages(true);
-    try {
-      const response = await axiosInstance.get(`playoffs-stage/passedStages`);
-      setPassedStages(response.data);
-    } catch (error) {
-      showError(`server error.`);
-    } finally {
-      setIsLoadingStages(false);
-    }
-  };
+  // const fetchStages = async () => {
+  //   setIsLoadingStages(true);
+  //   try {
+  //     const response = await axiosInstance.get(`playoffs-stage/passedStages`);
+  //     setPassedStages(response.data);
+  //   } catch (error) {
+  //     showError(`server error.`);
+  //   } finally {
+  //     setIsLoadingStages(false);
+  //   }
+  // };
 
-  const fetchLeagues = async () => {
-    try {
-      setLeagues([]);
-      const response = await axiosInstance.get(`/private-league`);
-      const newLeagues = [...response.data, { name: "Overall", users: [] }];
+  // const fetchLeagues = async () => {
+  //   try {
+  //     setLeagues([]);
+  //     const response = await axiosInstance.get(`/private-league`);
+  //     const newLeagues = [...response.data, { name: "Overall", users: [] }];
 
-      setLeagues(newLeagues);
-    } catch (error) {
-      showError(`Failed to fetch Leagues`);
-    }
-  };
+  //     setLeagues(newLeagues);
+  //   } catch (error) {
+  //     showError(`Failed to fetch Leagues`);
+  //   }
+  // };
 
   const setInitialsComprison = async () => {
     setIsLoadingInitial(true);
@@ -250,13 +250,12 @@ const ComparingPage: React.FC = () => {
     }
     for (const key of Object.keys(allSeriesBets)) {
       if (new Date(allSeriesBets[key].startDate) < new Date()) {
-          name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
-          seriesKey = key;
-          setSelectedSeries(key);
-          setSelectedSeriesName(name);
-          setShowSeriesSelection(true);
-          break;
-        
+        name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
+        seriesKey = key;
+        setSelectedSeries(key);
+        setSelectedSeriesName(name);
+        setShowSeriesSelection(true);
+        break;
       }
     }
     if (allSeriesBets && users) {
@@ -270,7 +269,7 @@ const ComparingPage: React.FC = () => {
     setSelectedLeague(league);
     setIsLoadingInitial(false);
   };
-  checkTokenExpiration();
+  // checkTokenExpiration();
   // useLayoutEffect(() => {
   //   console.log("location.state?.secondUserId:", location.state?.secondUserId);
   //   setSecondUserId(location.state?.secondUserId);
@@ -296,27 +295,81 @@ const ComparingPage: React.FC = () => {
     allSeriesBets,
     secondUserId,
   ]);
-
   useEffect(() => {
-    const fetchAllData = async () => {
+    const fetchComparisonPageData = async () => {
       try {
-        await Promise.all([
-          getAllBetsBySeries(),
-          fetchLeagues(),
-          fetchUsers(),
-          fetchStages(),
-        ]);
+        setIsLoadingUsers(true);
+        setIsLoadingBets(true);
+        setIsLoadingStages(true);
+  
+        const response = await axiosInstance.get("/comparison-page/load");
+        const {
+          currentUser,
+          allUsers,
+          allBets,
+          passedStages,
+          userLeagues,
+        } = response.data;
+  
+        // Set current user
+        setCurrentUser(currentUser);
+  
+        // Prepare and set all users map
+        const userMap: { [key: string]: User } = {};
+        allUsers.forEach((user: User) => {
+          userMap[user.id] = user;
+        });
+        setUsers(userMap);
+  
+        // Prepare and set series bets
+        setAllSeriesBets(allBets);
+        const res: { [key: string]: string } = {};
+        Object.keys(allBets).forEach((key) => {
+          if (new Date(allBets[key].startDate) < new Date()) {
+            res[key] = `${allBets[key].team1} vs ${allBets[key].team2} (${allBets[key].round})`;
+          }
+        });
+        setSeries(res);
+  
+        // Prepare and set passed stages
+        setPassedStages(passedStages);
+  
+        // Set leagues (add "Overall" manually)
+        const withOverall = [...userLeagues, { name: "Overall", users: [] }];
+        setLeagues(withOverall);
+  
       } catch (error) {
-        showError("Failed to fetch data.");
+        showError("Failed to load comparison page data.");
+      } finally {
+        setIsLoadingUsers(false);
+        setIsLoadingBets(false);
+        setIsLoadingStages(false);
       }
     };
-    // getAllBetsBySeries();
-    // fetchLeagues();
-    // fetchUsers();
-    // fetchStages();
-
-    fetchAllData();
+  
+    fetchComparisonPageData();
   }, []);
+  
+  // useEffect(() => {
+  //   const fetchAllData = async () => {
+  //     try {
+  //       await Promise.all([
+  //         getAllBetsBySeries(),
+  //         fetchLeagues(),
+  //         fetchUsers(),
+  //         fetchStages(),
+  //       ]);
+  //     } catch (error) {
+  //       showError("Failed to fetch data.");
+  //     }
+  //   };
+  //   // getAllBetsBySeries();
+  //   // fetchLeagues();
+  //   // fetchUsers();
+  //   // fetchStages();
+
+  //   fetchAllData();
+  // }, []);
 
   const handleOpenModal = () => {
     setOpen(true);
@@ -335,46 +388,25 @@ const ComparingPage: React.FC = () => {
       );
       return;
     }
+    setIsLoadingUser(true);
     try {
       const user = users[userId];
       const name = `${user?.firstName} ${user?.lastName}`;
       if (!(userId in selectedUsers)) {
         if (showSeriesSelection) {
           const id = seriesId ? seriesId : selectedSeries;
-          const seriesBets = allSeriesBets[id];
-          console.log(seriesId,selectedSeries);
-          const bestOf7Guess = seriesBets.bestOf7Bet.guesses.filter(
-            (guess) => guess.createdById === userId
-          );
-          const team = seriesBets.teamWinBet.guesses.filter(
-            (guess) => guess.createdById === userId
-          );
-          const playerMatchups = seriesBets.playerMatchupBets.flatMap((bet) => {
-            const matchingGuesses = (bet?.guesses ?? []).filter(
-              (guess) => guess.createdById === userId
-            );
-            const player1 = bet.player1;
-            const player2 = bet.player2;
-            return { guesses: matchingGuesses, player1, player2 };
-          });
-          const spontaneousGuesses = seriesBets.spontaneousBets.flatMap(
-            (bet) => {
-              const matchingGuesses = (bet?.guesses ?? []).filter(
-                (guess) => guess.createdById === userId
-              );
-              const player1 = bet.player1;
-              const player2 = bet.player2;
-              return { guesses: matchingGuesses, player1, player2 };
-            }
-          );
+          // const seriesBets = allSeriesBets[id];
+          const userWithGuesses = (
+            await axiosInstance.get(`/series/${id}/getAllGuesses`)
+          ).data;
 
           setUsersGuesses((prevUsersGuesses) => ({
             ...prevUsersGuesses,
             [userId]: {
-              bestOf7: bestOf7Guess[0],
-              teamWon: team[0],
-              playerMatchups,
-              spontaneousGuesses,
+              bestOf7: userWithGuesses.bestOf7,
+              teamWon: userWithGuesses.teamWon,
+              playerMatchups: userWithGuesses.playerMatchups,
+              spontaneousGuesses: userWithGuesses.spontaneousGuesses,
             },
           }));
         } else if (showChampSelection) {
@@ -405,6 +437,7 @@ const ComparingPage: React.FC = () => {
           }));
         }
       }
+      setIsLoadingUser(false);
       return false;
     } catch (error) {
       console.log(error);
@@ -619,12 +652,12 @@ const ComparingPage: React.FC = () => {
       </div>
     );
   }
-  if(isMobile){
+  if (isMobile) {
     return (
       <p className="text-center text-gray-700 mt-4">
         🛑 User comparison is only available on desktop.
       </p>
-    )
+    );
   }
 
   return (
@@ -965,6 +998,7 @@ const ComparingPage: React.FC = () => {
                         isSpontaneous={betsType === "Spontaneous"}
                         allSeriesBets={allSeriesBets}
                         selectedSeries={selectedSeries}
+                        isLoading={isLoadingUser}
                       />
                     ) : userChampGuessses?.[userId] ? (
                       <ChampGuessColumn guessData={userChampGuessses[userId]} />

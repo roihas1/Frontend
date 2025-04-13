@@ -168,4 +168,4 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series, userPoints, fetchData
   );
 };
 
-export default NBASeedCard;
+export default React.memo(NBASeedCard);

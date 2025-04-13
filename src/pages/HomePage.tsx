@@ -299,7 +299,7 @@ const HomePage: React.FC = () => {
       showError(`Failed to check guesses ${error}`);
     }
   };
-  checkTokenExpiration();
+  // checkTokenExpiration();
   useEffect(() => {
     if (stage && stage != "Finish") {
       checkIfGuessed();
@@ -331,57 +331,38 @@ const HomePage: React.FC = () => {
   //   setLoading(false);
   // }, []);
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchHomepageData = async () => {
       setLoading(true);
-
       try {
-        const [seriesData, playoffsStageData, userPointsData, guessData] =
-          await Promise.all([
-            axiosInstance.get("/series"),
-            axiosInstance.get("/playoffs-stage"),
-            axiosInstance.get("series/getOverallPoints/allSeries"),
-            axiosInstance.get("series/isUserGuessed/All"),
-          ]);
-
+        const response = await axiosInstance.get("/home-page/load");
+        const { userGuessedAll, seriesList, playoffsStages, userPoints } =
+          response.data;
+        console.log(userPoints);
+        // Organize series by conference
         const updatedSeries: {
           west: Series[];
           east: Series[];
           finals: Series[];
-        } = {
-          west: [],
-          east: [],
-          finals: [],
-        };
+        } = { west: [], east: [], finals: [] };
 
-        seriesData.data.forEach((element: Series) => {
-          return updatedSeries[
+        seriesList.forEach((element: Series) => {
+          updatedSeries[
             element.conference.toLowerCase() as keyof typeof updatedSeries
           ].push({
-            id: element.id,
-            team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
-            team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
-            dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
-            bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
-            teamWinBetId: element.teamWinBetId || "",
-            conference: element.conference,
-            round: element.round,
-            seed1: element.seed1,
-            seed2: element.seed2,
-            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")], // If you want to fetch logos, you can add logic here
+            ...element,
+            dateOfStart: new Date(element.dateOfStart),
+            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")],
             logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")],
-            playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
-            timeOfStart: element.timeOfStart,
-            lastUpdate: element.lastUpdate,
-            spontaneousBets: element.spontaneousBets,
-            numOfGames: element.numOfGames,
+            team1: nbaTeams[element.team1],
+            team2: nbaTeams[element.team2],
           });
         });
 
         setSeries(updatedSeries);
-        setUserPointsPerSeries(userPointsData.data);
-        setIspartialGuess(guessData.data);
+        setUserPointsPerSeries(userPoints);
+        setIspartialGuess(userGuessedAll);
 
-        const upcomingStage = playoffsStageData.data.find((round: Stage) => {
+        const upcomingStage = playoffsStages.find((round: Stage) => {
           const startDate = new Date(round.startDate);
           const time = round.timeOfStart.split(":");
           startDate.setHours(parseInt(time[0]));
@@ -396,24 +377,181 @@ const HomePage: React.FC = () => {
           setStage("Finish");
         }
 
-        if (upcomingStage?.name && upcomingStage.name !== "Finish") {
-          const checkGuessResponse = await axiosInstance.get(
-            "/playoffs-stage/checkGuess/",
-            {
-              params: { stage: upcomingStage.name },
-            }
-          );
-          setShowInput(checkGuessResponse.data);
-        }
-      } catch {
-        showError("Error fetching data.");
-      } finally {
+        setLoading(false);
+      } catch (error) {
+        showError("Failed to load homepage data.");
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchHomepageData();
   }, []);
+
+  // useEffect(() => {
+  //   const fetchCore = async () => {
+  //     setLoading(true);
+  //     try {
+  //       const [seriesData, stageData] = await Promise.all([
+  //         axiosInstance.get("/series"),
+  //         axiosInstance.get("/playoffs-stage"),
+  //       ]);
+
+  //       const updatedSeries: {
+  //         west: Series[];
+  //         east: Series[];
+  //         finals: Series[];
+  //       } = {
+  //         west: [],
+  //         east: [],
+  //         finals: [],
+  //       };
+  //       seriesData.data.forEach((element: Series) => {
+  //         return updatedSeries[
+  //           element.conference.toLowerCase() as keyof typeof updatedSeries
+  //         ].push({
+  //           id: element.id,
+  //           team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
+  //           team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
+  //           dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
+  //           bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
+  //           teamWinBetId: element.teamWinBetId || "",
+  //           conference: element.conference,
+  //           round: element.round,
+  //           seed1: element.seed1,
+  //           seed2: element.seed2,
+  //           logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")], // If you want to fetch logos, you can add logic here
+  //           logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")],
+  //           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
+  //           timeOfStart: element.timeOfStart,
+  //           lastUpdate: element.lastUpdate,
+  //           spontaneousBets: element.spontaneousBets,
+  //           numOfGames: element.numOfGames,
+  //         });
+  //       });
+
+  //       setSeries(updatedSeries);
+
+  //       const upcomingStage = stageData.data.find((round: Stage) => {
+  //         const startDate = new Date(round.startDate);
+  //         const time = round.timeOfStart.split(":");
+  //         startDate.setHours(parseInt(time[0]));
+  //         startDate.setMinutes(parseInt(time[1]));
+  //         return startDate > new Date();
+  //       });
+
+  //       if (upcomingStage) {
+  //         setStage(upcomingStage.name);
+  //         setStageStartDate(new Date(upcomingStage.startDate));
+  //       } else {
+  //         setStage("Finish");
+  //       }
+
+  //       setLoading(false);
+  //     } catch {
+  //       showError("Error loading core data");
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   const fetchSecondary = async () => {
+  //     try {
+  //       const [points, guesses] = await Promise.all([
+  //         axiosInstance.get("user-series-points/user"),
+  //         axiosInstance.get("series/isUserGuessed/All"),
+  //       ]);
+  //       setUserPointsPerSeries(points.data);
+  //       setIspartialGuess(guesses.data);
+  //     } catch {
+  //       showError("Error loading guesses/points");
+  //     }
+  //   };
+
+  //   fetchCore().then(fetchSecondary);
+  // }, []);
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     setLoading(true);
+
+  //     try {
+  //       const [seriesData, playoffsStageData, userPointsData, guessData] =
+  //         await Promise.all([
+  //           axiosInstance.get("/series"),
+  //           axiosInstance.get("/playoffs-stage"),
+  //           axiosInstance.get("series/getOverallPoints/allSeries"),
+  //           axiosInstance.get("series/isUserGuessed/All"),
+  //         ]);
+
+  //       const updatedSeries: {
+  //         west: Series[];
+  //         east: Series[];
+  //         finals: Series[];
+  //       } = {
+  //         west: [],
+  //         east: [],
+  //         finals: [],
+  //       };
+
+  //       seriesData.data.forEach((element: Series) => {
+  //         return updatedSeries[
+  //           element.conference.toLowerCase() as keyof typeof updatedSeries
+  //         ].push({
+  //           id: element.id,
+  //           team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
+  //           team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
+  //           dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
+  //           bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
+  //           teamWinBetId: element.teamWinBetId || "",
+  //           conference: element.conference,
+  //           round: element.round,
+  //           seed1: element.seed1,
+  //           seed2: element.seed2,
+  //           logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")], // If you want to fetch logos, you can add logic here
+  //           logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")],
+  //           playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
+  //           timeOfStart: element.timeOfStart,
+  //           lastUpdate: element.lastUpdate,
+  //           spontaneousBets: element.spontaneousBets,
+  //           numOfGames: element.numOfGames,
+  //         });
+  //       });
+
+  //       setSeries(updatedSeries);
+  //       setUserPointsPerSeries(userPointsData.data);
+  //       setIspartialGuess(guessData.data);
+
+  //       const upcomingStage = playoffsStageData.data.find((round: Stage) => {
+  //         const startDate = new Date(round.startDate);
+  //         const time = round.timeOfStart.split(":");
+  //         startDate.setHours(parseInt(time[0]));
+  //         startDate.setMinutes(parseInt(time[1]));
+  //         return startDate > new Date();
+  //       });
+
+  //       if (upcomingStage) {
+  //         setStage(upcomingStage.name);
+  //         setStageStartDate(new Date(upcomingStage.startDate));
+  //       } else {
+  //         setStage("Finish");
+  //       }
+
+  //       if (upcomingStage?.name && upcomingStage.name !== "Finish") {
+  //         const checkGuessResponse = await axiosInstance.get(
+  //           "/playoffs-stage/checkGuess/",
+  //           {
+  //             params: { stage: upcomingStage.name },
+  //           }
+  //         );
+  //         setShowInput(checkGuessResponse.data);
+  //       }
+  //       setLoading(false);
+  //     } catch {
+  //       showError("Error fetching data.");
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, []);
 
   const sortMatchups = (matchups: Series[]) => {
     return matchups.sort((a, b) => {
@@ -487,6 +625,7 @@ const HomePage: React.FC = () => {
               src={Logo}
               alt="NBA Logo"
               className="w-20 h-16 object-contain rounded-2xl"
+              loading="lazy"
             />
           </div>
           <p className="text-xs font-bold text-gray-700 mt-2 text-center">
@@ -606,9 +745,11 @@ const HomePage: React.FC = () => {
       setExpanded(isExpanded ? panel : false);
     };
   if (loading) {
-    <div className="flex justify-center">
-      <CircularProgress />
-    </div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <CircularProgress />
+      </div>
+    );
   }
 
   return (
@@ -617,37 +758,42 @@ const HomePage: React.FC = () => {
 
       <div className="md:hidden">
         <div className="flex justify-center">
-        <button
-          className="bg-gray-300 text-md text-center rounded-lg text-black font-semibold shadow-md p-2 mb-4"
-          onClick={() => setShowMobileChampInput(true)}
-        >
-          {" "}
-          Open Champoins Bets
-        </button>
+          <button
+            className="bg-gray-300 text-md text-center rounded-lg text-black font-semibold shadow-md p-2 mb-4"
+            onClick={() => setShowMobileChampInput(true)}
+          >
+            {" "}
+            Open Champoins Bets
+          </button>
         </div>
-        <Modal open={showMobileChampInput} onClose={()=> setShowMobileChampInput(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "0",
-            left: "0",
-            bgcolor: "background.paper",
-            p: 4,
-            borderRadius: 2,
-            maxWidth: "100vw",
-            maxHeight: "100vh",
-            overflowY: "auto",
-          }}
+        <Modal
+          open={showMobileChampInput}
+          onClose={() => setShowMobileChampInput(false)}
         >
-          <ChampionsInput
-            west={series.west}
-            east={series.east}
-            startDate={stageStartDate}
-            stage={stage}
-            setShowInput={()=> setShowMobileChampInput(false)}
-          />
-        </Box>
-      </Modal>
+          <Box
+            sx={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100vw",
+              height: "100dvh",
+              bgcolor: "background.paper",
+              overflowY: "auto",
+              padding: 2,
+              paddingBottom: 6,
+              boxSizing: "border-box",
+              WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
+            }}
+          >
+            <ChampionsInput
+              west={series.west}
+              east={series.east}
+              startDate={stageStartDate}
+              stage={stage}
+              setShowInput={() => setShowMobileChampInput(false)}
+            />
+          </Box>
+        </Modal>
         {[
           "NBA Finals",
           "Conference Finals",
@@ -720,60 +866,83 @@ const HomePage: React.FC = () => {
                               />
                             </svg>
                           }
-                          className="bg-gray-200 p-2 rounded-lg flex items-center justify-between"
+                          className="bg-gray-200 p-2 rounded-lg"
                         >
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={matchup.logo1}
-                              alt={matchup.team1}
-                              className="w-12 h-14"
-                            />
-                            <p className="font-semibold">
-                              {matchup.team1} vs {matchup.team2}
-                            </p>
-                            <img
-                              src={matchup.logo2}
-                              alt={matchup.team2}
-                              className="w-12 h-14"
-                            />
-                          </div>
+                          <div className="flex items-center justify-between w-full gap-2">
+                            {/* Logos + Names container */}
+                            <div className="grid grid-cols-[48px_auto_48px] items-center w-full">
+                              {/* Left Logo */}
+                              <div className="w-12 aspect-square flex items-center justify-center">
+                                <img
+                                  src={matchup.logo1}
+                                  alt={matchup.team1}
+                                  className="object-contain max-w-full max-h-full"
+                                  loading="lazy"
+                                />
+                              </div>
 
-                          {/* Yellow "I" Icon for Missing Bets */}
-                          {!isPartialGuess[matchup.id ?? ""] && (
-                            <Tooltip
-                              title="Missing guesses"
-                              arrow
-                              placement="bottom"
-                              disableHoverListener={true}
-                              disableFocusListener={false}
-                              disableInteractive={false}
-                              enterTouchDelay={0}
-                              leaveTouchDelay={1500}
-                            >
-                              <button
-                                className="p-1 focus:outline-none"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                  className="w-5 h-5 text-yellow-500"
+                              {/* Team Names stacked */}
+                              <div className="flex flex-col items-center justify-center">
+                                <div className="whitespace-nowrap flex items-center justify-center gap-1">
+                                  <span className="text-md font-semibold">
+                                    {matchup.team1}
+                                  </span>
+                                  <span className="text-sm font-normal p-2 text-gray-600">
+                                    vs
+                                  </span>
+                                  <span className="text-md font-semibold">
+                                    {matchup.team2}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Right Logo */}
+                              <div className="w-12 aspect-square flex items-center justify-center">
+                                <img
+                                  src={matchup.logo2}
+                                  alt={matchup.team2}
+                                  className="object-contain max-w-full max-h-full"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Reserve space for icon regardless */}
+                            <div className="w-10 mr-4 flex justify-end">
+                              {!isPartialGuess[matchup.id ?? ""] && (
+                                <Tooltip
+                                  title="Missing guesses"
+                                  arrow
+                                  placement="bottom"
+                                  enterTouchDelay={0}
+                                  leaveTouchDelay={1500}
                                 >
-                                  <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="9"
-                                    fill="#FDB927"
-                                  />
-                                  <path
-                                    fill="white"
-                                    d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                                  />
-                                </svg>
-                              </button>
-                            </Tooltip>
-                          )}
+                                  <button
+                                    className="p-1 rounded-full focus:outline-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      viewBox="0 0 24 24"
+                                      fill="currentColor"
+                                      className="w-5 h-5 text-yellow-500"
+                                    >
+                                      <circle
+                                        cx="12"
+                                        cy="12"
+                                        r="9"
+                                        fill="#FDB927"
+                                      />
+                                      <path
+                                        fill="white"
+                                        d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                                      />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </div>
                         </AccordionSummary>
 
                         <AccordionDetails className="bg-white p-4">

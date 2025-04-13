@@ -1,4 +1,4 @@
-import { Paper, Typography, Tooltip } from "@mui/material";
+import { Paper, Typography, Tooltip, CircularProgress } from "@mui/material";
 import { AllSeriesBets } from "../../types";
 
 const GuessColumn = ({
@@ -6,12 +6,21 @@ const GuessColumn = ({
   isSpontaneous,
   allSeriesBets,
   selectedSeries,
+  isLoading,
 }: {
   guessData: any;
   isSpontaneous: boolean;
   allSeriesBets: AllSeriesBets;
   selectedSeries: string;
+  isLoading:boolean
 }) => {
+  if(isLoading){
+  return (
+        <div className="fixed inset-0 flex justify-center items-center  z-50">
+          <CircularProgress />
+        </div>
+      );
+    }
 
   return (
     <div className="flex flex-col space-y-2">

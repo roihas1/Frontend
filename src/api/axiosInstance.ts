@@ -25,13 +25,10 @@ const handleLogout = () => {
   // Send logout request to backend
   axios.patch(`${import.meta.env.VITE_BASE_URL}/auth/logout`, { username });
 
-  // Clear stored tokens and user info
-  Cookies.remove("auth_token");
-  localStorage.removeItem("username");
-  localStorage.removeItem("role");
+  
+  window.dispatchEvent(new Event("forceLogout"));
+  
 
-  // Redirect to login
-  window.location.href = "/login";
 };
 
 

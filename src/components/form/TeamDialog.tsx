@@ -5,7 +5,7 @@ import { Series } from "../../pages/HomePage";
 import axiosInstance from "../../api/axiosInstance";
 import { useError } from "../providers&context/ErrorProvider";
 import { useSuccessMessage } from "../providers&context/successMassageProvider";
-import { Box, Tab, Tabs, Tooltip } from "@mui/material";
+import { Box, CircularProgress, Tab, Tabs, Tooltip } from "@mui/material";
 import BetsDisplay from "../forPages/BetsDisplay";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
 
@@ -226,6 +226,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
     return true;
   };
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
   const handleSubmit = async () => {
     // Validate input
     setValidationError(null);
@@ -244,6 +246,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               spontaneousGuesses: selectedPlayerForBetSpontaneous,
             });
           }
+          await delay(500);
+          await axiosInstance.patch(`user-missing-bets/user/updateBets`);
           showSuccessMessage("Guesses were updated.");
           setLoading(false);
           setSelectedTeam(-1); // Reset selected team
@@ -261,19 +265,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       }
     }
   };
-  const getUserGuesses = async () => {
-    setLoading(true);
-    try {
-      const response = await axiosInstance.get(
-        `series/${series.id}/getGuesses`
-      );
-      return response.data;
-    } catch (error) {
-      showError(`Failed to get guesses ${error}`);
-    } finally {
-      setLoading(false);
-    }
-  };
   const checkNumOfgames = () => {
     let max = 0;
     series.spontaneousBets?.forEach((bet) => {
@@ -284,17 +275,27 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     return max;
   };
   useEffect(() => {
-    if (isOpen && series) {
-      const fetchGuesses = async () => {
-        const userGuesses = await getUserGuesses();
+    const fetchAllGuessesAndStats = async () => {
+      if (!isOpen || !series) return;
 
+      setLoading(true);
+      try {
+        const response = await axiosInstance.get(
+          `/series/${series.id}/full-data`
+        );
+
+        const {
+          guesses: userGuesses,
+          spontaneousGuesses,
+          percentages,
+        } = response.data;
         if (userGuesses["teamWinGuess"]) {
           // setHasGuesses(true);
           setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
         }
         if (userGuesses["playerMatchupGuess"].length > 0) {
           userGuesses["playerMatchupGuess"].forEach((element: any) => {
-            handlePlayerSelection(element["bet"]["id"], element["guess"]);
+            handlePlayerSelection(element["betId"], element["guess"]);
           });
           // setHasGuesses(true);
         }
@@ -308,32 +309,121 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           setSelectedNumberOfGames(0); // Reset number of games
           setHasGuesses(false);
         }
-      };
-      const fetchGuessesSpontaneous = async () => {
-        setLoading(true);
-        try {
-          const response = await axiosInstance.get(
-            `series/${series.id}/getSpontaneousGuesses`
-          );
-          if (response.data.length > 0) {
-            response.data.forEach((element: any) => {
-              setSelectedPlayerForBetSpontaneous((prevState) => ({
-                ...prevState,
-                [element["bet"]["id"]]: element["guess"],
-              }));
-            });
-          }
-        } catch (error) {
-          showError(`Failed to get guesses ${error}`);
-        } finally {
-          setLoading(false);
+
+        if (spontaneousGuesses?.length > 0) {
+          spontaneousGuesses.forEach((element: any) => {
+            setSelectedPlayerForBetSpontaneous((prevState) => ({
+              ...prevState,
+              [element["betId"]]: element["guess"],
+            }));
+          });
         }
-      };
-      fetchGuesses();
-      fetchGuessesSpontaneous();
-      setNumOfSpontaneousBets(checkNumOfgames());
-    }
+
+        if (percentages) {
+          setGuessPercentage(percentages);
+        }
+
+        setNumOfSpontaneousBets(checkNumOfgames());
+      } catch (error) {
+        console.log(error)
+        showError("Failed to fetch guesses and stats.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllGuessesAndStats();
   }, [isOpen, series]);
+
+  // const getUserGuesses = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const response = await axiosInstance.get(
+  //       `series/${series.id}/getGuesses`
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     showError(`Failed to get guesses ${error}`);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (isOpen && series) {
+  //     const fetchGuesses = async () => {
+  //       const userGuesses = await getUserGuesses();
+
+  //       if (userGuesses["teamWinGuess"]) {
+  //         // setHasGuesses(true);
+  //         setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
+  //       }
+  //       if (userGuesses["playerMatchupGuess"].length > 0) {
+  //         userGuesses["playerMatchupGuess"].forEach((element: any) => {
+  //           handlePlayerSelection(element["bet"]["id"], element["guess"]);
+  //         });
+  //         // setHasGuesses(true);
+  //       }
+  //       if (userGuesses["bestOf7Guess"]) {
+  //         setSelectedNumberOfGames(userGuesses["bestOf7Guess"]["guess"]);
+  //         // setHasGuesses(true);
+  //       } else {
+  //         setSelectedTeam(-1); // Reset selected team
+  //         setSelectedPlayerForBet({}); // Reset selected players for bets
+  //         setSelectedPlayerForBetSpontaneous({});
+  //         setSelectedNumberOfGames(0); // Reset number of games
+  //         setHasGuesses(false);
+  //       }
+  //     };
+  //     const fetchGuessesSpontaneous = async () => {
+  //       setLoading(true);
+  //       try {
+  //         const response = await axiosInstance.get(
+  //           `series/${series.id}/getSpontaneousGuesses`
+  //         );
+  //         if (response.data.length > 0) {
+  //           response.data.forEach((element: any) => {
+  //             setSelectedPlayerForBetSpontaneous((prevState) => ({
+  //               ...prevState,
+  //               [element["betId"]]: element["guess"],
+  //             }));
+  //           });
+  //         }
+  //       } catch (error) {
+  //         showError(`Failed to get guesses ${error}`);
+  //       } finally {
+  //         setLoading(false);
+  //       }
+  //     };
+  //     fetchGuesses();
+  //     fetchGuessesSpontaneous();
+  //     setNumOfSpontaneousBets(checkNumOfgames());
+  //   }
+  // }, [isOpen, series]);
+
+  // useEffect(() => {
+  //   if (isOpen && series) {
+  //     const fetchGuessPercentage = async () => {
+  //       setLoading(true);
+  //       try {
+
+  //         console.log(new Date(`${series.dateOfStart}T${series.timeOfStart}`) )
+  //         console.log(new Date())
+  //         if (isStartDatePassed) {
+  //           const response = await axiosInstance.get(
+  //             `/series/${series.id}/getPercentages`
+  //           );
+  //           setGuessPercentage(response.data);
+  //         }
+  //       } catch {
+  //         showError(`Failed to get percentage.`);
+  //       } finally {
+  //         setLoading(false);
+  //       }
+  //     };
+  //     fetchGuessPercentage();
+  //   }
+  // }, [isOpen, series]);
 
   useEffect(() => {
     if (isOpen) {
@@ -341,26 +431,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       setSelectedTab(intialSelectedTab ?? 0);
     }
   }, [isOpen, intialGamesTab, intialSelectedTab]);
-
-  useEffect(() => {
-    if (isOpen && series) {
-      const fetchGuessPercentage = async () => {
-        setLoading(true);
-        try {
-          const response = await axiosInstance.get(
-            `/series/${series.id}/getPercentages`
-          );
-
-          setGuessPercentage(response.data);
-        } catch {
-          showError(`Failed to get percentage.`);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchGuessPercentage();
-    }
-  }, [isOpen, series]);
 
   const handleRemoveGuessFromBet = (id: string, idx: number) => {
     if (selectedTab === 0) {
@@ -391,6 +461,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   // const maxTabIndex = numOfSpontaneousBets - 1;
   const validGamesTab =
     gamesTab > 0 && gamesTab <= numOfSpontaneousBets ? gamesTab - 1 : 0;
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-gray-100 bg-opacity-80 flex justify-center items-center">
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onClose={closeDialog} className="relative z-30">

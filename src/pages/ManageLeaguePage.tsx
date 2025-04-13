@@ -12,6 +12,7 @@ import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { League } from "./LeagueSelectionPage";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const ManageLeague: React.FC = () => {
   const location = useLocation();
@@ -60,13 +61,31 @@ const ManageLeague: React.FC = () => {
 
   const handleDeleteLeague = async () => {
     try {
-      await axiosInstance.delete(`/private-league/${league?.id}`);
-      showSuccessMessage(`League was deleted.`);
-      navigate("/leagues");
+      if (!league?.id) return;
+      deleteLeagueMutation.mutate(league.id);
     } catch {
       showError(`Failed to delete league ${league?.name}`);
     }
   };
+  const queryClient = useQueryClient();
+
+  const deleteLeagueMutation = useMutation({
+    mutationFn: async (leagueId: string) => {
+      return axiosInstance.delete(`/private-league/${leagueId}`);
+    },
+    onSuccess: () => {
+      showSuccessMessage("League was deleted.");
+      queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
+      navigate("/leagues");
+    },
+    onError: (error: any) => {
+      showError(
+        `Failed to delete league ${league?.name ?? ""}. ${
+          error?.response?.data?.message || ""
+        }`
+      );
+    },
+  });
 
   const handleRemoveUsers = async () => {
     try {
@@ -75,7 +94,9 @@ const ManageLeague: React.FC = () => {
       });
 
       setSelectedUsers([]);
-      showSuccessMessage(`Selected users were removed from league ${league?.name}`);
+      showSuccessMessage(
+        `Selected users were removed from league ${league?.name}`
+      );
     } catch {
       showError(`Failed to remove users.`);
     }
@@ -84,15 +105,23 @@ const ManageLeague: React.FC = () => {
   return (
     <div className="flex flex-col items-center p-4 bg-gray-100 min-h-screen">
       {/* League Title */}
-      <h1 className="text-2xl font-semibold text-center">{league?.name} - League Admin</h1>
+      <h1 className="text-2xl font-semibold text-center">
+        {league?.name} - League Admin
+      </h1>
 
       {/* League Code */}
-      <div className="w-full max-w-lg mt-6">
-        <h3 className="text-lg font-medium">League Code: <span className="font-semibold">{league?.code}</span></h3>
+      <div className="w-full max-w-xl mt-6">
+        <p className="text-gray-700 mb-1">
+          Invite your friends to join the fun! Share this league code and
+          compete together.
+        </p>
+        <h3 className="text-lg font-medium">
+          League Code: <span className="font-semibold">{league?.code}</span>
+        </h3>
       </div>
 
       {/* Change League Name */}
-      <div className="w-full max-w-lg mt-6">
+      <div className="w-full max-w-xl mt-6">
         <h3 className="text-xl font-semibold mb-2">Change League Name</h3>
         <FormControl fullWidth required>
           <Input
@@ -113,7 +142,7 @@ const ManageLeague: React.FC = () => {
       </div>
 
       {/* Remove Players */}
-      <div className="w-full max-w-lg mt-8">
+      <div className="w-full max-w-xl mt-8">
         <h3 className="text-xl font-semibold mb-2">Remove Players</h3>
         <p className="text-gray-600 mb-2">
           Search for the player you wish to remove from this league.
@@ -152,10 +181,13 @@ const ManageLeague: React.FC = () => {
       </div>
 
       {/* Delete League */}
-      <div className="w-full max-w-lg mt-10">
-        <h3 className="text-xl font-semibold mb-2 text-colors-nba-red">Delete League</h3>
+      <div className="w-full max-w-xl mt-10">
+        <h3 className="text-xl font-semibold mb-2 text-colors-nba-red">
+          Delete League
+        </h3>
         <p className="text-gray-600 mb-4">
-          To delete the league, click the button below. Players will remain in the system and can join other leagues.
+          To delete the league, click the button below. Players will remain in
+          the system and can join other leagues.
         </p>
         <button
           className="w-full md:w-1/2 text-lg bg-colors-nba-red hover:opacity-80 py-2 rounded-lg text-white shadow-md font-semibold"

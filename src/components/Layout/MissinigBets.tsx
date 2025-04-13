@@ -46,9 +46,7 @@ const MissingBets = () => {
   const fetchSeriesData = async (id: string) => {
     try {
       const response = await axiosInstance.get(`/series/${id}`);
-      const responsePoints = await axiosInstance.get(
-        `series/${id}/getOverallPointsPerSeries`
-      );
+      const responsePoints = await axiosInstance.get(`user-series-points/user`);
 
       setSeriesPoints(responsePoints.data);
       const series: Series = response.data;
@@ -75,7 +73,7 @@ const MissingBets = () => {
   };
   const fetchMissingBets = async () => {
     try {
-      const response = await axiosInstance.get(`/series/bets/allMissingBets`);
+      const response = await axiosInstance.get(`/user-missing-bets/user`);
 
       setMissiningBetsData(response.data);
       const totalMissingBets: number = Object.values(
@@ -121,7 +119,8 @@ const MissingBets = () => {
 
   return (
     <div className="block ">
-      <div className="flex items-center">
+      <div className="flex items-center gap-2">
+       
         <IconButton onClick={handleClick} disabled={!isLoggedIn}>
           <Badge
             badgeContent={!isLoggedIn ? 0 : badgeContent}
@@ -139,8 +138,8 @@ const MissingBets = () => {
               viewBox="0 0 24 24"
               strokeWidth="1.5"
               stroke="currentColor"
-              className={`size-6 text-black ${
-                !isLoggedIn ? "text-gray-500" : ""
+              className={`size-6 ${
+                !isLoggedIn ? "text-gray-500" : "text-black"
               }`}
             >
               <path
@@ -151,26 +150,32 @@ const MissingBets = () => {
             </svg>
           </Badge>
         </IconButton>
-
-        
-        <span className=" text-md text-gray-900 sm:hidden">
+        <button
+          className="text-md text-gray-900 sm:hidden focus:outline-none"
+          onClick={handleClick}
+          disabled={!isLoggedIn}
+        >
           Missing Bets
-        </span>
+        </button>
       </div>
 
       <Menu
-        id="basic-menu"
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
         MenuListProps={{
           "aria-labelledby": "basic-button",
         }}
-        sx={{
-          "& .MuiPaper-root": {
-            borderRadius: "6px",
-            boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
-            backgroundColor: "#f5f5f5",
+        slotProps={{
+          paper: {
+            sx: {
+              maxHeight: "70vh",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
+              borderRadius: 2,
+              boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
+              backgroundColor: "#f5f5f5",
+            },
           },
         }}
       >
@@ -184,7 +189,7 @@ const MissingBets = () => {
                 color: "black",
               }}
             >
-              Bets you need to guess
+              Still Got Bets to Predict — Let’s Go!
             </Typography>
           ) : (
             <Typography
@@ -195,7 +200,7 @@ const MissingBets = () => {
                 color: "black",
               }}
             >
-              No bets need to be guessed
+              No Open Bets — You’re Ready for Tip-Off!
             </Typography>
           )}
         </div>

@@ -13,6 +13,8 @@ import afterBetsClosed from "../assets/Examples/ClosedBets.png";
 import beforeSeriesStart from "../assets/Examples/OpenBets.png";
 import React, { useState } from "react";
 import champExample from "../assets/Examples/Champ example.png";
+import Demo from "../assets/video/Demo.mp4"
+import cover from "../assets/images/cover.png"
 interface ImgModalProps {
   imgSource: string;
   open: boolean;
@@ -34,8 +36,8 @@ const HowToPlayPage: React.FC = () => {
     open,
     handleClose,
   }) => {
-    if (!imgSource) return null; // Ensure the image source exists
-
+    if (!imgSource) return null;
+  
     return (
       <Modal open={open} onClose={handleClose}>
         <Box
@@ -46,27 +48,29 @@ const HowToPlayPage: React.FC = () => {
             transform: "translate(-50%, -50%)",
             bgcolor: "white",
             boxShadow: 24,
-            p: 2,
+            p: { xs: 1, sm: 2 }, // smaller padding on mobile
             borderRadius: "8px",
             outline: "none",
-            maxWidth: "80%",
-            maxHeight: "80%",
+            width: { xs: "95vw", sm: "90vw", md: "80vw" },
+            height: { xs: "auto", sm: "auto", md: "auto" },
+            maxHeight: "90vh",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <img
-            src={imgSource} // Image source from prop
+            src={imgSource}
             alt="Series Bets Explanation"
-            className="max-w-full max-h-full rounded-md"
+            className="max-w-full max-h-[80vh] w-auto h-auto rounded-md"
           />
         </Box>
       </Modal>
     );
   };
+  
   return (
-    <div className="flex flex-col justify-start  bg-gray-100 space-y-2 pt-4 pb-4">
+    <div className="flex flex-col justify-start  bg-gray-100 space-y-3 pt-4 pb-4">
       <div className="flex justify-center text-2xl font-semibold mb-8">
         <h1>Beyond the Bracket - How to play?</h1>
       </div>
@@ -608,6 +612,86 @@ const HowToPlayPage: React.FC = () => {
             </div>
           </AccordionDetails>
         </Accordion>
+      </div>
+      <div className="flex justify-center mx-auto w-full max-w-screen-lg">
+        <Accordion key={"Leagues"} className="mb-4 w-full">
+          <AccordionSummary
+            expandIcon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                className="size-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m19.5 8.25-7.5 7.5-7.5-7.5"
+                />
+              </svg>
+            }
+            aria-controls={`panel-leagues-content`}
+            id={`panel-leagues-header`}
+            className="hover:bg-colors-nba-yellow"
+          >
+            <Typography component="span">Leagues</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <div>
+              <ul className="pl-5 ml-8 space-y-2 mb-4 text-sm text-gray-700">
+                <li>
+                  <span className="font-semibold">What Are Leagues?</span> –
+                  Leagues let you and your friends compete in a private group.
+                  It’s your own leaderboard separate from the global one.
+                </li>
+                <li>
+                  <span className="font-semibold">Create a League</span> – Go to
+                  the Leagues page, click{" "}
+                  <span className="italic">"Create League"</span>, choose a
+                  name, and share your league code.
+                </li>
+                <li>
+                  <span className="font-semibold">Join a League</span> – Got a
+                  league code? Head to{" "}
+                  <span className="italic">"Join League"</span> and paste the
+                  code to start competing.
+                </li>
+                <li>
+                  <span className="font-semibold">Manage a League</span> – If
+                  you created the league, click the{" "}
+                  <span className="italic">settings icon ⚙️</span> next to your
+                  league name, then select{" "}
+                  <span className="italic">"Manage League"</span> to:
+                  <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                    <li>View and copy the league code</li>
+                    <li>See current members</li>
+                    <li>Edit the league name</li>
+                    <li>Remove players if needed</li>
+                  </ul>
+                </li>
+                <li className="font-bold">
+                  Tip: Share the league code with friends to grow your league
+                  and climb the leaderboard!
+                </li>
+              </ul>
+            </div>
+          </AccordionDetails>
+        </Accordion>
+      </div>
+      <div className="flex flex-col items-center justify-center pt-16 mb-4">
+        
+        <video
+          controls
+          className="rounded-md shadow-md w-full max-w-2xl"
+          src={Demo}
+          poster={cover}
+          height="800"
+          width="1280"
+        >
+          Your browser does not support the video tag.
+        </video>
       </div>
     </div>
   );

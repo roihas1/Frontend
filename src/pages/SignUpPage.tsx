@@ -8,6 +8,8 @@ import { useSuccessMessage } from "../components/providers&context/successMassag
 import Logo from "../assets/siteLogo/gray_trans.png";
 import { AxiosError } from "axios";
 import AuthCard from "../components/Layout/AuthCard";
+import { Divider } from "@mui/material";
+import googleLogo from "../assets/logos/search.png";
 
 const SignUpPage: React.FC = () => {
   // Adding TypeScript types to state variables
@@ -39,6 +41,13 @@ const SignUpPage: React.FC = () => {
         lastName,
         email,
       });
+
+      
+      await Promise.all([
+        axiosInstance.patch(`/user-missing-bets/user/updateBets`),
+        axiosInstance.patch(`/user-series-points/user/updatePoints`),
+      ]);
+
       setUsername("");
       setPassword("");
       setFirstName("");
@@ -63,13 +72,33 @@ const SignUpPage: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL
+        ? window.RUNTIME_CONFIG.VITE_BASE_URL
+        : import.meta.env.VITE_BASE_URL;
+      window.location.href = `${baseUrl}auth/google/login`;
+    } catch {
+      showError(`Failed to login with Google. Try again later.`);
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-center  w-full bg-gray-100 p-4 sm:p-8">
       {/* Left Side: Sign Up Form */}
       <div className="w-full md:w-3/5 flex flex-col items-center justify-center">
-        <AuthCard title="Sign Up" description="Enter your details below to create your account and get started">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+        <AuthCard
+          title="Sign Up"
+          description="Enter your details below to create your account and get started"
+        >
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full"
+          >
             <InputField
               id="username"
               label="Username"
@@ -77,7 +106,6 @@ const SignUpPage: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              
             />
             <InputField
               id="email"
@@ -86,7 +114,6 @@ const SignUpPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              
             />
             <InputField
               id="firstName"
@@ -95,7 +122,6 @@ const SignUpPage: React.FC = () => {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              
             />
             <InputField
               id="lastName"
@@ -104,7 +130,6 @@ const SignUpPage: React.FC = () => {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              
             />
             <InputField
               id="password"
@@ -113,7 +138,6 @@ const SignUpPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              
             />
             <InputField
               id="confirmPassword"
@@ -122,27 +146,45 @@ const SignUpPage: React.FC = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              
             />
             <div className="col-span-full flex justify-center">
-              <SubmitButton loading={loading} text="Sign Up" className="w-full sm:w-auto" />
+              <SubmitButton
+                loading={loading}
+                text="Sign Up"
+                className="w-full sm:w-auto"
+              />
             </div>
           </form>
+          <div className="my-4 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account ?{" "}
+              <Link
+                to="/login"
+                className="text-colors-nba-blue hover:text-colors-nba-red"
+              >
+                Login
+              </Link>
+            </p>
+          </div>
+          <Divider className="text-gray-400 text-xs">or continue with</Divider>
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={handleGoogleLogin}
+              className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80"
+            >
+              <img src={googleLogo} alt="Google Login" className="w-8 h-8" />
+            </button>
+          </div>
         </AuthCard>
-
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account or want to sign up with Google?{" "}
-            <Link to="/login" className="text-colors-nba-blue hover:text-colors-nba-red">
-              Login
-            </Link>
-          </p>
-        </div>
       </div>
 
       {/* Right Side: Logo (Hidden on Mobile) */}
       <div className="hidden sm:flex w-3/5 items-center justify-center">
-        <img src={Logo} alt="NBA Logo" className="w-4/5 max-w-xs md:max-w-2xl" />
+        <img
+          src={Logo}
+          alt="NBA Logo"
+          className="w-4/5 max-w-xs md:max-w-2xl"
+        />
       </div>
     </div>
   );
