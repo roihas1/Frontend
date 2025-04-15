@@ -88,11 +88,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series, userPoints, fetchData
         >
           {/* Team 1 */}
           <div
-            className={`relative flex items-center w-full  ${
-              seriesScore[0] > seriesScore[1]
-                ? "border-4 rounded-2xl border-blue-100 p-1"
-                : ""
-            }`}
+            className={`relative flex items-center w-full `}
           >
             {/* Left column for win count with background color */}
             <div className="w-1/4 flex justify-center items-center bg-blue-100 rounded-lg py-1">
@@ -124,11 +120,7 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series, userPoints, fetchData
 
           {/* Team 2 */}
           <div
-            className={`relative flex items-center w-full ${
-              seriesScore[0] < seriesScore[1]
-                ? "border-4 rounded-2xl border-blue-100 m-1 p-1"
-                : ""
-            }`}
+            className={`relative flex items-center w-full `}
           >
             {/* Left column for win count with background color */}
             <div className="w-1/4 flex justify-center items-center bg-blue-100 rounded-lg py-2">

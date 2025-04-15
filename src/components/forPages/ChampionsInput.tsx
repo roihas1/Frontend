@@ -125,28 +125,44 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         return [];
     }
   };
-  const playersList = [
-    "LeBron James",
-    "Stephen Curry",
+   const playersList: string[] = [
     "Shai Gilgeous-Alexander",
-    "Nikola Jokic",
-    "Jayson Tatum",
-    "Giannis Antetokounmpo",
-    "Kevin Durant",
-    "Kawhi Leonard",
-    "Anthony Edwards",
+    "Jalen Williams",
+    "Chet Holmgren",
+    "Jalen Green",
+    "Alperen Sengun",
+    "Fred VanVleet",
     "Luka Doncic",
-    "Devin Booker",
-    "Jaylen Brown",
-    "Jimmy Butler",
+    "LeBron James",
+    "Austin Reaves",
+    "Nikola Jokic",
     "Jamal Murray",
-    "Tyrese Haliburton",
-    "Donovan Mitchell",
-    "Jalen Brunson",
-    "Cade Cunningham",
     "James Harden",
-    "Amen Thompson",
+    "Norman Powell",
+    "Kawhi Leonard",
+    "Ivica Zubac",
+    "Stephen Curry",
+    "Jimmy Butler III",
+    "Anthony Edwards",
+    "Julius Randle",
+    "Ja Morant",
+    "Donovan Mitchell",
+    "Darius Garland",
+    "Evan Mobley",
+    "Jayson Tatum",
+    "Jaylen Brown",
+    "Derrick White",
+    "Jalen Brunson",
+    "Karl-Anthony Towns",
+    "OG Anunoby",
+    "Mikal Bridges",
+    "Josh Hart",
+    "Pascal Siakam",
+    "Tyrese Haliburton",
+    "Giannis Antetokounmpo",
+    "Cade Cunningham"
   ];
+  
   
   // Validate fields
   const validateFields = () => {
@@ -171,7 +187,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     }
   }, [validationError]);
   const handleEastFinalsTeamSelection = (team: string, numTeam: number) => {
-    console.log(team, numTeam);
     if (
       (team === selectedEasternTeam2 && numTeam === 1) ||
       (team === selectedEasternTeam1 && numTeam === 2)
@@ -187,7 +202,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     }
   };
   const handleWestFinalsTeamSelection = (team: string, numTeam: number) => {
-    console.log(team, numTeam);
     if (
       (team === selectedWesternTeam2 && numTeam === 1) ||
       (team === selectedWesternTeam1 && numTeam === 2)

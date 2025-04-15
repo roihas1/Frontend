@@ -47,6 +47,10 @@ const WelcomePage = () => {
           <p className="text-xs text-gray-500 pt-2 px-2">
             Think you know basketball? Let’s find out.
           </p>
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            *This app is for entertainment purposes only. No real money is
+            involved.
+          </p>
         </div>
 
         {/* Scroll Down Arrow */}
@@ -104,15 +108,29 @@ const WelcomePage = () => {
             ].map(({ step, title, description }) => (
               <div
                 key={step}
-                className={` ${step === "02" ? "bg-gradient-to-br from-colors-nba-blue to-blue-600": "bg-white"} relative snap-start shrink-0 w-[85vw]  rounded-xl shadow-lg p-6  mb-12 hover:-translate-y-1 transition-all duration-300 overflow-visible`}
+                className={` ${
+                  step === "02"
+                    ? "bg-gradient-to-br from-colors-nba-blue to-blue-600"
+                    : "bg-white"
+                } relative snap-start shrink-0 w-[85vw]  rounded-xl shadow-lg p-6  mb-12 hover:-translate-y-1 transition-all duration-300 overflow-visible`}
               >
                 <div className="absolute top-1 left-0 bg-colors-nba-yellow text-white font-bold w-8 h-8 flex items-center justify-center rounded-full shadow-md z-10">
                   {step}
                 </div>
-                <h3 className={` ${step === "02" ? "text-white" :"text-gray-800"} text-xl font-bold mb-2 mt-4`}>
+                <h3
+                  className={` ${
+                    step === "02" ? "text-white" : "text-gray-800"
+                  } text-xl font-bold mb-2 mt-4`}
+                >
                   {title}
                 </h3>
-                <p className={`${step === "02" ? "text-white" : "text-gray-600"} text-sm`}>{description}</p>
+                <p
+                  className={`${
+                    step === "02" ? "text-white" : "text-gray-600"
+                  } text-sm`}
+                >
+                  {description}
+                </p>
               </div>
             ))}
           </div>
@@ -142,13 +160,29 @@ const WelcomePage = () => {
           ].map(({ step, title, description }) => (
             <div
               key={step}
-              className={`relative  rounded-xl shadow-lg p-6 hover:-translate-y-2 transition-all duration-300 ${step === "02" ? "bg-gradient-to-br from-colors-nba-blue to-blue-600": "bg-white"}` }
+              className={`relative  rounded-xl shadow-lg p-6 hover:-translate-y-2 transition-all duration-300 ${
+                step === "02"
+                  ? "bg-gradient-to-br from-colors-nba-blue to-blue-600"
+                  : "bg-white"
+              }`}
             >
               <div className="absolute -top-4 -left-4 bg-colors-nba-yellow text-white font-bold w-10 h-10 flex items-center justify-center rounded-full shadow-md">
                 {step}
               </div>
-              <h3 className={`${step === "02" ? "text-white" : "text-gray-800"} text-xl font-bold text-gray-800 mb-2`}>{title}</h3>
-              <p className={`${step === "02" ? "text-white" : "text-gray-600" } text-sm`}>{description}</p>
+              <h3
+                className={`${
+                  step === "02" ? "text-white" : "text-gray-800"
+                } text-xl font-bold text-gray-800 mb-2`}
+              >
+                {title}
+              </h3>
+              <p
+                className={`${
+                  step === "02" ? "text-white" : "text-gray-600"
+                } text-sm`}
+              >
+                {description}
+              </p>
             </div>
           ))}
         </div>

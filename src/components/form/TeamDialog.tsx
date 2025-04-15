@@ -192,7 +192,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     if (validationError) {
       const timer = setTimeout(() => {
         setValidationError(null);
-      }, 5000); // 🕐 Clear error after 5 seconds
+      }, 5000);
 
       return () => clearTimeout(timer); // Cleanup if the component unmounts
     }
@@ -246,7 +246,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               spontaneousGuesses: selectedPlayerForBetSpontaneous,
             });
           }
-          await delay(500);
+          await delay(200);
           await axiosInstance.patch(`user-missing-bets/user/updateBets`);
           showSuccessMessage("Guesses were updated.");
           setLoading(false);
@@ -325,7 +325,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
         setNumOfSpontaneousBets(checkNumOfgames());
       } catch (error) {
-        console.log(error)
+        console.log(error);
         showError("Failed to fetch guesses and stats.");
       } finally {
         setLoading(false);
@@ -618,8 +618,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
                     {/* Green Dot if Team 1 is Leading */}
                     {isStartDatePassed &&
-                      guessPercentage?.teamWin["1"] >
-                        guessPercentage?.teamWin["2"] && (
+                      series.bestOf7BetId?.seriesScore &&
+                      series.bestOf7BetId.seriesScore[0] >
+                        series.bestOf7BetId.seriesScore[1] && (
                         <span className="absolute top-1/2 right-2 transform -translate-y-1/2 w-3 h-3 bg-green-500 rounded-full" />
                       )}
                   </label>
@@ -652,8 +653,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
                     {/* Green Dot if Team 2 is Leading */}
                     {isStartDatePassed &&
-                      guessPercentage?.teamWin["1"] <
-                        guessPercentage?.teamWin["2"] && (
+                      series.bestOf7BetId?.seriesScore &&
+                      series.bestOf7BetId.seriesScore[0] <
+                        series.bestOf7BetId.seriesScore[1] && (
                         <span className="absolute top-1/2 right-2 transform -translate-y-1/2 w-3 h-3 bg-green-500 rounded-full" />
                       )}
                   </label>

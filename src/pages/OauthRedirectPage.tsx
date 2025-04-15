@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { CircularProgress } from "@mui/material";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { useUser } from "../components/providers&context/userContext";
+import axiosInstance from "../api/axiosInstance";
 // import { useError } from "../components/providers&context/ErrorProvider";
 
 const OAuthRedirectPage: React.FC = () => {
@@ -34,7 +35,7 @@ const OAuthRedirectPage: React.FC = () => {
         localStorage.setItem("username", username);
         localStorage.setItem("role", userRole);
         setRole(userRole);
-
+        await axiosInstance.patch(`/user-series-points/user/updatePoints`);
         showSuccessMessage("Logged in successfully!");
         navigate("/home");
       }

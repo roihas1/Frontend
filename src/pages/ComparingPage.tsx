@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-import { AllSeriesBets, checkTokenExpiration, Guess, User } from "../types";
+import { AllSeriesBets, Guess, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import { useLocation } from "react-router-dom";
 import ChampColumn from "../components/forPages/ChampColumn";
@@ -119,9 +119,7 @@ const ComparingPage: React.FC = () => {
             params: { query },
           });
           setSearchResults(response.data); // Only update searchResults
-          console.log(response.data);
-          // setUsers
-          console.log(users);
+        
           const newUsers = response.data.reduce(
             (acc: { [key: string]: User }, user: User) => {
               acc[user.id] = user;
@@ -285,7 +283,6 @@ const ComparingPage: React.FC = () => {
       Object.keys(allSeriesBets).length > 0 &&
       secondUserId
     ) {
-      console.log("Triggering setInitialsComprison with:", secondUserId);
       setInitialsComprison();
     }
   }, [
@@ -458,7 +455,7 @@ const ComparingPage: React.FC = () => {
 
   const getFantasyPoints = (userId: string) => {
     const user = users[userId];
-    return user?.fantasyPoints;
+    return user?.fantasyPoints + user?.championPoints;
   };
   const SearchIcon = () => (
     <svg
@@ -938,7 +935,7 @@ const ComparingPage: React.FC = () => {
           {/* {Object.keys(users).map((id)=> <p>{id}</p>)} */}
           {Object.keys(users).length > 0 &&
             Object.keys(selectedUsers).map((userId, index) => {
-              console.log(users);
+
               const userName = `${users?.[userId].firstName} ${users?.[userId].lastName}`;
               const firstName = users?.[userId].firstName;
               const lastName = users?.[userId].lastName;

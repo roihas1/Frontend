@@ -31,7 +31,7 @@ const LeaguesSelectionPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [showCreateNewLeague, setShowCreateNewLeague] =
     useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<User>();
+  // const [currentUser, setCurrentUser] = useState<User>();
   const [showJoinLeague, setShowJoinLeague] = useState<boolean>(false);
   const [leagueCode, setLeagueCode] = useState<string>("");
   const [leagueName, setLeagueName] = useState<string>("");
@@ -59,9 +59,7 @@ const LeaguesSelectionPage: React.FC = () => {
 
   const {
     data: privateLeagues,
-
     isError,
-    refetch,
   } = useQuery({
     queryKey: ["private-leagues"],
     queryFn: async () => {
@@ -98,10 +96,10 @@ const LeaguesSelectionPage: React.FC = () => {
     }
   }, [isOverallError]);
 
-  useEffect(() => {
-    // fetchOverallLeague();
-    fetchUser();
-  }, []);
+  // useEffect(() => {
+  //   // fetchOverallLeague();
+  //   fetchUser();
+  // }, []);
 
   const handleCreateNewLeague = () => setShowCreateNewLeague(true);
   const handleShowJoinLeague = () => setShowJoinLeague(true);
@@ -124,8 +122,12 @@ const LeaguesSelectionPage: React.FC = () => {
       }
     },
   });
-  const handleJoinLeague = () => {
-    if (!leagueCode) return showError(`Must enter a league code`);
+  const handleJoinLeague = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leagueCode) {
+      showError(`Must enter a league code`);
+      return;
+    }
     joinLeagueMutation.mutate(leagueCode);
   };
   
@@ -146,15 +148,30 @@ const LeaguesSelectionPage: React.FC = () => {
   //     }
   //   }
   // };
-
-  const fetchUser = async () => {
-    try {
+  const { data: currentUser, isError: isUserError } = useQuery<User>({
+    queryKey: ["current-user"],
+    queryFn: async () => {
       const response = await axiosInstance.get("/auth/user");
-      setCurrentUser(response.data);
-    } catch (error) {
-      showError(`Server error.`);
+      return response.data;
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes (stays fresh)
+    gcTime: 60 * 60 * 1000,    // 1 hour (kept in cache)
+  });
+  
+  useEffect(() => {
+    if (isUserError) {
+      showError("Failed to fetch user info");
     }
-  };
+  }, [isUserError]);
+  
+  // const fetchUser = async () => {
+  //   try {
+  //     const response = await axiosInstance.get("/auth/user");
+  //     setCurrentUser(response.data);
+  //   } catch (error) {
+  //     showError(`Server error.`);
+  //   }
+  // };
 
   const handleSubmitNewLeague = async () => {
     if (!leagueName) return showError(`Must enter a league name`);

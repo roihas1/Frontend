@@ -37,6 +37,7 @@ import { BestOf7Bet, PlayerMatchupBet, SpontaneousBet } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
+import defaultLogo from "../assets/logos/defaultLogoTBD.png";
 import {
   Accordion,
   AccordionDetails,
@@ -46,7 +47,7 @@ import {
   Modal,
   Zoom,
 } from "@mui/material";
-import { checkTokenExpiration } from "../types";
+// import { checkTokenExpiration } from "../types";
 // import PageBackground from "../components/common/PageBackground";
 // import backgroundLogo from "../assets/siteLogo/gray_only_ball_trans.png";
 // export interface PlayerMatchupBet {
@@ -337,7 +338,7 @@ const HomePage: React.FC = () => {
         const response = await axiosInstance.get("/home-page/load");
         const { userGuessedAll, seriesList, playoffsStages, userPoints } =
           response.data;
-        console.log(userPoints);
+    
         // Organize series by conference
         const updatedSeries: {
           west: Series[];
@@ -351,8 +352,8 @@ const HomePage: React.FC = () => {
           ].push({
             ...element,
             dateOfStart: new Date(element.dateOfStart),
-            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")],
-            logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")],
+            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")] || defaultLogo,
+            logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")] || defaultLogo,
             team1: nbaTeams[element.team1],
             team2: nbaTeams[element.team2],
           });
@@ -371,8 +372,13 @@ const HomePage: React.FC = () => {
         });
 
         if (upcomingStage) {
+          const startDate = new Date(upcomingStage.startDate);
+          const time = upcomingStage.timeOfStart.split(":");
+          startDate.setHours(parseInt(time[0]));
+          startDate.setMinutes(parseInt(time[1]));
+        
           setStage(upcomingStage.name);
-          setStageStartDate(new Date(upcomingStage.startDate));
+          setStageStartDate(startDate); // ✅ Now includes time as well
         } else {
           setStage("Finish");
         }

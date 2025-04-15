@@ -83,6 +83,7 @@ export interface BestOf7Bet {
     id: string;
     username: string;
     fantasyPoints: number;
+    championPoints:number;
     role: string;
     firstName: string;
     lastName: string;

@@ -18,7 +18,6 @@ import {
   Zoom,
 } from "@mui/material";
 import {
-  checkTokenExpiration,
   MatchupCategory,
   nbaTeamsList,
   PlayerMatchupBet,
@@ -182,8 +181,7 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleGameNumberSelection = (event: SelectChangeEvent<string>) => {
     const { value } = event.target;
-    console.log(value);
-    console.log(typeof value);
+
     setSelectedBet({
       ...selectedBet,
       gameNumber: parseInt(value),
@@ -547,7 +545,7 @@ const UpdateBetsPage: React.FC = () => {
       spontaneousBets.filter((bet) => bet.id === selectedBet.id).length > 0
         ? true
         : false;
-    console.log(spontaneous);
+  
     try {
       if (spontaneous) {
         await axiosInstance.patch(`spontaneous-bet/${selectedBet?.id}/update`, {
@@ -1222,7 +1220,7 @@ const UpdateBetsPage: React.FC = () => {
                     : ""
                 }
                 onChange={(e) => {
-                  console.log(e.target.value);
+                  
                   setSelectedSeries((prevSeries) =>
                     prevSeries
                       ? {
@@ -1242,7 +1240,6 @@ const UpdateBetsPage: React.FC = () => {
                 name="timeOfStart"
                 value={selectedSeries.timeOfStart}
                 onChange={(e) => {
-                  console.log(e.target.value);
                   setSelectedSeries((prevSeries) =>
                     prevSeries
                       ? {

@@ -59,7 +59,7 @@ const TermsOfUsePage: React.FC = () => {
           If you have any questions or concerns about these Terms of Use, you can
           contact us at:
         </p>
-        <p className="font-medium">Email: support@beyond-the-bracket.com</p>
+        <p className="font-medium">Email: info.beyondthebracket@gmail.com</p>
 
         <hr className="my-8" />
 

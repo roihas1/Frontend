@@ -8,7 +8,6 @@ const BetColumn = ({
   isSpontaneous: boolean;
 }) => {
   const opacity = 0.218;
-  console.log(betsData);
   return (
     <div className="flex flex-col space-y-2">
       {!isSpontaneous && (
