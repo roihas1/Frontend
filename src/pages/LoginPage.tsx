@@ -45,7 +45,10 @@ const LoginPage: React.FC = () => {
       Cookies.set("auth_token", accessToken, { expires: expiresInSeconds / (24 * 60 * 60) });
       localStorage.setItem("username", username);
       localStorage.setItem("role", userRole);
-      await axiosInstance.patch(`user-missing-bets/user/updateBets`);
+      await Promise.all([
+        axiosInstance.patch(`/user-missing-bets/user/updateBets`),
+        axiosInstance.patch(`/user-series-points/user/updatePoints`),
+      ]);
       setRole(userRole);
       setIsLoggedIn(true);
       checkAuthStatus();

@@ -1,3 +1,4 @@
+import { Tooltip } from "@mui/material";
 import React, { useState } from "react";
 
 interface FormInputProps {
@@ -29,7 +30,44 @@ const FormInput: React.FC<FormInputProps> = ({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700" htmlFor={id}>
-        {label}
+        <span className="inline-flex items-center gap-1">
+          {label}
+          {id === "password-signup" && (
+            <Tooltip
+              title={
+                <div className="text-xs max-w-[220px] text-left">
+                  <p className="font-semibold mb-1">Password must:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Be 8–32 characters long</li>
+                    <li>Include at least one lowercase letter</li>
+                    <li>Include at least one uppercase letter</li>
+                    <li>Include at least one number or special character</li>
+                  </ul>
+                </div>
+              }
+              arrow
+              placement="right"
+              enterTouchDelay={0}
+              leaveTouchDelay={3000}
+              enterDelay={200}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-4 h-4 text-black cursor-pointer"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                />
+              </svg>
+            </Tooltip>
+          )}
+        </span>
       </label>
       <div className="relative mt-1">
         <input

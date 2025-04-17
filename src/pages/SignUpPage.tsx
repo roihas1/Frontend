@@ -42,12 +42,6 @@ const SignUpPage: React.FC = () => {
         email,
       });
 
-      
-      await Promise.all([
-        axiosInstance.patch(`/user-missing-bets/user/updateBets`),
-        axiosInstance.patch(`/user-series-points/user/updatePoints`),
-      ]);
-
       setUsername("");
       setPassword("");
       setFirstName("");
@@ -95,6 +89,22 @@ const SignUpPage: React.FC = () => {
           title="Sign Up"
           description="Enter your details below to create your account and get started"
         >
+          <div className="flex flex-col  space-y-4 sm:hidden mb-4">
+            <Divider className="text-gray-400 text-xs mb-4">
+              Sign Up with
+            </Divider>
+            <div className="flex justify-center">
+              <button
+                onClick={handleGoogleLogin}
+                className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80"
+              >
+                <img src={googleLogo} alt="Google Login" className="w-8 h-8" />
+              </button>
+            </div>
+            <Divider className="text-gray-400 text-xs mt-4">
+              or use email
+            </Divider>
+          </div>
           <form
             onSubmit={handleSubmit}
             className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full"
@@ -131,14 +141,18 @@ const SignUpPage: React.FC = () => {
               onChange={(e) => setLastName(e.target.value)}
               required
             />
-            <InputField
-              id="password"
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="relative">
+              <InputField
+                id="password-signup"
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              
+            </div>
+
             <InputField
               id="confirmPassword"
               label="Confirm Password"
@@ -166,14 +180,18 @@ const SignUpPage: React.FC = () => {
               </Link>
             </p>
           </div>
-          <Divider className="text-gray-400 text-xs">or continue with</Divider>
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={handleGoogleLogin}
-              className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80"
-            >
-              <img src={googleLogo} alt="Google Login" className="w-8 h-8" />
-            </button>
+          <div className="hidden sm:flex flex-col space-y-2 mt-4">
+            <Divider className="text-gray-400 text-xs mb-2">
+              or continue with
+            </Divider>
+            <div className="flex justify-center">
+              <button
+                onClick={handleGoogleLogin}
+                className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80"
+              >
+                <img src={googleLogo} alt="Google Login" className="w-8 h-8" />
+              </button>
+            </div>
           </div>
         </AuthCard>
       </div>

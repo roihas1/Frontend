@@ -33,7 +33,7 @@ export const nbaTeamsNicknamesReversed: { [key: string]: string } = {
   "Memphis Grizzlies": "Grizzlies",
   "Miami Heat": "Heat",
   "Milwaukee Bucks": "Bucks",
-  "Minnesota Timberwolves": "Timberwolves",
+  "Minnesota Timberwolves": "Wolves",
   "New Orleans Pelicans": "Pelicans",
   "New York Knicks": "Knicks",
   "Oklahoma City Thunder": "Thunder",
@@ -66,7 +66,7 @@ export const nbaTeamsNicknames: { [key: string]: string } = {
   Grizzlies: "Memphis Grizzlies",
   Heat: "Miami Heat",
   Bucks: "Milwaukee Bucks",
-  Timberwolves: "Minnesota Timberwolves",
+  Wolves: "Minnesota Timberwolves",
   Pelicans: "New Orleans Pelicans",
   Knicks: "New York Knicks",
   Thunder: "Oklahoma City Thunder",
@@ -226,7 +226,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       setValidationError("Please fill in all the required fields.");
       return;
     }
-
+console.log(nbaTeamsNicknames[selectedWesternTeam1])
     try {
       if (stage === "Before playoffs") {
         await axiosInstance.post("/champions-guess/update/beforePlayoffs", {

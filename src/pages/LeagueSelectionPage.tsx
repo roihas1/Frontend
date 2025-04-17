@@ -100,7 +100,6 @@ const LeaguesSelectionPage: React.FC = () => {
   //   // fetchOverallLeague();
   //   fetchUser();
   // }, []);
-
   const handleCreateNewLeague = () => setShowCreateNewLeague(true);
   const handleShowJoinLeague = () => setShowJoinLeague(true);
   const joinLeagueMutation = useMutation({

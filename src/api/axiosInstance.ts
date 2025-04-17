@@ -14,8 +14,14 @@ const hasValidToken = (): boolean => {
 
 
 const isAuthRequest = (url: string) => {
-  return url.includes("/auth/signin") || url.includes("/auth/signup");
+  try {
+    const path = new URL(url, baseUrl).pathname;
+    return path.includes("/auth/signin") || path.includes("/auth/signup");
+  } catch {
+    return false;
+  }
 };
+
 
 
 const handleLogout = () => {
@@ -23,7 +29,7 @@ const handleLogout = () => {
   const username = localStorage.getItem("username");
 
   // Send logout request to backend
-  axios.patch(`${import.meta.env.VITE_BASE_URL}/auth/logout`, { username });
+  axios.patch(`${import.meta.env.VITE_BASE_URL}auth/logout`, { username });
 
   
   window.dispatchEvent(new Event("forceLogout"));
