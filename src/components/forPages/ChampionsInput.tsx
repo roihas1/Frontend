@@ -226,7 +226,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       setValidationError("Please fill in all the required fields.");
       return;
     }
-console.log(nbaTeamsNicknames[selectedWesternTeam1])
     try {
       if (stage === "Before playoffs") {
         await axiosInstance.post("/champions-guess/update/beforePlayoffs", {

@@ -40,6 +40,7 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
 
   const fetchPriorStageGuesses = async () => {
     try {
+      if (stage === "Before playoffs") return;
       const response = await axiosInstance.get(
         `playoffs-stage/getGuesses/${stage}`
       );
