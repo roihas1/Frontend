@@ -184,14 +184,23 @@ const ComparingPage: React.FC = () => {
   const setInitialsComprison = async () => {
     setIsLoadingInitial(true);
     let seriesKey = "";
-    let name = "";
     if (!series) {
       showError(`No Series has Ended`);
       return;
     }
     for (const key of Object.keys(allSeriesBets)) {
-      if (new Date(allSeriesBets[key].startDate) < new Date()) {
-        name = `${allSeriesBets[key].team1} vs ${allSeriesBets[key].team2} (${allSeriesBets[key].round})`;
+      const series = allSeriesBets[key];
+      if (!series.startDate || !series.timeOfStart) continue;
+    
+      const [hours, minutes] = series.timeOfStart.split(':').map(Number);
+      const dateWithTime = new Date(series.startDate);
+      dateWithTime.setHours(hours);
+      dateWithTime.setMinutes(minutes);
+      dateWithTime.setSeconds(0);
+      dateWithTime.setMilliseconds(0);
+    
+      if (dateWithTime < new Date()) {
+        const name = `${series.team1} vs ${series.team2} (${series.round})`;
         seriesKey = key;
         setSelectedSeries(key);
         setSelectedSeriesName(name);
@@ -253,7 +262,18 @@ const ComparingPage: React.FC = () => {
     if (!comparisonData?.allBets) return {};
     const result: { [key: string]: string } = {};
     Object.entries(comparisonData.allBets).forEach(([key, value]: any) => {
-      if (new Date(value.startDate) < new Date()) {
+      const [hours, minutes] = value.timeOfStart.split(':').map(Number);
+
+      const dateWithTime = new Date(value.startDate);
+      dateWithTime.setHours(hours);
+      dateWithTime.setMinutes(minutes);
+      dateWithTime.setSeconds(0);
+      dateWithTime.setMilliseconds(0);
+  
+      console.log(dateWithTime);
+      console.log(value);
+  
+      if (dateWithTime < new Date()) {
         result[key] = `${value.team1} vs ${value.team2} (${value.round})`;
       }
     });

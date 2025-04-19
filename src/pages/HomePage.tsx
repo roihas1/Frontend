@@ -338,7 +338,7 @@ const HomePage: React.FC = () => {
         const response = await axiosInstance.get("/home-page/load");
         const { userGuessedAll, seriesList, playoffsStages, userPoints } =
           response.data;
-    
+
         // Organize series by conference
         const updatedSeries: {
           west: Series[];
@@ -352,8 +352,12 @@ const HomePage: React.FC = () => {
           ].push({
             ...element,
             dateOfStart: new Date(element.dateOfStart),
-            logo1: logos[element.team1.toLowerCase().replace(/ /g, "_")] || defaultLogo,
-            logo2: logos[element.team2.toLowerCase().replace(/ /g, "_")] || defaultLogo,
+            logo1:
+              logos[element.team1.toLowerCase().replace(/ /g, "_")] ||
+              defaultLogo,
+            logo2:
+              logos[element.team2.toLowerCase().replace(/ /g, "_")] ||
+              defaultLogo,
             team1: nbaTeams[element.team1],
             team2: nbaTeams[element.team2],
           });
@@ -376,7 +380,7 @@ const HomePage: React.FC = () => {
           const time = upcomingStage.timeOfStart.split(":");
           startDate.setHours(parseInt(time[0]));
           startDate.setMinutes(parseInt(time[1]));
-        
+
           setStage(upcomingStage.name);
           setStageStartDate(startDate); // ✅ Now includes time as well
         } else {
@@ -686,7 +690,8 @@ const HomePage: React.FC = () => {
                       </div>
                     </Tooltip>
                   )}
-                  {!isPartialGuess[matchup.id ?? ""] && (
+
+                  {!isPartialGuess[matchup.id ?? ""] ? (
                     <div className="absolute top-[-24px]  transform mb-4 ">
                       <Tooltip
                         title="Missing guesses"
@@ -706,6 +711,33 @@ const HomePage: React.FC = () => {
                           <path
                             fill="white"
                             d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                          />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                  ) : (
+                    <div className="absolute top-[-24px] transform mb-4">
+                      <Tooltip
+                        title="Guessed all"
+                        slots={{
+                          transition: Zoom,
+                        }}
+                        arrow
+                        placement="left"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="size-6"
+                        >
+                          <circle cx="12" cy="12" r="9" fill="green" />
+                          <path
+                            d="M9 12.75L11.25 15L15 9.75"
+                            stroke="white"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
                           />
                         </svg>
                       </Tooltip>
