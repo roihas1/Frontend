@@ -769,7 +769,7 @@ const HomePage: React.FC = () => {
             onClick={() => setShowMobileChampInput(true)}
           >
             {" "}
-            Open Champoins Bets
+            Open Champions Bets
           </button>
         </div>
         <Modal
