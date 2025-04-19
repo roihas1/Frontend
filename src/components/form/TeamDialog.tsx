@@ -164,7 +164,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     playerMatchupGuess: {},
     spontaneousGuesses: {},
   });
-  
 
   const createDateExpiration = () => {
     const dateExpiration: { [key: string]: boolean } = {};
@@ -240,8 +239,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     if (
       initialGuesses.teamWinGuess === undefined ||
       initialGuesses.bestOf7Guess === undefined
-    ) return true; // user didn’t guess yet
-  
+    )
+      return true; // user didn’t guess yet
+
     for (const betId in selectedPlayerForBet) {
       // Only return true if this is a new bet (wasn't in the initial guesses at all)
       if (!(betId in initialGuesses.playerMatchupGuess)) return true;
@@ -250,6 +250,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       if (!(betId in initialGuesses.spontaneousGuesses)) return true;
     }
     return false; // no new guesses
+  };
+  const delay = (ms: number): Promise<void> => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   };
   const handleSubmit = async () => {
     // Validate input
@@ -269,10 +272,11 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               spontaneousGuesses: selectedPlayerForBetSpontaneous,
             });
           }
+          await delay(100);
           if (hasNewGuesses()) {
             await axiosInstance.patch(`user-missing-bets/user/updateBets`);
           }
-          
+
           showSuccessMessage("Guesses were updated.");
           setLoading(false);
           setSelectedTeam(-1); // Reset selected team
@@ -291,7 +295,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
   };
 
-  
   const checkNumOfgames = () => {
     let max = 0;
     series.spontaneousBets?.forEach((bet) => {
@@ -355,7 +358,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           teamWinGuess: userGuesses["teamWinGuess"]?.guess,
           bestOf7Guess: userGuesses["bestOf7Guess"]?.guess,
           playerMatchupGuess: Object.fromEntries(
-            userGuesses["playerMatchupGuess"].map((g: any) => [g.betId, g.guess])
+            userGuesses["playerMatchupGuess"].map((g: any) => [
+              g.betId,
+              g.guess,
+            ])
           ),
           spontaneousGuesses: Object.fromEntries(
             spontaneousGuesses.map((g: any) => [g.betId, g.guess])
