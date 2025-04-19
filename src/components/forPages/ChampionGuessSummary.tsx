@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useError } from "../providers&context/ErrorProvider";
-// import { useSuccessMessage } from "../providers&context/successMassageProvider";
 import axiosInstance from "../../api/axiosInstance";
 import {
   Accordion,
@@ -8,6 +7,7 @@ import {
   AccordionSummary,
   Typography,
 } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
 
 interface PriorGuesses {
   conferenceFinalGuesses: {
@@ -30,34 +30,37 @@ interface ChampionGuessProps {
   stage: string;
 }
 
+const stagesToShow = ["Before Playoffs", "Round 1", "Round 2"];
+
 const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
   const { showError } = useError();
-  // const { showSuccessMessage } = useSuccessMessage();
-  const [priorGuesses, setPriorGuesses] = useState<PriorGuesses>();
-  const [priorGuessesRound2, setPriorGuessesRound2] =
-    useState<PriorGuessesByStage>();
-  const [stagesToShow, setStagesToShow] = useState<string[]>([]);
 
-  const fetchPriorStageGuesses = async () => {
-    try {
-      if (stage === "Before playoffs") return;
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["priorGuesses", stage],
+    queryFn: async () => {
+      if (stage === "Before playoffs") return null;
       const response = await axiosInstance.get(
         `playoffs-stage/getGuesses/${stage}`
       );
-      if (stage === "Round 2" || stage === "Finish") {
-        setPriorGuessesRound2(response.data);
-      } else {
-        setPriorGuesses(response.data);
-      }
-    } catch (error) {
-      showError(`Failed to fetch guesses ${error}`);
-    }
-  };
+      return response.data;
+    },
+    enabled: stage !== "Before playoffs",
+    staleTime: 3600000, // 1 hour
+    gcTime: 3600000, // 1 hour
+    retry: 1,
+  });
 
   useEffect(() => {
-    fetchPriorStageGuesses();
-    setStagesToShow(["Before Playoffs", "Round 1", "Round 2"]);
-  }, []);
+    if (isError && error) {
+      showError(`Failed to fetch guesses: ${error}`);
+    }
+  }, [isError, error, showError]);
+
+  const priorGuesses = stage === "Round 1" ? (data as PriorGuesses) : undefined;
+  const priorGuessesRound2 =
+    stage === "Round 2" || stage === "Finish"
+      ? (data as PriorGuessesByStage)
+      : undefined;
 
   const renderGuessSection = (title: string, guesses: any[]) => (
     <div className="mb-4">
@@ -80,52 +83,50 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({ stage }) => {
     stageName: string,
     guesses: PriorGuesses | undefined,
     stageKey: keyof PriorGuessesByStage
-  ) => {
-    return (
-      <Accordion key={stageName} className="mb-4">
-        <AccordionSummary
-          expandIcon={
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="m19.5 8.25-7.5 7.5-7.5-7.5"
-              />
-            </svg>
-          }
-          aria-controls={`panel-${stageName}-content`}
-          id={`panel-${stageName}-header`}
-        >
-          <Typography component="span">{stageName}</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <div>
-            {guesses && (
-              <>
-                {stageKey === "beforePlayoffs" &&
-                  renderGuessSection(
-                    "Conference Final Guesses",
-                    guesses.conferenceFinalGuesses
-                  )}
-                {renderGuessSection(
-                  "Champion Team Guess",
-                  guesses.championTeamGuesses
-                )}
-                {renderGuessSection("MVP Guesses", guesses.mvpGuesses)}
-              </>
+  ) => (
+    <Accordion key={stageName} className="mb-4">
+      <AccordionSummary
+        expandIcon={
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+            className="size-4"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            />
+          </svg>
+        }
+        aria-controls={`panel-${stageName}-content`}
+        id={`panel-${stageName}-header`}
+      >
+        <Typography component="span">{stageName}</Typography>
+      </AccordionSummary>
+      <AccordionDetails>
+        {guesses && (
+          <>
+            {stageKey === "beforePlayoffs" &&
+              renderGuessSection(
+                "Conference Final Guesses",
+                guesses.conferenceFinalGuesses
+              )}
+            {renderGuessSection(
+              "Champion Team Guess",
+              guesses.championTeamGuesses
             )}
-          </div>
-        </AccordionDetails>
-      </Accordion>
-    );
-  };
+            {renderGuessSection("MVP Guesses", guesses.mvpGuesses)}
+          </>
+        )}
+      </AccordionDetails>
+    </Accordion>
+  );
+
+  if (isLoading) return <div className="text-center">Loading guesses...</div>;
 
   return (
     <div>

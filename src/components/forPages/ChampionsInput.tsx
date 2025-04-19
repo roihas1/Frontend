@@ -7,6 +7,7 @@ import { useError } from "../providers&context/ErrorProvider";
 import SubmitButton from "../common/SubmitButton";
 import CustomSelectInput from "../form/CustomSelectInput";
 import ChampionGuessSummary from "../forPages/ChampionGuessSummary";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -15,6 +16,16 @@ interface ChampionsInputProps {
   stage: string;
   setShowInput: () => void;
 }
+interface UserGuessesResponse {
+  conferenceFinalGuesses: {
+    team1: string;
+    team2: string;
+    conference: string;
+  }[];
+  championTeamGuesses: { team: string }[];
+  mvpGuesses: { player: string }[];
+}
+
 export const nbaTeamsNicknamesReversed: { [key: string]: string } = {
   "Atlanta Hawks": "Hawks",
   "Boston Celtics": "Celtics",
@@ -97,8 +108,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const [selectedMvp, setSelectedMvp] = useState<string>("");
   const [selectedChampion, setSelectedChampion] = useState<string>("");
   const [guessesFilled, setGuessesFilled] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
+  // const [isLoading, setLoading] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const queryClient = useQueryClient(); 
 
   const { showSuccessMessage } = useSuccessMessage();
   const { showError } = useError();
@@ -125,7 +137,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         return [];
     }
   };
-   const playersList: string[] = [
+  const playersList: string[] = [
     "Shai Gilgeous-Alexander",
     "Jalen Williams",
     "Chet Holmgren",
@@ -160,10 +172,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     "Pascal Siakam",
     "Tyrese Haliburton",
     "Giannis Antetokounmpo",
-    "Cade Cunningham"
+    "Cade Cunningham",
   ];
-  
-  
+
   // Validate fields
   const validateFields = () => {
     return (
@@ -265,6 +276,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
           stage,
         });
       }
+      await queryClient.invalidateQueries({ queryKey: ["userGuesses", stage] });
     } catch (error) {
       console.log(error);
       showError(`Failed to update champion guess ${error}`);
@@ -273,57 +285,76 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       showSuccessMessage("Your guesses updated!");
     }
   };
-  const fetchUserGuesses = async (stage: string) => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get(
+
+  const {
+    data: guesses,
+    isSuccess,
+    isLoading,
+    isError,
+  } = useQuery<UserGuessesResponse>({
+    queryKey: ["userGuesses", stage],
+    queryFn: async () => {
+      const res = await axiosInstance.get(
         `/playoffs-stage/userGuesses/${stage}`
       );
-      const guesses = response.data;
+      return res.data;
+    },
+    enabled: stage !== "Finish",
+    retry: 1,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+  useEffect(() => {
+      if (isError) {
+        showError("Failed to fetch user champions guesses");
+      }
+    }, [isError]);
 
-      if (
-        guesses.conferenceFinalGuesses.length > 0 &&
-        stage === "Before playoffs"
-      ) {
-        for (const guess of guesses.conferenceFinalGuesses) {
-          switch (guess.conference) {
-            case "East":
-              setSelectedEasternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-              setSelectedEasternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-              setGuessesFilled(true);
-              break;
-            case "West":
-              setSelectedWesternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-              setSelectedWesternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-              setGuessesFilled(true);
-              break;
-            case "Finals":
-              setSelectedFinalsTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-              setSelectedFinalsTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-              setGuessesFilled(true);
-              break;
-          }
+  useEffect(() => {
+    if (!isSuccess || !guesses) return;
+  
+    let hasGuesses = false;
+  
+    if (
+      guesses.conferenceFinalGuesses.length > 0 &&
+      stage === "Before playoffs"
+    ) {
+      for (const guess of guesses.conferenceFinalGuesses) {
+        switch (guess.conference) {
+          case "East":
+            setSelectedEasternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+            setSelectedEasternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
+            hasGuesses = true;
+            break;
+          case "West":
+            setSelectedWesternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+            setSelectedWesternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
+            hasGuesses = true;
+            break;
+          case "Finals":
+            setSelectedFinalsTeam1(nbaTeamsNicknamesReversed[guess.team1]);
+            setSelectedFinalsTeam2(nbaTeamsNicknamesReversed[guess.team2]);
+            hasGuesses = true;
+            break;
         }
       }
-      if (guesses.championTeamGuesses.length > 0) {
-        setSelectedChampion(guesses.championTeamGuesses[0].team);
-        setGuessesFilled(true);
-      }
-      if (guesses.mvpGuesses.length > 0) {
-        setSelectedMvp(guesses.mvpGuesses[0].player);
-        setGuessesFilled(true);
-      }
-    } catch (error) {
-      showError(`Failed to get your guesses.`);
-    } finally {
-      setLoading(false);
     }
-  };
-  useEffect(() => {
-    if (stage !== "Finish") {
-      fetchUserGuesses(stage);
+  
+    if (guesses.championTeamGuesses.length > 0) {
+      setSelectedChampion(guesses.championTeamGuesses[0].team);
+      hasGuesses = true;
     }
-  }, [stage]);
+  
+    if (guesses.mvpGuesses.length > 0) {
+      setSelectedMvp(guesses.mvpGuesses[0].player);
+      hasGuesses = true;
+    }
+  
+    if (hasGuesses) {
+      setGuessesFilled(true);
+    }
+  }, [isSuccess, guesses, stage]);
+  
 
   // Get the teams for each round
   const easternTeams = getTeamsForRound("east");
@@ -348,7 +379,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   }
   const lastDate = new Date(startDate).toLocaleString("he-IL", {
     timeZone: "Asia/Jerusalem",
-  })
+  });
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
       {stage !== "Before playoffs" && (
@@ -362,11 +393,8 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       }`}</h3>
       <div className="text-center text-gray-600 text-sm mt-4">
         <p>
-          You have until{" "}
-          <span className="font-semibold">
-            {lastDate}
-          </span>{" "}
-          to make your guesses.
+          You have until <span className="font-semibold">{lastDate}</span> to
+          make your guesses.
         </p>
         {guessesFilled && (
           <p className="font-bold text-colors-nba-blue">
@@ -376,13 +404,13 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       </div>
 
       <form onSubmit={handleSubmit}>
-        {loading && (
+        {isLoading && (
           <div className="flex justify-center">
             <CircularProgress />
           </div>
         )}
         {/* Eastern Conference Finals */}
-        {!loading && stage === "Before playoffs" && (
+        {!isLoading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">
               Eastern Conference Finals
@@ -418,7 +446,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         )}
 
         {/* Western Conference Finals */}
-        {!loading && stage === "Before playoffs" && (
+        {!isLoading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl mt-2 font-semibold text-gray-700">
               Western Conference Finals
@@ -454,7 +482,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         )}
 
         {/* Finals */}
-        {!loading && stage === "Before playoffs" && (
+        {!isLoading && stage === "Before playoffs" && (
           <div className="space-y-4">
             <h3 className="text-xl font-semibold mt-2 text-gray-700">Finals</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -487,7 +515,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
           stage === "Round 2") &&
-          !loading && (
+          !isLoading && (
             <div className="space-y-4">
               <h3 className="text-xl mt-2 font-semibold text-gray-700">MVP</h3>
               <FormControl fullWidth required>
@@ -507,7 +535,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         {(stage === "Before playoffs" ||
           stage === "Round 1" ||
           stage === "Round 2") &&
-          !loading && (
+          !isLoading && (
             <div className="space-y-4">
               <h3 className="text-xl mt-2 font-semibold text-gray-700">
                 Champion
