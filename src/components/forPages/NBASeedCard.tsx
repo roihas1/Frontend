@@ -22,7 +22,6 @@ const NBASeedCard: React.FC<NBASeedCardProps> = ({ series, userPoints, fetchData
   const closeDialog = () => {
     setIsDialogOpen(false);
 
-    
   };
   const [loading, setLoading] = useState<boolean>(false);
 

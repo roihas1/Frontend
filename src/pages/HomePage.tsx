@@ -947,36 +947,65 @@ const HomePage: React.FC = () => {
 
                             {/* Reserve space for icon regardless */}
                             <div className="w-10 mr-4 flex justify-end">
-                              {!isPartialGuess[matchup.id ?? ""] && (
+                              {typeof isPartialGuess[matchup.id ?? ""] !==
+                                "undefined" && (
                                 <Tooltip
-                                  title="Missing guesses"
+                                  title={
+                                    isPartialGuess[matchup.id ?? ""]
+                                      ? "Guessed all"
+                                      : "Missing guesses"
+                                  }
                                   arrow
                                   placement="bottom"
                                   enterTouchDelay={0}
-                                  leaveTouchDelay={1500}
+                                  leaveTouchDelay={2000}
+                                  slots={{ transition: Zoom }}
                                 >
-                                  <button
-                                    className="p-1 rounded-full focus:outline-none"
+                                  <div
+                                    className="p-1 rounded-full cursor-default"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      viewBox="0 0 24 24"
-                                      fill="currentColor"
-                                      className="w-5 h-5 text-yellow-500"
-                                    >
-                                      <circle
-                                        cx="12"
-                                        cy="12"
-                                        r="9"
-                                        fill="#FDB927"
-                                      />
-                                      <path
-                                        fill="white"
-                                        d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                                      />
-                                    </svg>
-                                  </button>
+                                    {isPartialGuess[matchup.id ?? ""] ? (
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        className="w-6 h-6"
+                                      >
+                                        <circle
+                                          cx="12"
+                                          cy="12"
+                                          r="9"
+                                          fill="green"
+                                        />
+                                        <path
+                                          d="M9 12.75L11.25 15L15 9.75"
+                                          stroke="white"
+                                          strokeWidth="1.5"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          fill="none"
+                                        />
+                                      </svg>
+                                    ) : (
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="currentColor"
+                                        className="w-6 h-6 text-yellow-500"
+                                      >
+                                        <circle
+                                          cx="12"
+                                          cy="12"
+                                          r="9"
+                                          fill="#FDB927"
+                                        />
+                                        <path
+                                          fill="white"
+                                          d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
+                                        />
+                                      </svg>
+                                    )}
+                                  </div>
                                 </Tooltip>
                               )}
                             </div>
@@ -991,8 +1020,8 @@ const HomePage: React.FC = () => {
                           </p>
                           <NBASeedCard
                             series={matchup}
-                            userPoints={0}
-                            fetchData={() => {}}
+                            userPoints={userPointsPerSeries?.[matchup.id ?? ""] ?? 0}
+                            fetchData={checkIfGuessSeriesBetting}
                           />
                         </AccordionDetails>
                       </Accordion>

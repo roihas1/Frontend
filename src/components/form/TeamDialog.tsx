@@ -8,6 +8,7 @@ import { useSuccessMessage } from "../providers&context/successMassageProvider";
 import { Box, CircularProgress, Tab, Tabs, Tooltip } from "@mui/material";
 import BetsDisplay from "../forPages/BetsDisplay";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface Team {
   image: string;
@@ -147,6 +148,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     spontaneousMacthups: { [key: string]: { 1: number; 2: number } };
   }>({ teamWin: { 1: 0, 2: 0 }, playerMatchup: {}, spontaneousMacthups: {} });
   const { triggerRefresh } = useMissingBets();
+  const queryClient = useQueryClient();
 
   const time = series.timeOfStart.split(":");
   series.dateOfStart.setHours(parseInt(time[0]));
@@ -284,10 +286,13 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           setSelectedPlayerForBetSpontaneous({});
           setSelectedNumberOfGames(0); // Reset number of games
           setHasGuesses(false);
-
+          await queryClient.invalidateQueries({
+            queryKey: ['seriesFullData', series?.id],
+          });
+          fetchData();
           closeDialog(); // Close the dialog if submission is successful
           triggerRefresh();
-          fetchData();
+          
         } catch {
           showError("An unexpected error occurred.");
         }
@@ -304,21 +309,40 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     });
     return max;
   };
+  const {
+    data: fullData,
+    error: queryError,
+  } = useQuery({
+    queryKey: ['seriesFullData', series?.id],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/series/${series.id}/full-data`);
+      return response.data;
+    },
+    enabled: !!isOpen && !!series?.id,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 3, 
+    gcTime : 1000 * 60 * 4
+  });
+  useEffect(() => {
+    if (queryError) {
+      showError("Failed to load guesses and percentages.");
+    }
+  }, [queryError]);
   useEffect(() => {
     const fetchAllGuessesAndStats = async () => {
-      if (!isOpen || !series) return;
+      if (!isOpen || !series || !fullData) return;
 
       setLoading(true);
       try {
-        const response = await axiosInstance.get(
-          `/series/${series.id}/full-data`
-        );
+        // const response = await axiosInstance.get(
+        //   `/series/${series.id}/full-data`
+        // );
 
         const {
           guesses: userGuesses,
           spontaneousGuesses,
           percentages,
-        } = response.data;
+        } = fullData;
         if (userGuesses["teamWinGuess"]) {
           // setHasGuesses(true);
           setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
@@ -376,7 +400,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     };
 
     fetchAllGuessesAndStats();
-  }, [isOpen, series]);
+  }, [isOpen, series, fullData]);
 
   // const getUserGuesses = async () => {
   //   setLoading(true);

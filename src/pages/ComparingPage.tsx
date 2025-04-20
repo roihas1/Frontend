@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-import {  Guess, User } from "../types";
+import { Guess, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import { useLocation } from "react-router-dom";
 import ChampColumn from "../components/forPages/ChampColumn";
@@ -35,7 +35,7 @@ import { League } from "./LeagueSelectionPage";
 import debounce from "lodash/debounce";
 import BetColumn from "../components/forPages/BetColumn";
 import GuessColumn from "../components/forPages/GuessColumn";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
@@ -89,6 +89,7 @@ const ComparingPage: React.FC = () => {
   //   }
   // }, [location.state?.league]);
   const [isMobile, setIsMobile] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const handleResize = () => {
@@ -99,7 +100,38 @@ const ComparingPage: React.FC = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  
+  // const useSeriesGuesses = (seriesId: string, userId: string, isCurrentUser: boolean) => {
+  //   return useQuery({
+  //     queryKey: [isCurrentUser ? "seriesGuessesSelf" : "seriesGuesses", seriesId, userId],
+  //     queryFn: async () => {
+  //       if (isCurrentUser) {
+  //         const { data } = await axiosInstance.get(`/series/${seriesId}/getAllGuesses`);
+  //         return data;
+  //       } else {
+  //         const { data } = await axiosInstance.get(`/series/${seriesId}/getAllGuessesForUser/${userId}`);
+  //         return data;
+  //       }
+  //     },
+  //     enabled: !!seriesId && !!userId,
+  //     staleTime: 5 * 60 * 1000,
+  //     gcTime: 10 * 60 * 1000,
+  //   });
+  // };
+
+  // const useChampGuesses = (stage: string, userId: string, isCurrentUser: boolean) => {
+  //   return useQuery({
+  //     queryKey: [isCurrentUser ? "champGuessesSelf" : "champGuesses", stage, userId],
+  //     queryFn: async () => {
+  //       const { data } = await axiosInstance.get(
+  //         `playoffs-stage/getUserGuesses/${stage}/${userId}`
+  //       );
+  //       return data;
+  //     },
+  //     enabled: !!stage && !!userId,
+  //     staleTime: 5 * 60 * 1000,
+  //     gcTime: 10 * 60 * 1000,
+  //   });
+  // };
   const {
     data: comparisonData,
     isLoading: isLoadingComparison,
@@ -180,7 +212,6 @@ const ComparingPage: React.FC = () => {
     [debouncedSearch]
   );
 
- 
   const setInitialsComprison = async () => {
     setIsLoadingInitial(true);
     let seriesKey = "";
@@ -191,14 +222,14 @@ const ComparingPage: React.FC = () => {
     for (const key of Object.keys(allSeriesBets)) {
       const series = allSeriesBets[key];
       if (!series.startDate || !series.timeOfStart) continue;
-    
-      const [hours, minutes] = series.timeOfStart.split(':').map(Number);
+
+      const [hours, minutes] = series.timeOfStart.split(":").map(Number);
       const dateWithTime = new Date(series.startDate);
       dateWithTime.setHours(hours);
       dateWithTime.setMinutes(minutes);
       dateWithTime.setSeconds(0);
       dateWithTime.setMilliseconds(0);
-    
+
       if (dateWithTime < new Date()) {
         const name = `${series.team1} vs ${series.team2} (${series.round})`;
         seriesKey = key;
@@ -235,15 +266,11 @@ const ComparingPage: React.FC = () => {
     ) {
       setInitialsComprison();
     }
-  }, [
-    isLoadingComparison,
-    allSeriesBets,
-    secondUserId,
-  ]);
+  }, [isLoadingComparison, allSeriesBets, secondUserId]);
 
-  
-
-  const [overrideUsers, setOverrideUsers] = useState<{ [key: string]: User } | null>(null);
+  const [overrideUsers, setOverrideUsers] = useState<{
+    [key: string]: User;
+  } | null>(null);
 
   const users = useMemo(() => {
     if (overrideUsers) return overrideUsers;
@@ -254,25 +281,19 @@ const ComparingPage: React.FC = () => {
     });
     return userMap;
   }, [comparisonData, overrideUsers]);
-  
-
- 
 
   const series = useMemo(() => {
     if (!comparisonData?.allBets) return {};
     const result: { [key: string]: string } = {};
     Object.entries(comparisonData.allBets).forEach(([key, value]: any) => {
-      const [hours, minutes] = value.timeOfStart.split(':').map(Number);
+      const [hours, minutes] = value.timeOfStart.split(":").map(Number);
 
       const dateWithTime = new Date(value.startDate);
       dateWithTime.setHours(hours);
       dateWithTime.setMinutes(minutes);
       dateWithTime.setSeconds(0);
       dateWithTime.setMilliseconds(0);
-  
-      console.log(dateWithTime);
-      console.log(value);
-  
+
       if (dateWithTime < new Date()) {
         result[key] = `${value.team1} vs ${value.team2} (${value.round})`;
       }
@@ -333,35 +354,70 @@ const ComparingPage: React.FC = () => {
       const user = users[userId];
       const name = `${user?.firstName} ${user?.lastName}`;
       if (!(userId in selectedUsers)) {
-        if (showSeriesSelection) {
+        if (!(userId in selectedUsers)) {
+          const isCurrentUser = userId === currentUser.id;
           const id = seriesId ? seriesId : selectedSeries;
-          // const seriesBets = allSeriesBets[id];
-          const userWithGuesses = (
-            await axiosInstance.get(`/series/${id}/getAllGuesses`)
-          ).data;
 
-          setUsersGuesses((prevUsersGuesses) => ({
-            ...prevUsersGuesses,
-            [userId]: {
-              bestOf7: userWithGuesses.bestOf7,
-              teamWon: userWithGuesses.teamWon,
-              playerMatchups: userWithGuesses.playerMatchups,
-              spontaneousGuesses: userWithGuesses.spontaneousGuesses,
-            },
-          }));
-        } else if (showChampSelection) {
-          const response = await axiosInstance.get(
-            `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`
-          );
+          if (showSeriesSelection) {
+            const queryKey = [
+              isCurrentUser ? "seriesGuessesSelf" : "seriesGuesses",
+              id,
+              userId,
+            ];
+            let cached = queryClient.getQueryData(queryKey);
 
-          setUserChampGuesses((prevUserChampGuesses) => ({
-            ...prevUserChampGuesses,
-            [userId]: {
-              conferenceFinalGuesses: response.data.conferenceFinalGuesses,
-              championTeamGuesses: response.data.championTeamGuesses,
-              mvpGuesses: response.data.mvpGuesses,
-            },
-          }));
+            if (!cached) {
+              const { data } = await (isCurrentUser
+                ? axiosInstance.get(`/series/${id}/getAllGuesses`)
+                : axiosInstance.get(
+                    `/series/${id}/getAllGuessesForUser/${userId}`
+                  ));
+              cached = data;
+              queryClient.setQueryDefaults(queryKey, {
+                staleTime: 5 * 60 * 1000,
+                gcTime: 10 * 60 * 1000,
+              });
+              queryClient.setQueryData(queryKey, cached);
+            }
+
+            setUsersGuesses((prev) => ({
+              ...prev,
+              [userId]: cached as {
+                bestOf7: Guess;
+                teamWon: Guess;
+                playerMatchups: object[];
+                spontaneousGuesses: object[];
+              },
+            }));
+          } else if (showChampSelection) {
+            const queryKey = [
+              isCurrentUser ? "champGuessesSelf" : "champGuesses",
+              selectedStage,
+              userId,
+            ];
+            let cached = queryClient.getQueryData(queryKey);
+
+            if (!cached) {
+              const { data } = await axiosInstance.get(
+                `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`
+              );
+              cached = data;
+              queryClient.setQueryDefaults(queryKey, {
+                staleTime: 5 * 60 * 1000,
+                gcTime: 10 * 60 * 1000,
+              });
+              queryClient.setQueryData(queryKey, cached);
+            }
+
+            setUserChampGuesses((prev) => ({
+              ...prev,
+              [userId]: cached as {
+                conferenceFinalGuesses: [];
+                championTeamGuesses: [];
+                mvpGuesses: [];
+              },
+            }));
+          }
         }
 
         if (!isCurrentUserSelected.current && userId === currentUser?.id) {
@@ -534,7 +590,9 @@ const ComparingPage: React.FC = () => {
     setSelectedLeague(foundLeague[0]);
     try {
       if (foundLeague[0].name !== "Overall") {
-        const response = await axiosInstance.get(`/private-league/${foundLeague[0].id}/users`);
+        const response = await axiosInstance.get(
+          `/private-league/${foundLeague[0].id}/users`
+        );
         const allUsers: { [key: string]: User } = {};
         response.data.forEach((user: User) => {
           allUsers[user.id] = user;
@@ -576,10 +634,7 @@ const ComparingPage: React.FC = () => {
     setSelectedUsers({});
     isCurrentUserSelected.current = false;
   };
-  if (
-    loading ||
-    isLoadingComparison
-  ) {
+  if (loading || isLoadingComparison) {
     return (
       <div className="fixed inset-0 flex justify-center items-center  z-50">
         <CircularProgress />
