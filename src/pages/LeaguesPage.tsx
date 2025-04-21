@@ -36,7 +36,7 @@ const LeaguesPage: React.FC = () => {
 
   const navigate = useNavigate();
   const { showError } = useError();
-  const [limit, setLimit] = useState<number>(5);
+  const [limit, setLimit] = useState<number>(20);
 
   const fetchUsers = async (
     cursor?: { totalPoints: number; id: string },
@@ -96,83 +96,64 @@ const LeaguesPage: React.FC = () => {
     });
   };
 
-  // Assign ranks
   const usersWithRank = users.map((user, index) => ({
     ...user,
     rank: offset + index + 1,
   }));
 
-  // Fetch data when the page loads
   useEffect(() => {
     fetchUsers();
     fetchUser();
   }, []);
 
   return (
-    <div className="flex flex-col ">
-      <div className="p-8 max-w-7xl mx-auto  bg-white rounded-lg shadow-lg">
+    <div className="flex flex-col">
+      <div className="p-4 md:p-8 max-w-full md:max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
         <h1 className="text-4xl font-semibold mb-8 text-center text-colors-nba-blue">
           Ranking
         </h1>
         {loading ? (
           <div className="text-center text-lg text-gray-500">Loading...</div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="max-h-screen overflow-y-auto">
+          <div className="w-full overflow-x-auto">
+            <div className="max-h-screen overflow-y-auto min-w-[360px]">
               <table className="min-w-full table-auto border-separate border-spacing-0.5">
                 <thead className="bg-colors-nba-blue text-white">
                   <tr>
-                    <th
-                      className="px-6 py-3 text-center"
-                      title="The user's rank in the league"
-                    >
-                      Rank
-                    </th>
-                    <th
-                      className="px-6 py-3"
-                      title="Player's username and full name"
-                    >
-                      Player
-                    </th>
-                    <th
-                      className="px-6 py-3 text-center"
-                      title="Total points accumulated by the player"
-                    >
-                      TOT
-                    </th>
+                    <th className="px-4 py-3 text-center">Rank</th>
+                    <th className="px-4 py-3">Player</th>
+                    <th className="px-4 py-3 text-center">TOT</th>
                   </tr>
                 </thead>
                 <tbody>
                   {usersWithRank.map((user) => (
                     <tr
                       key={user.id}
-                      className={`${
+                      className={`$${
                         user.id === currentUser?.id
                           ? "bg-indigo-100 text-indigo-800"
                           : "hover:bg-gray-100"
                       } transition-all duration-300`}
                     >
-                      <td className="border-t px-6 py-4 text-center text-lg font-semibold">
+                      <td className="border-t px-4 py-3 text-center text-lg font-semibold">
                         {user.rank}
                       </td>
-                      <td className="border-t px-6 py-4">
+                      <td className="border-t px-4 py-3 max-w-[200px] truncate whitespace-nowrap">
                         <Tooltip
                           title="Click to compare"
-                          slots={{
-                            transition: Zoom,
-                          }}
+                          slots={{ transition: Zoom }}
                           arrow
                           placement="right"
                           disableHoverListener={user.id === currentUser?.id}
                         >
                           <strong
-                            className={`text-colors-nba-blue  ${
-                              user.id != currentUser?.id
+                            className={`text-colors-nba-blue block truncate ${
+                              user.id !== currentUser?.id
                                 ? "cursor-pointer hover:underline transition-all duration-300"
                                 : ""
                             }`}
                             onClick={() => {
-                              if (user.id != currentUser?.id) {
+                              if (user.id !== currentUser?.id) {
                                 handleUserClick(user);
                               }
                             }}
@@ -180,12 +161,11 @@ const LeaguesPage: React.FC = () => {
                             {user.username}
                           </strong>
                         </Tooltip>
-                        <br />
-                        <span className="text-gray-700">
+                        <span className="text-gray-700 block truncate">
                           {user.firstName} {user.lastName}
                         </span>
                       </td>
-                      <td className="border-t px-6 py-4 text-center text-lg">
+                      <td className="border-t px-4 py-3 text-center text-lg">
                         {user.fantasyPoints + user.championPoints}
                       </td>
                     </tr>
@@ -195,7 +175,7 @@ const LeaguesPage: React.FC = () => {
             </div>
             <div className="flex justify-between mt-4">
               <button
-                className=" flex gap-2  items-center px-4 py-2 bg-colors-nba-blue opacity-90 text-white rounded-md disabled:opacity-50"
+                className="flex gap-2 items-center px-4 py-2 bg-colors-nba-blue opacity-90 text-white rounded-md disabled:opacity-50"
                 onClick={() => fetchUsers(undefined, prevCursor)}
                 disabled={!prevCursor}
               >
@@ -221,22 +201,12 @@ const LeaguesPage: React.FC = () => {
                   id="limitSelection"
                   value={limit}
                   onChange={handleLimitSelection}
-                  sx={{
-                    borderRadius: "1rem",
-                  }}
+                  sx={{ borderRadius: "1rem" }}
                 >
-                  <MenuItem key={5} value={5}>
-                    5
-                  </MenuItem>
-                  <MenuItem key={10} value={10}>
-                    10
-                  </MenuItem>
-                  <MenuItem key={20} value={20}>
-                    20
-                  </MenuItem>
-                  <MenuItem key={50} value={50}>
-                    50
-                  </MenuItem>
+                  <MenuItem value={5}>5</MenuItem>
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
                 </Select>
               </FormControl>
               <button

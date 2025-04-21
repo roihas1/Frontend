@@ -287,12 +287,11 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           setSelectedNumberOfGames(0); // Reset number of games
           setHasGuesses(false);
           await queryClient.invalidateQueries({
-            queryKey: ['seriesFullData', series?.id],
+            queryKey: ["seriesFullData", series?.id],
           });
           fetchData();
           closeDialog(); // Close the dialog if submission is successful
           triggerRefresh();
-          
         } catch {
           showError("An unexpected error occurred.");
         }
@@ -309,19 +308,18 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     });
     return max;
   };
-  const {
-    data: fullData,
-    error: queryError,
-  } = useQuery({
-    queryKey: ['seriesFullData', series?.id],
+  const { data: fullData, error: queryError } = useQuery({
+    queryKey: ["seriesFullData", series?.id],
     queryFn: async () => {
-      const response = await axiosInstance.get(`/series/${series.id}/full-data`);
+      const response = await axiosInstance.get(
+        `/series/${series.id}/full-data`
+      );
       return response.data;
     },
     enabled: !!isOpen && !!series?.id,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 3, 
-    gcTime : 1000 * 60 * 4
+    staleTime: 1000 * 60 * 3,
+    gcTime: 1000 * 60 * 4,
   });
   useEffect(() => {
     if (queryError) {
@@ -580,26 +578,19 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             Series bets
           </Dialog.Title>
 
-          <div className="flex flex-col sm:flex-row justify-center items-center mb-4 space-y-4 sm:space-y-0 sm:space-x-10">
+          <div className="flex flex-row items-center space-x-4 sm:flex-row sm:justify-center sm:items-center mb-4 sm:space-x-10 space-y-4 sm:space-y-0">
             {/* Team 1 Logo */}
             <img
               src={series.logo1}
               alt={`${series.logo1} logo`}
-              className="h-16 sm:h-20 object-contain"
+              className="h-16 w-1/5 sm:h-20 sm:w-1/5 object-contain"
             />
-            {!isStartDatePassed && (
-              <p className=" hidden text-xs sm:inline sm:text-sm font-medium text-gray-600 text-center sm:text-left">
-                <strong>Series start date:</strong>{" "}
-                {new Date(series.dateOfStart).toLocaleString("he-IL", {
-                  timeZone: "Asia/Jerusalem",
-                })}
-              </p>
-            )}
 
+            {/* Middle paragraph between logos */}
             {isStartDatePassed && (
               <div
                 className="text-center text-gray-700 bg-colors-nba-blue bg-opacity-40 px-4 py-2 rounded-lg shadow-md 
-                 text-sm sm:text-lg leading-snug sm:leading-normal order-1 sm:order-none w-full sm:w-auto"
+        text-sm sm:text-lg leading-snug sm:leading-normal w-full sm:w-auto"
               >
                 <p className="font-semibold">The series has started!</p>
 
@@ -623,11 +614,21 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
               </div>
             )}
 
+            {/* If series hasn't started yet, show date */}
+            {!isStartDatePassed && (
+              <p className="text-xs sm:text-sm font-medium text-gray-600 text-center sm:text-left">
+                <strong>Series start date:</strong>{" "}
+                {new Date(series.dateOfStart).toLocaleString("he-IL", {
+                  timeZone: "Asia/Jerusalem",
+                })}
+              </p>
+            )}
+
             {/* Team 2 Logo */}
             <img
               src={series.logo2}
               alt={`${series.logo2} logo`}
-              className="h-16 sm:h-20 object-contain"
+              className="h-16 w-1/5 sm:h-20 sm:w-1/5 object-contain"
             />
           </div>
 
@@ -638,7 +639,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             </h4>
             <div className="flex justify-center mb-4">
               <select
-                className="p-2 border w-1/6 text-colors-nba-blue border-colors-nba-blue rounded-lg"
+                className="p-2 border w-1/5 text-colors-nba-blue border-colors-nba-blue rounded-lg"
                 value={selectedNumberOfGames}
                 onChange={handleNumberOfGamesSelection}
                 disabled={isStartDatePassed}

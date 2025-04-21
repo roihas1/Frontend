@@ -632,6 +632,7 @@ const ComparingPage: React.FC = () => {
     setSelectedSeries(seriesId);
     setSelectedSeriesName(series?.[seriesId] ?? "");
     setSelectedUsers({});
+    setSelectedLeague(undefined)
     isCurrentUserSelected.current = false;
   };
   if (loading || isLoadingComparison) {
