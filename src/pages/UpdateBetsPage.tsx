@@ -539,8 +539,8 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const updateStats = [...selectedBet.currentStats];
-    updateStats[0] += player1Stat;
-    updateStats[1] += player2Stat;
+    updateStats[0] += player1Stat === 100 ? 0: player1Stat;
+    updateStats[1] += player2Stat === 100 ? 0: player2Stat;
     const spontaneous =
       spontaneousBets.filter((bet) => bet.id === selectedBet.id).length > 0
         ? true

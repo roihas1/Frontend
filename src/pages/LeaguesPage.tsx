@@ -129,9 +129,9 @@ const LeaguesPage: React.FC = () => {
                   {usersWithRank.map((user) => (
                     <tr
                       key={user.id}
-                      className={`$${
+                      className={`${
                         user.id === currentUser?.id
-                          ? "bg-indigo-100 text-indigo-800"
+                          ? "bg-indigo-100 text-indigo-800 "
                           : "hover:bg-gray-100"
                       } transition-all duration-300`}
                     >
@@ -147,7 +147,7 @@ const LeaguesPage: React.FC = () => {
                           disableHoverListener={user.id === currentUser?.id}
                         >
                           <strong
-                            className={`text-colors-nba-blue block truncate ${
+                            className={`text-colors-nba-blue   ${
                               user.id !== currentUser?.id
                                 ? "cursor-pointer hover:underline transition-all duration-300"
                                 : ""
