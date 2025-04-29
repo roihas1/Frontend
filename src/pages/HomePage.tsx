@@ -47,22 +47,7 @@ import {
   Modal,
   Zoom,
 } from "@mui/material";
-// import { checkTokenExpiration } from "../types";
-// import PageBackground from "../components/common/PageBackground";
-// import backgroundLogo from "../assets/siteLogo/gray_only_ball_trans.png";
-// export interface PlayerMatchupBet {
-//   id: string;
-//   seriesId: string;
-//   typeOfMatchup: PlayerMatchupType;
-//   categories: MatchupCategory[];
-//   fantasyPoints: number;
-//   player1: string;
-//   player2: string;
-//   differential: number;
-//   result: number;
-//   currentStats: number[];
-//   playerGames: number[];
-// }
+
 export interface Series {
   id?: string;
   team1: string;
@@ -195,61 +180,9 @@ const HomePage: React.FC = () => {
   const [expanded, setExpanded] = useState<string | false>(false);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
-  // const getSeries = async () => {
-  //   try {
-  //     const updatedSeries: {
-  //       west: Series[];
-  //       east: Series[];
-  //       finals: Series[];
-  //     } = {
-  //       west: [],
-  //       east: [],
-  //       finals: [],
-  //     };
-  //     // const capitalize = (str: string) => {
-  //     //   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-  //     // };
-  //     const response = await axiosInstance.get("/series");
-  //     const seriesData = response.data; // Assuming the response is an array of series
-  //     seriesData.forEach((element: Series) => {
-  //       const team1Logo = logos[element.team1.toLowerCase().replace(/ /g, "_")];
-  //       const team2Logo = logos[element.team2.toLowerCase().replace(/ /g, "_")];
-  //       const series: Series = {
-  //         id: element.id,
-  //         team1: nbaTeams[element.team1], //capitalize(element.team1.split(" ").pop()),
-  //         team2: nbaTeams[element.team2], //capitalize(element.team2.split(" ").pop()),
-  //         dateOfStart: new Date(element.dateOfStart), // Convert date string to Date object
-  //         bestOf7BetId: element.bestOf7BetId as BestOf7Bet | undefined,
-  //         teamWinBetId: element.teamWinBetId || "",
-  //         conference: element.conference,
-  //         round: element.round,
-  //         seed1: element.seed1,
-  //         seed2: element.seed2,
-  //         logo1: team1Logo, // If you want to fetch logos, you can add logic here
-  //         logo2: team2Logo,
-  //         playerMatchupBets: element.playerMatchupBets || [], // Initialize playerMatchupBets if undefined
-  //         timeOfStart: element.timeOfStart,
-  //         lastUpdate: element.lastUpdate,
-  //         spontaneousBets: element.spontaneousBets,
-  //         numOfGames: element.numOfGames,
-  //       };
-  //       // Push series into the correct conference array based on the "conference" field
-  //       if (series.conference === "West") {
-  //         updatedSeries.west.push(series);
-  //       } else if (series.conference === "East") {
-  //         updatedSeries.east.push(series);
-  //       } else {
-  //         updatedSeries.finals.push(series);
-  //       }
-  //     });
-
-  //     setSeries(updatedSeries);
-  //   } catch (err) {
-  //     console.error("Error fetching series data:", err);
-  //     showError("Error fetching series data");
-  //     setLoading(false);
-  //   }
-  // };
+  const [hasGuessedChampions, setHasGuessedChampions] =
+    useState<boolean>(true);
+  
   const checkIfGuessed = async () => {
     try {
       const response = await axiosInstance.get(`/playoffs-stage/checkGuess/`, {
@@ -259,6 +192,7 @@ const HomePage: React.FC = () => {
       });
 
       setShowInput(response.data);
+      setHasGuessedChampions(!response.data)
     } catch (error) {
       console.log(error);
       showError("Server Error.");
@@ -267,31 +201,7 @@ const HomePage: React.FC = () => {
   const hideInputAfterSubmit = () => {
     setShowInput(false);
   };
-  // const getPlayoffsStage = async () => {
-  //   try {
-  //     const response = await axiosInstance.get("/playoffs-stage");
-  //     let flag = true;
-  //     const stages = response.data;
-  //     for (const round of stages) {
-  //       const startDate = new Date(round.startDate);
-  //       const time = round.timeOfStart.split(":");
-  //       startDate.setHours(parseInt(time[0]));
-  //       startDate.setMinutes(parseInt(time[1]));
-  //       if (new Date(startDate) > new Date()) {
-  //         setStage(round.name);
-  //         setStageStartDate(startDate);
-  //         flag = false;
-  //         break;
-  //       }
-  //     }
-  //     if (flag) {
-  //       setStage("Finish");
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //     showError("Server Error.");
-  //   }
-  // };
+ 
   const checkIfGuessSeriesBetting = async () => {
     try {
       const response = await axiosInstance.get(`series/isUserGuessed/All`);
@@ -306,31 +216,7 @@ const HomePage: React.FC = () => {
       checkIfGuessed();
     }
   }, [stage]);
-  // const getUserPointsPerSeries = async () => {
-  //   try {
-  //     const response = await axiosInstance.get(
-  //       "series/getOverallPoints/allSeries"
-  //     );
-  //     setUserPointsPerSeries(response.data);
-  //   } catch {
-  //     showError(`Failed to get user's points.`);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   getUserPointsPerSeries();
-  // }, []);
-  // useEffect(() => {
-  //   const fetchData = async ()=>{
-  //     await Promise.all([ getSeries(),getPlayoffsStage(),checkIfGuessSeriesBetting(),getUserPointsPerSeries()])
-  //   }
-  //   // getSeries();
-  // getPlayoffsStage();
-  //   // checkIfGuessSeriesBetting();
-  //   setLoading(true);
-  //   fetchData();
-  //   setLoading(false);
-  // }, []);
+  
   useEffect(() => {
     const fetchHomepageData = async () => {
       setLoading(true);
@@ -396,7 +282,6 @@ const HomePage: React.FC = () => {
 
     fetchHomepageData();
   }, []);
-
 
   const sortMatchups = (matchups: Series[]) => {
     return matchups.sort((a, b) => {
@@ -625,6 +510,7 @@ const HomePage: React.FC = () => {
     );
   }
 
+
   return (
     <div className="relative z-10  bg-gray-100 p-4">
       {/* Mobile View */}
@@ -632,13 +518,24 @@ const HomePage: React.FC = () => {
       <div className="md:hidden">
         <div className="flex justify-center">
           <button
-            className="bg-gray-300 text-md text-center rounded-lg text-black font-semibold shadow-md p-2 mb-4"
+            className={`px-6 py-2.5 text-base font-semibold rounded-md shadow-md transition-all duration-300 mb-4 tracking-wide
+      ${
+        hasGuessedChampions
+          ? "bg-gray-300 text-gray-800 hover:bg-gray-300"
+          : "bg-colors-nba-yellow text-black ring-2 animate-scale-pulse ring-yellow-500 hover:bg-yellow-400 scale-105"
+      }
+    `}
+            style={{
+              transform: !hasGuessedChampions ? "translateY(0)" : undefined,
+            }}
             onClick={() => setShowMobileChampInput(true)}
           >
-            {" "}
-            Open Champions Bets
+            {hasGuessedChampions
+              ? "Open Champions Bets"
+              : "Guess the Champions"}
           </button>
         </div>
+
         <Modal
           open={showMobileChampInput}
           onClose={() => setShowMobileChampInput(false)}
@@ -663,7 +560,10 @@ const HomePage: React.FC = () => {
               east={series.east}
               startDate={stageStartDate}
               stage={stage}
-              setShowInput={() => setShowMobileChampInput(false)}
+              setShowInput={() => {
+                setHasGuessedChampions(true);
+                setShowMobileChampInput(false);
+              }}
             />
           </Box>
         </Modal>
@@ -855,7 +755,9 @@ const HomePage: React.FC = () => {
                           </p>
                           <NBASeedCard
                             series={matchup}
-                            userPoints={userPointsPerSeries?.[matchup.id ?? ""] ?? 0}
+                            userPoints={
+                              userPointsPerSeries?.[matchup.id ?? ""] ?? 0
+                            }
                             fetchData={checkIfGuessSeriesBetting}
                           />
                         </AccordionDetails>
