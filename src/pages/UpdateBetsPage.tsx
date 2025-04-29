@@ -539,8 +539,8 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const updateStats = [...selectedBet.currentStats];
-    updateStats[0] += player1Stat === 100 ? 0: player1Stat;
-    updateStats[1] += player2Stat === 100 ? 0: player2Stat;
+    updateStats[0] +=  player1Stat;
+    updateStats[1] +=  player2Stat;
     const spontaneous =
       spontaneousBets.filter((bet) => bet.id === selectedBet.id).length > 0
         ? true
@@ -551,6 +551,8 @@ const UpdateBetsPage: React.FC = () => {
         await axiosInstance.patch(`spontaneous-bet/${selectedBet?.id}/update`, {
           currentStats: updateStats,
         });
+        updateStats[0] -= player1Stat === 100 ? 100: 0;
+        updateStats[1] -= player2Stat === 100 ? 100: 0;
         setSpontaneousBets((prevBets) =>
           prevBets.map((bet) =>
             bet.id === selectedBet.id
@@ -565,7 +567,8 @@ const UpdateBetsPage: React.FC = () => {
             currentStats: updateStats,
           }
         );
-
+        updateStats[0] -= player1Stat === 100 ? 100: 0;
+        updateStats[1] -= player2Stat === 100 ? 100: 0;
         setBets((prevBets) =>
           prevBets.map(
             (bet) =>
