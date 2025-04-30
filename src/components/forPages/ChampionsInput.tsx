@@ -14,7 +14,7 @@ interface ChampionsInputProps {
   east: Series[];
   startDate: Date;
   stage: string;
-  setShowInput: () => void;
+  setShowInput: (arg0: string) => void;
 }
 interface UserGuessesResponse {
   conferenceFinalGuesses: {
@@ -281,7 +281,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       console.log(error);
       showError(`Failed to update champion guess ${error}`);
     } finally {
-      setShowInput();
+      setShowInput("Submit");
       showSuccessMessage("Your guesses updated!");
     }
   };
@@ -369,7 +369,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         <ChampionGuessSummary stage={stage} />
         <button
           type="button"
-          onClick={() => setShowInput()}
+          onClick={() => setShowInput("Close")}
           className="text-colors-nba-red hover:scale-110 transition-transform mt-6"
         >
           Collapse Previous Guesses
@@ -562,7 +562,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         <div className="flex justify-center mt-6 space-x-10">
           <button
             type="button"
-            onClick={() => setShowInput()}
+            onClick={() => setShowInput("Close")}
             className="text-colors-nba-red hover:scale-110 transition-transform"
           >
             Close

@@ -498,6 +498,12 @@ const HomePage: React.FC = () => {
       </div>
     );
   };
+  const setHasGuessedAndInput = (functionName:string)=>{
+    if (functionName === "Submit"){
+      setHasGuessedChampions(true);
+    }
+    setShowMobileChampInput(false);
+  }
   const handleAccordionChange =
     (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpanded(isExpanded ? panel : false);
@@ -560,10 +566,7 @@ const HomePage: React.FC = () => {
               east={series.east}
               startDate={stageStartDate}
               stage={stage}
-              setShowInput={() => {
-                setHasGuessedChampions(true);
-                setShowMobileChampInput(false);
-              }}
+              setShowInput={setHasGuessedAndInput}
             />
           </Box>
         </Modal>
