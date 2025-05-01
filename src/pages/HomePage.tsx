@@ -180,9 +180,8 @@ const HomePage: React.FC = () => {
   const [expanded, setExpanded] = useState<string | false>(false);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
-  const [hasGuessedChampions, setHasGuessedChampions] =
-    useState<boolean>(true);
-  
+  const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
+
   const checkIfGuessed = async () => {
     try {
       const response = await axiosInstance.get(`/playoffs-stage/checkGuess/`, {
@@ -192,7 +191,7 @@ const HomePage: React.FC = () => {
       });
 
       setShowInput(response.data);
-      setHasGuessedChampions(!response.data)
+      setHasGuessedChampions(!response.data);
     } catch (error) {
       console.log(error);
       showError("Server Error.");
@@ -201,7 +200,7 @@ const HomePage: React.FC = () => {
   const hideInputAfterSubmit = () => {
     setShowInput(false);
   };
- 
+
   const checkIfGuessSeriesBetting = async () => {
     try {
       const response = await axiosInstance.get(`series/isUserGuessed/All`);
@@ -216,7 +215,7 @@ const HomePage: React.FC = () => {
       checkIfGuessed();
     }
   }, [stage]);
-  
+
   useEffect(() => {
     const fetchHomepageData = async () => {
       setLoading(true);
@@ -338,15 +337,25 @@ const HomePage: React.FC = () => {
     ) {
       placeholderCount = 1;
     }
+    const positionToPlace =
+      sortedMatchups[0]?.seed1 === 1 || sortedMatchups[0]?.seed1 === 8;
+    // check where to position the placeholder in case there is one series only in semi finals
+
     const placeholders = Array.from({ length: placeholderCount }, (_, idx) => (
       <div
         key={idx}
-        className={`bg-white shadow-lg rounded-lg p-2 m-2 max-w-xs mx-auto ${
-          idx == 1
-            ? "mt-60"
-            : placeholderCount === 1 && roundName === "Conference Semifinals"
-            ? "mt-8"
-            : "mt-8"
+        className={`bg-white shadow-lg rounded-lg p-4 m-2 max-w-xs mx-auto ${
+          positionToPlace
+            ? "mt-40"
+            : roundName === "Conference Semifinals" &&
+              placeholderCount === 1 &&
+              idx === 0
+            ? "mt-2 mb-40"
+            : roundName === "Conference Semifinals" &&
+              placeholderCount === 2 &&
+              idx === 1
+            ? "mt-48"
+            : "mt-6"
         }`}
       >
         <div className="flex flex-col items-center justify-center rounded-md">
@@ -365,10 +374,6 @@ const HomePage: React.FC = () => {
       </div>
     ));
 
-    const positionToPlace =
-      sortedMatchups[0]?.seed1 === 1 || sortedMatchups[0]?.seed1 === 8;
-    // check where to position the placeholder in case there is one series only in semi finals
-
     if (sortedMatchups.length > 0) {
       return (
         <div className={`flex flex-col ${className}`}>
@@ -386,12 +391,10 @@ const HomePage: React.FC = () => {
                 <div
                   key={idx}
                   className={`mb-6 relative ${
-                    !positionToPlace && placeholderCount === 1 ? "mt-56" : ""
-                  } ${
-                    placeholderCount === 0 &&
-                    roundName === "Conference Semifinals" &&
-                    idx === 1
-                      ? "mt-36"
+                    !positionToPlace &&
+                    placeholderCount === 1 &&
+                    roundName === "Conference Semifinals"
+                      ? "mt-12"
                       : ""
                   }`}
                 >
@@ -498,12 +501,12 @@ const HomePage: React.FC = () => {
       </div>
     );
   };
-  const setHasGuessedAndInput = (functionName:string)=>{
-    if (functionName === "Submit"){
+  const setHasGuessedAndInput = (functionName: string) => {
+    if (functionName === "Submit") {
       setHasGuessedChampions(true);
     }
     setShowMobileChampInput(false);
-  }
+  };
   const handleAccordionChange =
     (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
       setExpanded(isExpanded ? panel : false);
@@ -515,7 +518,6 @@ const HomePage: React.FC = () => {
       </div>
     );
   }
-
 
   return (
     <div className="relative z-10  bg-gray-100 p-4">
@@ -750,12 +752,43 @@ const HomePage: React.FC = () => {
                           </div>
                         </AccordionSummary>
 
-                        <AccordionDetails className="bg-white p-4">
+                        <AccordionDetails
+                          className="bg-white"
+                          sx={{ padding: "0px 16px 16px" }}
+                        >
                           {/* Matchup Details */}
-                          <p className="text-sm font-medium text-gray-600">
-                            <strong>Series start date:</strong>{" "}
-                            {new Date(matchup.dateOfStart).toLocaleString()}
-                          </p>
+                          <div className="ml-3 text-sm text-gray-700">
+                            <div className="flex flex-wrap items-center gap-4 mb-1">
+                              {new Date(matchup.dateOfStart) > new Date() ? (
+                                <span>
+                                  <span className="font-semibold">
+                                    The series starts on:{" "}
+                                  </span>
+                                  {new Date(matchup.dateOfStart).toLocaleString(
+                                    "he-IL",
+                                    {
+                                      timeZone: "Asia/Jerusalem",
+                                    }
+                                  )}
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="font-semibold text-gray  -700">
+                                    The series has started!
+                                  </span>
+                                  <span className="font-semibold">
+                                    Points Earned:{" "}
+                                    <span className="text-black">
+                                      {userPointsPerSeries?.[
+                                        matchup.id ?? ""
+                                      ] ?? 0}
+                                    </span>
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
                           <NBASeedCard
                             series={matchup}
                             userPoints={

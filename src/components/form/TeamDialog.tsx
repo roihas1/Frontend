@@ -608,7 +608,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                 </p>
 
                 <p className="text-xs sm:text-base mt-1">
-                  <span className="font-semibold">Points gained:</span>{" "}
+                  <span className="font-semibold">Points Earned:</span>{" "}
                   {userPoints}
                 </p>
               </div>
