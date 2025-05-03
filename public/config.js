@@ -2,5 +2,5 @@
 // <reference path="./types/global.d.ts" />
 // https://api.beyond-the-bracket.com/
 window.RUNTIME_CONFIG = {
-  VITE_BASE_URL: "https://api.beyond-the-bracket.com/",
+  VITE_BASE_URL: "http://localhost:3000/",
 };

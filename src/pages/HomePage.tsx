@@ -390,13 +390,15 @@ const HomePage: React.FC = () => {
               return (
                 <div
                   key={idx}
-                  className={`mb-6 relative ${
-                    !positionToPlace &&
-                    placeholderCount === 1 &&
-                    roundName === "Conference Semifinals"
-                      ? "mt-12"
+                  className={`mb-6 relative
+                  ${
+                    roundName === "Conference Semifinals" &&
+                    sortedMatchups.length === 2 &&
+                    idx === 1
+                      ? "mt-40"
                       : ""
-                  }`}
+                  }
+                 `}
                 >
                   {/* Info Icon Outside of the Border */}
                   {new Date() > matchup.dateOfStart && userPointsPerSeries && (

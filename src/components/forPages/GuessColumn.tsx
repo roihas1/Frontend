@@ -21,7 +21,6 @@ const GuessColumn = ({
         </div>
       );
     }
-
   return (
     <div className="flex flex-col space-y-2">
       {/* BestOf7Bet */}
@@ -33,6 +32,9 @@ const GuessColumn = ({
                 sx={{
                   padding: 1,
                   backgroundColor: `${
+                    allSeriesBets[selectedSeries].teamWinBet.result ===
+                      guessData.teamWon.guess &&
+                    allSeriesBets[selectedSeries].bestOf7Bet.seriesScore.includes(4) &&
                     allSeriesBets[selectedSeries].bestOf7Bet.result ===
                     guessData.bestOf7.guess
                       ? "#ccffcc"

@@ -635,6 +635,7 @@ const ComparingPage: React.FC = () => {
     setSelectedLeague(undefined)
     isCurrentUserSelected.current = false;
   };
+  
   if (loading || isLoadingComparison) {
     return (
       <div className="fixed inset-0 flex justify-center items-center  z-50">
