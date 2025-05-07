@@ -239,6 +239,10 @@ const ComparingPage: React.FC = () => {
         break;
       }
     }
+    if (league) {
+      await loadLeagueUsers(league);
+    }
+    
     if (allSeriesBets && users) {
       await Promise.all([
         handleUserSelection(currentUser?.id ?? "", seriesKey),
@@ -247,7 +251,7 @@ const ComparingPage: React.FC = () => {
       // await handleUserSelection(currentUser?.id, seriesKey);
       // await handleUserSelection(secondUserId, seriesKey);
     }
-    setSelectedLeague(league);
+    // setSelectedLeague(league);
     setIsLoadingInitial(false);
   };
   // checkTokenExpiration();
@@ -353,8 +357,10 @@ const ComparingPage: React.FC = () => {
     try {
       const user = users[userId];
       const name = `${user?.firstName} ${user?.lastName}`;
-      if (!(userId in selectedUsers)) {
-        if (!(userId in selectedUsers)) {
+      const shouldForceRefetch = !!seriesId;
+
+      if (!(userId in selectedUsers) || shouldForceRefetch) {
+        if (!(userId in selectedUsers) || shouldForceRefetch) {
           const isCurrentUser = userId === currentUser.id;
           const id = seriesId ? seriesId : selectedSeries;
 
@@ -364,30 +370,23 @@ const ComparingPage: React.FC = () => {
               id,
               userId,
             ];
-            let cached = queryClient.getQueryData(queryKey);
-
-            if (!cached) {
-              const { data } = await (isCurrentUser
-                ? axiosInstance.get(`/series/${id}/getAllGuesses`)
-                : axiosInstance.get(
-                    `/series/${id}/getAllGuessesForUser/${userId}`
-                  ));
-              cached = data;
-              queryClient.setQueryDefaults(queryKey, {
-                staleTime: 5 * 60 * 1000,
-                gcTime: 10 * 60 * 1000,
-              });
-              queryClient.setQueryData(queryKey, cached);
-            }
-
+            
+            // Always ensures data is fetched (or returned from cache if valid)
+            const data = await queryClient.ensureQueryData({
+              queryKey,
+              queryFn: async () => {
+                const response = await (isCurrentUser
+                  ? axiosInstance.get(`/series/${id}/getAllGuesses`)
+                  : axiosInstance.get(`/series/${id}/getAllGuessesForUser/${userId}`));
+                return response.data;
+              },
+              staleTime: 5 * 60 * 1000,
+              gcTime: 10 * 60 * 1000,
+            });
+            
             setUsersGuesses((prev) => ({
               ...prev,
-              [userId]: cached as {
-                bestOf7: Guess;
-                teamWon: Guess;
-                playerMatchups: object[];
-                spontaneousGuesses: object[];
-              },
+              [userId]: data,
             }));
           } else if (showChampSelection) {
             const queryKey = [
@@ -583,32 +582,41 @@ const ComparingPage: React.FC = () => {
   }, [selectedLeague, users]);
 
   const handleLeagueSelection = async (event: SelectChangeEvent<string>) => {
+    const leagueName = event.target.value;
+    const foundLeague = leagues.find((l) => l.name === leagueName);
+    if (foundLeague) {
+      await loadLeagueUsers(foundLeague);
+    }
+  };
+  
+  const loadLeagueUsers = async (league: League) => {
     setSelectedUsers({});
     isCurrentUserSelected.current = false;
-    const foundLeague = leagues.filter((l) => l.name === event.target.value);
-    // handleUserSelection(currentUser?.id);
-    setSelectedLeague(foundLeague[0]);
+    setSelectedLeague(league);
+  
     try {
-      if (foundLeague[0].name !== "Overall") {
-        const response = await axiosInstance.get(
-          `/private-league/${foundLeague[0].id}/users`
-        );
+      if (league.name !== "Overall") {
+        const response = await axiosInstance.get(`/private-league/${league.id}/users`);
         const allUsers: { [key: string]: User } = {};
         response.data.forEach((user: User) => {
           allUsers[user.id] = user;
         });
         setOverrideUsers(allUsers);
       } else {
-        if (currentUser?.id) {
+        if(secondUserId && currentUser?.id){
+          setOverrideUsers({ [currentUser.id]: currentUser,[secondUserId]:users[secondUserId] })
+        }
+        else if (currentUser?.id) {
           setOverrideUsers({ [currentUser.id]: currentUser });
         } else {
           setOverrideUsers({});
         }
       }
     } catch (error) {
-      showError(`Server error.`);
+      showError("Server error.");
     }
   };
+  
   // useEffect(() => {
   //   if (Object.keys(selectedUsers).length === 0) {
   //     isCurrentUserSelected.current = false;
@@ -631,9 +639,11 @@ const ComparingPage: React.FC = () => {
     setBetsType("Regular");
     setSelectedSeries(seriesId);
     setSelectedSeriesName(series?.[seriesId] ?? "");
-    setSelectedUsers({});
-    setSelectedLeague(undefined)
-    isCurrentUserSelected.current = false;
+    for (const userId of Object.keys(selectedUsers)){
+      handleUserSelection(userId,seriesId)
+    }
+    // setSelectedLeague(undefined)
+    // isCurrentUserSelected.current = false;
   };
   
   if (loading || isLoadingComparison) {
