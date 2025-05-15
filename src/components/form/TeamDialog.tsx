@@ -129,6 +129,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   intialGamesTab,
   fetchData = () => {},
 }) => {
+
   const [selectedTeam, setSelectedTeam] = useState<number>(-1); // Track selected team
   const [selectedPlayerForBet, setSelectedPlayerForBet] = useState<{
     [key: string]: number;

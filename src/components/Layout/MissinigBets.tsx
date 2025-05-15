@@ -47,15 +47,13 @@ const MissingBets = () => {
     try {
       const response = await axiosInstance.get(`/series/${id}`);
       const responsePoints = await axiosInstance.get(`user-series-points/user`);
-
-      setSeriesPoints(responsePoints.data);
+      setSeriesPoints(responsePoints.data[id]);
       const series: Series = response.data;
       const team1Logo = logos[series.team1.toLowerCase().replace(/ /g, "_")];
       const team2Logo = logos[series.team2.toLowerCase().replace(/ /g, "_")];
       series.dateOfStart = new Date(response.data.dateOfStart);
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;
-
       setSelectedSeries(series);
     } catch {
       showError(`Server Error,try again.`);
@@ -74,7 +72,6 @@ const MissingBets = () => {
   const fetchMissingBets = async () => {
     try {
       const response = await axiosInstance.get(`/user-missing-bets/user`);
-
       setMissiningBetsData(response.data);
       const totalMissingBets: number = Object.values(
         response.data as MissingBetsData
@@ -279,9 +276,10 @@ const MissingBets = () => {
                     <StyledMenuItem
                       key={matchup.id}
                       onClick={() => {
+                        handleClose();
                         setSpontaneousGameTab(matchup.gameNumber ?? 0);
                         setIntialTab(1);
-                        handleClose();
+                        
                         fetchSeriesData(id);
                       }}
                     >
@@ -344,9 +342,9 @@ const MissingBets = () => {
                   <StyledMenuItem
                     key={matchup.id}
                     onClick={() => {
+                      handleClose();
                       setSpontaneousGameTab(matchup.gameNumber ?? 0);
                       setIntialTab(1);
-                      handleClose();
                       fetchSeriesData(id);
                     }}
                   >
@@ -364,7 +362,7 @@ const MissingBets = () => {
           closeDialog={() => setIsDialogOpen(false)}
           userPoints={seriesPoints}
           intialSelectedTab={intialTab}
-          intialGamesTab={spontaneousGameTab}
+          intialGamesTab={spontaneousGameTab+1}
         />
       )}
     </div>
