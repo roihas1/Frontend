@@ -221,20 +221,20 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }));
   };
   
-  const handlePlayerSelection = (id: string, player: number) => {
+  // const handlePlayerSelection = (id: string, player: number) => {
     
-    if (selectedTab === 0) {
-      setSelectedPlayerForBet((prevState) => ({
-        ...prevState,
-        [id]: player,
-      }));
-    } else {
-      setSelectedPlayerForBetSpontaneous((prevState) => ({
-        ...prevState,
-        [id]: player,
-      }));
-    }
-  };
+  //   if (selectedTab === 0) {
+  //     setSelectedPlayerForBet((prevState) => ({
+  //       ...prevState,
+  //       [id]: player,
+  //     }));
+  //   } else {
+  //     setSelectedPlayerForBetSpontaneous((prevState) => ({
+  //       ...prevState,
+  //       [id]: player,
+  //     }));
+  //   }
+  // };
 
   const handleNumberOfGamesSelection = (
     event: React.ChangeEvent<HTMLSelectElement>
@@ -263,6 +263,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
     for (const betId in selectedPlayerForBetSpontaneous) {
       if (!(betId in initialGuesses.spontaneousGuesses)) return true;
+    }
+    for (const betId in initialGuesses.spontaneousGuesses) {
+      if (!(betId in selectedPlayerForBetSpontaneous)) return true;
     }
     return false; // no new guesses
   };
