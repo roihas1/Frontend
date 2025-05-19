@@ -210,7 +210,19 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
   }, [validationError]);
   // Handle player selection for each bet
+  const handlePlayerSelectionForSeries = (id: string, player: number) => {
+    setSelectedPlayerForBet((prevState) => ({ ...prevState, [id]: player }));
+  };
+  
+  const handlePlayerSelectionForSpontaneous = (id: string, player: number) => {
+    setSelectedPlayerForBetSpontaneous((prevState) => ({
+      ...prevState,
+      [id]: player,
+    }));
+  };
+  
   const handlePlayerSelection = (id: string, player: number) => {
+    
     if (selectedTab === 0) {
       setSelectedPlayerForBet((prevState) => ({
         ...prevState,
@@ -348,7 +360,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
         }
         if (userGuesses["playerMatchupGuess"].length > 0) {
           userGuesses["playerMatchupGuess"].forEach((element: any) => {
-            handlePlayerSelection(element["betId"], element["guess"]);
+            handlePlayerSelectionForSeries(element["betId"], element["guess"]);
           });
           // setHasGuesses(true);
         }
@@ -768,7 +780,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             <BetsDisplay
               bets={series.playerMatchupBets ?? []}
               selectedPlayerForBet={selectedPlayerForBet}
-              handlePlayerSelection={handlePlayerSelection}
+              handlePlayerSelection={handlePlayerSelectionForSeries}
               handleRemoveGuessFromBet={handleRemoveGuessFromBet}
               isStartDatePassed={isStartDatePassed}
               guessPercentage={guessPercentage.playerMatchup}
@@ -820,7 +832,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   ) ?? []
                 }
                 selectedPlayerForBet={selectedPlayerForBetSpontaneous}
-                handlePlayerSelection={handlePlayerSelection}
+                handlePlayerSelection={handlePlayerSelectionForSpontaneous}
                 handleRemoveGuessFromBet={handleRemoveGuessFromBet}
                 isStartDatePassed={
                   spontaneousExpiration[currentSpontaneousBet?.id ?? ""] ?? true
