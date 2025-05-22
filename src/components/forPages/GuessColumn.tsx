@@ -12,15 +12,16 @@ const GuessColumn = ({
   isSpontaneous: boolean;
   allSeriesBets: AllSeriesBets;
   selectedSeries: string;
-  isLoading:boolean
+  isLoading: boolean;
 }) => {
-  if(isLoading){
-  return (
-        <div className="fixed inset-0 flex justify-center items-center  z-50">
-          <CircularProgress />
-        </div>
-      );
-    }
+  console.log(allSeriesBets[selectedSeries]);
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex justify-center items-center  z-50">
+        <CircularProgress />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col space-y-2">
       {/* BestOf7Bet */}
@@ -34,9 +35,11 @@ const GuessColumn = ({
                   backgroundColor: `${
                     allSeriesBets[selectedSeries].teamWinBet.result ===
                       guessData.teamWon.guess &&
-                    allSeriesBets[selectedSeries].bestOf7Bet.seriesScore.includes(4) &&
+                    allSeriesBets[
+                      selectedSeries
+                    ].bestOf7Bet.seriesScore.includes(4) &&
                     allSeriesBets[selectedSeries].bestOf7Bet.result ===
-                    guessData.bestOf7.guess
+                      guessData.bestOf7.guess
                       ? "#ccffcc"
                       : "rgba(0,0,0,0)"
                   }`,
@@ -177,7 +180,13 @@ const GuessColumn = ({
           : guessData.playerMatchups
         ).map((matchup: any, index: number) => {
           // Check if guesses is undefined
-          if (matchup.guesses.length === 0) {
+          if (
+            matchup.guesses.length === 0 ||
+            new Date(
+              allSeriesBets[selectedSeries]?.spontaneousBets?.[index]
+                ?.startTime ?? 0
+            ).getTime() < Date.now()
+          ) {
             return (
               <Tooltip
                 key={index + 10}

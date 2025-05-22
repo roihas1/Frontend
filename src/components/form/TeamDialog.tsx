@@ -288,6 +288,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           } else {
             await axiosInstance.post(`spontaneous-guess/update`, {
               spontaneousGuesses: selectedPlayerForBetSpontaneous,
+              seriesId: series.id
             });
           }
           await delay(100);
