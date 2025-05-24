@@ -14,7 +14,6 @@ const GuessColumn = ({
   selectedSeries: string;
   isLoading: boolean;
 }) => {
-  console.log(allSeriesBets[selectedSeries]);
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex justify-center items-center  z-50">
@@ -182,10 +181,11 @@ const GuessColumn = ({
           // Check if guesses is undefined
           if (
             matchup.guesses.length === 0 ||
-            new Date(
-              allSeriesBets[selectedSeries]?.spontaneousBets?.[index]
-                ?.startTime ?? 0
-            ).getTime() < Date.now()
+            (isSpontaneous &&
+              new Date(
+                allSeriesBets[selectedSeries]?.spontaneousBets?.[index]
+                  ?.startTime ?? 0
+              ).getTime() > Date.now())
           ) {
             return (
               <Tooltip

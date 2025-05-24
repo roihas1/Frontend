@@ -16,6 +16,7 @@ interface GuessData {
 
 interface ChampGuessColumnProps {
   guessData: GuessData | null;
+  stage: string;
 }
 
 // Reusable Component for Guess Rows (Eastern, Western, Finals)
@@ -63,7 +64,10 @@ const GuessPaper = ({ text }: { text: string }) => {
 };
 
 // Main Component
-const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({ guessData }) => {
+const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({
+  guessData,
+  stage,
+}) => {
   if (!guessData) return null;
 
   // Extracting teams from guesses
@@ -77,7 +81,6 @@ const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({ guessData }) => {
   const eastTeams = getTeamsByConference("East");
   const westTeams = getTeamsByConference("West");
   const finalsTeams = getTeamsByConference("Finals");
-
   return (
     <div className="flex flex-col space-y-2">
       {/* Champion Team Guess */}
@@ -95,9 +98,13 @@ const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({ guessData }) => {
       )}
 
       {/* Conference Finals Guesses */}
-      <TeamGuessRow {...eastTeams} />
-      <TeamGuessRow {...westTeams} />
-      <TeamGuessRow {...finalsTeams} />
+      {stage == "Before playoffs" && (
+        <>
+          <TeamGuessRow {...eastTeams} />
+          <TeamGuessRow {...westTeams} />
+          <TeamGuessRow {...finalsTeams} />
+        </>
+      )}
     </div>
   );
 };

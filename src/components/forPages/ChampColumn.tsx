@@ -1,6 +1,6 @@
 import { Paper, Typography } from "@mui/material";
 
-const ChampColumn = () => {
+const ChampColumn = (selectedStage: any) => {
     const opacity = 0.218;
     return (
       <div className="flex flex-col space-y-2">
@@ -28,7 +28,9 @@ const ChampColumn = () => {
             </Typography>
           </Paper>
         </div>
-        <div>
+        {selectedStage.selectedStage == "Before playoffs" && (
+          <>
+          <div>
           <Paper
             sx={{
               padding: 1,
@@ -64,6 +66,8 @@ const ChampColumn = () => {
             </Typography>
           </Paper>
         </div>
+        </>
+        )}
       </div>
     );
   };

@@ -342,7 +342,7 @@ const ComparingPage: React.FC = () => {
   const handleCloseModal = () => {
     setOpen(false);
   };
-  const handleUserSelection = async (userId: string, seriesId?: string) => {
+  const handleUserSelection = async (userId: string, seriesId?: string,  forceRefetch = false) => {
     if (!allSeriesBets || Object.keys(allSeriesBets).length === 0) {
       showError(`No series bets available yet.`);
       return;
@@ -357,7 +357,8 @@ const ComparingPage: React.FC = () => {
     try {
       const user = users[userId];
       const name = `${user?.firstName} ${user?.lastName}`;
-      const shouldForceRefetch = !!seriesId;
+      const shouldForceRefetch = !!seriesId || forceRefetch;
+
 
       if (!(userId in selectedUsers) || shouldForceRefetch) {
         if (!(userId in selectedUsers) || shouldForceRefetch) {
@@ -523,8 +524,17 @@ const ComparingPage: React.FC = () => {
   //     handleUserSelection(currentUser?.id);
   //   }
   // }, [selectedStage]);
+  useEffect(() => {
+    if (selectedStage && showChampSelection) {
+      for (const userId of Object.keys(selectedUsers)) {
+        handleUserSelection(userId,undefined,true);
+      }
+    }
+  }, [selectedStage]);
+  
   const handleStageSelection = (event: SelectChangeEvent<string>) => {
     setSelectedStage(event.target.value);
+
   };
   const handleClearSelectedUsers = (
     event: React.MouseEvent<HTMLButtonElement>
@@ -928,7 +938,7 @@ const ComparingPage: React.FC = () => {
               isSpontaneous={betsType === "Spontaneous"}
             />
           ) : showChampSelection && selectedStage ? (
-            <ChampColumn />
+            <ChampColumn selectedStage={selectedStage} />
           ) : (
             <div />
           )}
@@ -1001,7 +1011,7 @@ const ComparingPage: React.FC = () => {
                         isLoading={isLoadingUser}
                       />
                     ) : userChampGuessses?.[userId] ? (
-                      <ChampGuessColumn guessData={userChampGuessses[userId]} />
+                      <ChampGuessColumn guessData={userChampGuessses[userId]} stage= {selectedStage} />
                     ) : (
                       <p> No guess data available</p> // Placeholder for undefined data
                     )}
