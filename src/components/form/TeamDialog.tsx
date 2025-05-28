@@ -129,7 +129,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   intialGamesTab,
   fetchData = () => {},
 }) => {
-
   const [selectedTeam, setSelectedTeam] = useState<number>(-1); // Track selected team
   const [selectedPlayerForBet, setSelectedPlayerForBet] = useState<{
     [key: string]: number;
@@ -213,16 +212,16 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const handlePlayerSelectionForSeries = (id: string, player: number) => {
     setSelectedPlayerForBet((prevState) => ({ ...prevState, [id]: player }));
   };
-  
+
   const handlePlayerSelectionForSpontaneous = (id: string, player: number) => {
     setSelectedPlayerForBetSpontaneous((prevState) => ({
       ...prevState,
       [id]: player,
     }));
   };
-  
+
   // const handlePlayerSelection = (id: string, player: number) => {
-    
+
   //   if (selectedTab === 0) {
   //     setSelectedPlayerForBet((prevState) => ({
   //       ...prevState,
@@ -288,7 +287,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           } else {
             await axiosInstance.post(`spontaneous-guess/update`, {
               spontaneousGuesses: selectedPlayerForBetSpontaneous,
-              seriesId: series.id
+              seriesId: series.id,
             });
           }
           await delay(100);
@@ -798,6 +797,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   borderColor: "divider",
                   display: "flex",
                   justifyContent: "center",
+                  overflowX: "auto", //  makes the box scrollable
+                  whiteSpace: "nowrap", //  prevents wrapping
                 }}
               >
                 <Tabs
@@ -806,6 +807,9 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                     e.preventDefault();
                     setGamesTab(newValue + 1);
                   }}
+                  variant="scrollable" //  makes tabs scrollable
+                  scrollButtons="auto" //  shows arrows on desktop if needed
+                  allowScrollButtonsMobile //  optional: allows arrows on mobile too
                 >
                   {numOfSpontaneousBets > 0 &&
                     Array.from(
