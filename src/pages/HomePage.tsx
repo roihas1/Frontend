@@ -33,7 +33,13 @@ import houstonRocketsLogo from "../assets/logos/houston_rockets_logo.png";
 import newOrleansPelicansLogo from "../assets/logos/new_orleans_pelicans_logo.png";
 import Logo from "../assets/siteLogo/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
-import { BestOf7Bet, PlayerMatchupBet, SpontaneousBet } from "../types/index";
+import {
+  BestOf7Bet,
+  PlayerMatchupBet,
+  PlayoffTournament,
+  SpontaneousBet,
+  TeamRelation,
+} from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
@@ -50,12 +56,15 @@ import {
 
 export interface Series {
   id?: string;
-  team1: string;
-  team2: string;
+  team1?: string;
+  team2?: string;
+  team1Relation?: TeamRelation;
+  team2Relation?: TeamRelation;
+  tournament?: PlayoffTournament;
   dateOfStart: Date;
   bestOf7BetId?: BestOf7Bet;
   teamWinBetId?: string;
-  conference: "West" | "East" | "Finals";
+  conference?: "West" | "East" | "Finals";
   round: string;
   seed1: number;
   seed2: number;
@@ -231,21 +240,52 @@ const HomePage: React.FC = () => {
           finals: Series[];
         } = { west: [], east: [], finals: [] };
 
-        seriesList.forEach((element: Series) => {
-          updatedSeries[
-            element.conference.toLowerCase() as keyof typeof updatedSeries
-          ].push({
-            ...element,
-            dateOfStart: new Date(element.dateOfStart),
-            logo1:
-              logos[element.team1.toLowerCase().replace(/ /g, "_")] ||
-              defaultLogo,
-            logo2:
-              logos[element.team2.toLowerCase().replace(/ /g, "_")] ||
-              defaultLogo,
-            team1: nbaTeams[element.team1],
-            team2: nbaTeams[element.team2],
-          });
+        const logoKey = (name: string) =>
+          name.toLowerCase().replace(/ /g, "_");
+
+        (seriesList ?? []).forEach((element: Series) => {
+          const team1Full =
+            element.team1?.trim() ?? element.team1Relation?.name?.trim() ?? "";
+          const team2Full =
+            element.team2?.trim() ?? element.team2Relation?.name?.trim() ?? "";
+          const confLower = element.conference?.trim().toLowerCase();
+
+          if (!team1Full || !team2Full || !confLower) {
+            console.warn(
+              "Skipping series with missing team1, team2, or conference",
+              element.id ?? element
+            );
+            return;
+          }
+
+          const bucket = confLower as keyof typeof updatedSeries;
+          if (bucket !== "west" && bucket !== "east" && bucket !== "finals") {
+            console.warn(
+              "Skipping series with invalid conference",
+              element.id ?? element,
+              element.conference
+            );
+            return;
+          }
+
+          try {
+            updatedSeries[bucket].push({
+              ...element,
+              dateOfStart: new Date(element.dateOfStart),
+              lastUpdate: new Date(element.lastUpdate),
+              numOfGames: element.numOfGames ?? 7,
+              logo1: logos[logoKey(team1Full)] || defaultLogo,
+              logo2: logos[logoKey(team2Full)] || defaultLogo,
+              team1: nbaTeams[team1Full] ?? team1Full,
+              team2: nbaTeams[team2Full] ?? team2Full,
+            });
+          } catch (rowErr) {
+            console.warn(
+              "Skipping series row due to error",
+              element.id ?? element,
+              rowErr
+            );
+          }
         });
 
         setSeries(updatedSeries);
@@ -274,6 +314,7 @@ const HomePage: React.FC = () => {
 
         setLoading(false);
       } catch (error) {
+        console.log(error);
         showError("Failed to load homepage data.");
         setLoading(false);
       }

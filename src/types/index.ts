@@ -8,12 +8,27 @@ export interface Guess {
     guess: number;
     createdById: string;
 }
+
+export interface TeamRelation {
+  id: string;
+  name: string;
+  abbreviation: string;
+}
+
+export interface PlayoffTournament {
+  id: string;
+  sportType: string;
+  year: number;
+  name: string;
+}
+
 export interface BestOf7Bet {
     id: string;
     fantasyPoints: number;
     seriesScore: number[];
     result: number;
-    guesses: Guess[];
+    guesses?: Guess[];
+    seriesId?: string;
   }
   
   export interface TeamWinBet {

@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 import axiosInstance from "../api/axiosInstance";
-import { Guess, User } from "../types";
+import { Guess, PlayerMatchupBet, SeriesBets, User } from "../types";
 import CustomSelectInput from "../components/form/CustomSelectInput";
 import { useLocation } from "react-router-dom";
 import ChampColumn from "../components/forPages/ChampColumn";
@@ -36,6 +36,79 @@ import debounce from "lodash/debounce";
 import BetColumn from "../components/forPages/BetColumn";
 import GuessColumn from "../components/forPages/GuessColumn";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+function flattenPlayerMatchupBets(raw: unknown): PlayerMatchupBet[] {
+  if (raw == null || !Array.isArray(raw) || raw.length === 0) return [];
+  const first = raw[0];
+  if (
+    first &&
+    typeof first === "object" &&
+    "id" in first &&
+    typeof (first as PlayerMatchupBet).id === "string"
+  ) {
+    return raw as PlayerMatchupBet[];
+  }
+  return (raw as PlayerMatchupBet[][]).flat();
+}
+
+/** Comparison API: `SeriesBets` plus `timeOfStart`; normalizer fills team strings and flat bets */
+type SeriesBetsWithSchedule = SeriesBets & { timeOfStart?: string };
+
+function normalizeComparisonBetsEntry(
+  raw: Record<string, unknown>
+): SeriesBetsWithSchedule {
+  const r = raw as Record<string, unknown> & {
+    team1?: string;
+    team2?: string;
+    team1Name?: string;
+    team2Name?: string;
+    team1name?: string;
+    team2name?: string;
+    team1Relation?: { name?: string };
+    team2Relation?: { name?: string };
+    timeOfStart?: string;
+  };
+  const base = raw as unknown as SeriesBets;
+  const team1Name =
+    (typeof r.team1Name === "string" && r.team1Name.trim()) ||
+    (typeof r.team1name === "string" && r.team1name.trim()) ||
+    "";
+  const team2Name =
+    (typeof r.team2Name === "string" && r.team2Name.trim()) ||
+    (typeof r.team2name === "string" && r.team2name.trim()) ||
+    "";
+  const team1 =
+    (typeof r.team1 === "string" && r.team1.trim()) ||
+    team1Name ||
+    r.team1Relation?.name?.trim() ||
+    base.team1 ||
+    "";
+  const team2 =
+    (typeof r.team2 === "string" && r.team2.trim()) ||
+    team2Name ||
+    r.team2Relation?.name?.trim() ||
+    base.team2 ||
+    "";
+  const startDate = (raw.startDate ?? raw.dateOfStart ?? base.startDate) as Date;
+  const bestOf7Bet = (raw.bestOf7Bet ??
+    raw.bestOf7BetId ??
+    base.bestOf7Bet) as SeriesBets["bestOf7Bet"];
+  const spontaneousRaw = raw.spontaneousBets;
+  const spontaneousBets = Array.isArray(spontaneousRaw)
+    ? spontaneousRaw
+    : (base.spontaneousBets ?? []);
+
+  return {
+    ...base,
+    team1,
+    team2,
+    startDate,
+    bestOf7Bet,
+    playerMatchupBets: flattenPlayerMatchupBets(raw.playerMatchupBets),
+    spontaneousBets: spontaneousBets as SeriesBets["spontaneousBets"],
+    timeOfStart: r.timeOfStart,
+  } as SeriesBetsWithSchedule;
+}
 
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
@@ -140,15 +213,24 @@ const ComparingPage: React.FC = () => {
     queryKey: ["comparison-page"],
     queryFn: async () => {
       const response = await axiosInstance.get("/comparison-page/load");
+      console.log(response.data);
       return response.data;
     },
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
-  const allSeriesBets = useMemo(
-    () => comparisonData?.allBets || {},
-    [comparisonData]
-  );
+  const allSeriesBets = useMemo((): Record<string, SeriesBetsWithSchedule> => {
+    const raw = comparisonData?.allBets as
+      | Record<string, Record<string, unknown>>
+      | undefined;
+    if (!raw) return {};
+    return Object.fromEntries(
+      Object.entries(raw).map(([id, entry]) => [
+        id,
+        normalizeComparisonBetsEntry(entry),
+      ])
+    ) as Record<string, SeriesBetsWithSchedule>;
+  }, [comparisonData]);
   useEffect(() => {
     if (isComparisonError) {
       showError("Failed to load comparison page data.");
@@ -220,18 +302,18 @@ const ComparingPage: React.FC = () => {
       return;
     }
     for (const key of Object.keys(allSeriesBets)) {
-      const series = allSeriesBets[key];
-      if (!series.startDate || !series.timeOfStart) continue;
+      const seriesEntry = allSeriesBets[key];
+      if (!seriesEntry.startDate || !seriesEntry.timeOfStart) continue;
 
-      const [hours, minutes] = series.timeOfStart.split(":").map(Number);
-      const dateWithTime = new Date(series.startDate);
+      const [hours, minutes] = seriesEntry.timeOfStart.split(":").map(Number);
+      const dateWithTime = new Date(seriesEntry.startDate);
       dateWithTime.setHours(hours);
       dateWithTime.setMinutes(minutes);
       dateWithTime.setSeconds(0);
       dateWithTime.setMilliseconds(0);
 
       if (dateWithTime < new Date()) {
-        const name = `${series.team1} vs ${series.team2} (${series.round})`;
+        const name = `${seriesEntry.team1} vs ${seriesEntry.team2} (${seriesEntry.round})`;
         seriesKey = key;
         setSelectedSeries(key);
         setSelectedSeriesName(name);
@@ -287,11 +369,12 @@ const ComparingPage: React.FC = () => {
   }, [comparisonData, overrideUsers]);
 
   const series = useMemo(() => {
-    if (!comparisonData?.allBets) return {};
     const result: { [key: string]: string } = {};
-    Object.entries(comparisonData.allBets).forEach(([key, value]: any) => {
-      const [hours, minutes] = value.timeOfStart.split(":").map(Number);
+    for (const [key, value] of Object.entries(allSeriesBets)) {
+      const timeOfStart = value.timeOfStart;
+      if (!value.startDate || !timeOfStart) continue;
 
+      const [hours, minutes] = timeOfStart.split(":").map(Number);
       const dateWithTime = new Date(value.startDate);
       dateWithTime.setHours(hours);
       dateWithTime.setMinutes(minutes);
@@ -301,9 +384,9 @@ const ComparingPage: React.FC = () => {
       if (dateWithTime < new Date()) {
         result[key] = `${value.team1} vs ${value.team2} (${value.round})`;
       }
-    });
+    }
     return result;
-  }, [comparisonData]);
+  }, [allSeriesBets]);
 
   const passedStages = useMemo(
     () => comparisonData?.passedStages || [],
