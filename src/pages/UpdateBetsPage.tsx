@@ -217,8 +217,10 @@ const UpdateBetsPage: React.FC = () => {
   useEffect(() => {
     if (!showCreateSeriesForm) {
       setCreateSeriesTournamentId("");
+      return;
     }
-  }, [showCreateSeriesForm]);
+    setCreateSeriesTournamentId(selectedTournamentId ?? "");
+  }, [showCreateSeriesForm, selectedTournamentId]);
 
   // Fetch bets for the selected series
   useEffect(() => {
