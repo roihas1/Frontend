@@ -10,6 +10,7 @@ import {
   Zoom,
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 interface User {
   id: string;
@@ -37,6 +38,7 @@ const LeaguesPage: React.FC = () => {
   const navigate = useNavigate();
   const { showError } = useError();
   const [limit, setLimit] = useState<number>(20);
+  const { selectedTournamentId } = useTournament();
 
   const fetchUsers = async (
     cursor?: { totalPoints: number; id: string },
@@ -102,9 +104,10 @@ const LeaguesPage: React.FC = () => {
   }));
 
   useEffect(() => {
+    if (!selectedTournamentId) return;
     fetchUsers();
     fetchUser();
-  }, []);
+  }, [selectedTournamentId]);
 
   return (
     <div className="flex flex-col">

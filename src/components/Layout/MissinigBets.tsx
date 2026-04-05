@@ -8,7 +8,7 @@ import {
   Menu,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { PlayerMatchupBet, SpontaneousBet } from "../../types";
 import { useError } from "../providers&context/ErrorProvider";
 // import { useSuccessMessage } from "../providers&context/successMassageProvider";
@@ -18,6 +18,7 @@ import TeamDialog from "../form/TeamDialog";
 import { useAuth } from "../providers&context/AuthContext";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
 import StyledMenuItem from "../forPages/StyledMenuItem";
+import { useTournament } from "../providers&context/TournamentContext";
 
 interface MissingBetsData {
   [key: string]: {
@@ -42,6 +43,7 @@ const MissingBets = () => {
   const { refreshTrigger } = useMissingBets();
 
   const { isLoggedIn } = useAuth();
+  const { selectedTournamentId } = useTournament();
 
   const fetchSeriesData = async (id: string) => {
     try {
@@ -49,8 +51,10 @@ const MissingBets = () => {
       const responsePoints = await axiosInstance.get(`user-series-points/user`);
       setSeriesPoints(responsePoints.data[id]);
       const series: Series = response.data;
-      const team1Logo = logos[series.team1.toLowerCase().replace(/ /g, "_")];
-      const team2Logo = logos[series.team2.toLowerCase().replace(/ /g, "_")];
+      const team1Name = series.team1 ?? "";
+      const team2Name = series.team2 ?? "";
+      const team1Logo = logos[team1Name.toLowerCase().replace(/ /g, "_")];
+      const team2Logo = logos[team2Name.toLowerCase().replace(/ /g, "_")];
       series.dateOfStart = new Date(response.data.dateOfStart);
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;
@@ -69,7 +73,7 @@ const MissingBets = () => {
   const handleClose = () => {
     setAnchorEl(null);
   };
-  const fetchMissingBets = async () => {
+  const fetchMissingBets = useCallback(async () => {
     try {
       const response = await axiosInstance.get(`/user-missing-bets/user`);
       setMissiningBetsData(response.data);
@@ -87,18 +91,18 @@ const MissingBets = () => {
     } catch (error) {
       showError(`${error}`);
     }
-  };
+  }, [showError]);
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
     }
-  }, [refreshTrigger]);
+  }, [refreshTrigger, isLoggedIn, selectedTournamentId]);
 
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, selectedTournamentId]);
 
   useEffect(() => {
     if (selectedSeries) {

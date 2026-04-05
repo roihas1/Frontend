@@ -36,6 +36,7 @@ import debounce from "lodash/debounce";
 import BetColumn from "../components/forPages/BetColumn";
 import GuessColumn from "../components/forPages/GuessColumn";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 function flattenPlayerMatchupBets(raw: unknown): PlayerMatchupBet[] {
   if (raw == null || !Array.isArray(raw) || raw.length === 0) return [];
@@ -55,7 +56,7 @@ function flattenPlayerMatchupBets(raw: unknown): PlayerMatchupBet[] {
 type SeriesBetsWithSchedule = SeriesBets & { timeOfStart?: string };
 
 function normalizeComparisonBetsEntry(
-  raw: Record<string, unknown>
+  raw: Record<string, unknown>,
 ): SeriesBetsWithSchedule {
   const r = raw as Record<string, unknown> & {
     team1?: string;
@@ -89,7 +90,9 @@ function normalizeComparisonBetsEntry(
     r.team2Relation?.name?.trim() ||
     base.team2 ||
     "";
-  const startDate = (raw.startDate ?? raw.dateOfStart ?? base.startDate) as Date;
+  const startDate = (raw.startDate ??
+    raw.dateOfStart ??
+    base.startDate) as Date;
   const bestOf7Bet = (raw.bestOf7Bet ??
     raw.bestOf7BetId ??
     base.bestOf7Bet) as SeriesBets["bestOf7Bet"];
@@ -112,6 +115,7 @@ function normalizeComparisonBetsEntry(
 
 const ComparingPage: React.FC = () => {
   const { showError } = useError();
+  const { selectedTournamentId } = useTournament();
   // const [allSeriesBets, setAllSeriesBets] = useState<AllSeriesBets>({});
   // const [users, setUsers] = useState<{ [key: string]: User }>({});
   const [loading, setLoading] = useState<boolean>(false);
@@ -119,7 +123,7 @@ const ComparingPage: React.FC = () => {
   const [selectedSeries, setSelectedSeries] = useState<string>("");
   const [selectedSeriesName, setSelectedSeriesName] = useState<string>("");
   const [selectedUsers, setSelectedUsers] = useState<{ [key: string]: string }>(
-    {}
+    {},
   );
   const [isLoadingInitial, setIsLoadingInitial] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
@@ -210,12 +214,12 @@ const ComparingPage: React.FC = () => {
     isLoading: isLoadingComparison,
     isError: isComparisonError,
   } = useQuery({
-    queryKey: ["comparison-page"],
+    queryKey: ["comparison-page", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get("/comparison-page/load");
-      console.log(response.data);
       return response.data;
     },
+    enabled: !!selectedTournamentId,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -228,7 +232,7 @@ const ComparingPage: React.FC = () => {
       Object.entries(raw).map(([id, entry]) => [
         id,
         normalizeComparisonBetsEntry(entry),
-      ])
+      ]),
     ) as Record<string, SeriesBetsWithSchedule>;
   }, [comparisonData]);
   useEffect(() => {
@@ -239,7 +243,7 @@ const ComparingPage: React.FC = () => {
 
   const currentUser = useMemo(
     () => comparisonData?.currentUser,
-    [comparisonData]
+    [comparisonData],
   );
   useEffect(() => {
     if (!isCurrentUserSelected && allSeriesBets) {
@@ -265,7 +269,7 @@ const ComparingPage: React.FC = () => {
               acc[user.id] = user;
               return acc;
             },
-            {} as { [key: string]: User }
+            {} as { [key: string]: User },
           );
 
           // Merge new users with existing users in state
@@ -278,7 +282,7 @@ const ComparingPage: React.FC = () => {
           setLoading(false);
         }
       }, 800),
-    [showError]
+    [showError],
   );
 
   useEffect(() => {
@@ -291,7 +295,7 @@ const ComparingPage: React.FC = () => {
       const query = event.target.value;
       debouncedSearch(query);
     },
-    [debouncedSearch]
+    [debouncedSearch],
   );
 
   const setInitialsComprison = async () => {
@@ -324,7 +328,7 @@ const ComparingPage: React.FC = () => {
     if (league) {
       await loadLeagueUsers(league);
     }
-    
+
     if (allSeriesBets && users) {
       await Promise.all([
         handleUserSelection(currentUser?.id ?? "", seriesKey),
@@ -390,7 +394,7 @@ const ComparingPage: React.FC = () => {
 
   const passedStages = useMemo(
     () => comparisonData?.passedStages || [],
-    [comparisonData]
+    [comparisonData],
   );
 
   const leagues = useMemo(() => {
@@ -425,14 +429,18 @@ const ComparingPage: React.FC = () => {
   const handleCloseModal = () => {
     setOpen(false);
   };
-  const handleUserSelection = async (userId: string, seriesId?: string,  forceRefetch = false) => {
+  const handleUserSelection = async (
+    userId: string,
+    seriesId?: string,
+    forceRefetch = false,
+  ) => {
     if (!allSeriesBets || Object.keys(allSeriesBets).length === 0) {
       showError(`No series bets available yet.`);
       return;
     }
     if (Object.keys(selectedUsers).length === 5) {
       showError(
-        `Max participents in comparison is 5! Remove at least one user.`
+        `Max participents in comparison is 5! Remove at least one user.`,
       );
       return;
     }
@@ -441,7 +449,6 @@ const ComparingPage: React.FC = () => {
       const user = users[userId];
       const name = `${user?.firstName} ${user?.lastName}`;
       const shouldForceRefetch = !!seriesId || forceRefetch;
-
 
       if (!(userId in selectedUsers) || shouldForceRefetch) {
         if (!(userId in selectedUsers) || shouldForceRefetch) {
@@ -453,21 +460,24 @@ const ComparingPage: React.FC = () => {
               isCurrentUser ? "seriesGuessesSelf" : "seriesGuesses",
               id,
               userId,
+              selectedTournamentId,
             ];
-            
+
             // Always ensures data is fetched (or returned from cache if valid)
             const data = await queryClient.ensureQueryData({
               queryKey,
               queryFn: async () => {
                 const response = await (isCurrentUser
                   ? axiosInstance.get(`/series/${id}/getAllGuesses`)
-                  : axiosInstance.get(`/series/${id}/getAllGuessesForUser/${userId}`));
+                  : axiosInstance.get(
+                      `/series/${id}/getAllGuessesForUser/${userId}`,
+                    ));
                 return response.data;
               },
               staleTime: 5 * 60 * 1000,
               gcTime: 10 * 60 * 1000,
             });
-            
+
             setUsersGuesses((prev) => ({
               ...prev,
               [userId]: data,
@@ -477,12 +487,13 @@ const ComparingPage: React.FC = () => {
               isCurrentUser ? "champGuessesSelf" : "champGuesses",
               selectedStage,
               userId,
+              selectedTournamentId,
             ];
             let cached = queryClient.getQueryData(queryKey);
 
             if (!cached) {
               const { data } = await axiosInstance.get(
-                `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`
+                `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`,
               );
               cached = data;
               queryClient.setQueryDefaults(queryKey, {
@@ -531,7 +542,7 @@ const ComparingPage: React.FC = () => {
     isCurrentUserSelected.current =
       userId === currentUser?.id ? false : isCurrentUserSelected.current;
     setSelectedUsers((prevSelectedUser) =>
-      removeUser(prevSelectedUser, userId)
+      removeUser(prevSelectedUser, userId),
     );
   };
 
@@ -610,17 +621,16 @@ const ComparingPage: React.FC = () => {
   useEffect(() => {
     if (selectedStage && showChampSelection) {
       for (const userId of Object.keys(selectedUsers)) {
-        handleUserSelection(userId,undefined,true);
+        handleUserSelection(userId, undefined, true);
       }
     }
   }, [selectedStage]);
-  
+
   const handleStageSelection = (event: SelectChangeEvent<string>) => {
     setSelectedStage(event.target.value);
-
   };
   const handleClearSelectedUsers = (
-    event: React.MouseEvent<HTMLButtonElement>
+    event: React.MouseEvent<HTMLButtonElement>,
   ) => {
     event.preventDefault();
     setSelectedUsers({});
@@ -661,7 +671,7 @@ const ComparingPage: React.FC = () => {
           }
           return acc;
         },
-        {} as { [key: string]: string }
+        {} as { [key: string]: string },
       );
 
       setSelectedUsers(validSelectedUsers);
@@ -681,25 +691,29 @@ const ComparingPage: React.FC = () => {
       await loadLeagueUsers(foundLeague);
     }
   };
-  
+
   const loadLeagueUsers = async (league: League) => {
     setSelectedUsers({});
     isCurrentUserSelected.current = false;
     setSelectedLeague(league);
-  
+
     try {
       if (league.name !== "Overall") {
-        const response = await axiosInstance.get(`/private-league/${league.id}/users`);
+        const response = await axiosInstance.get(
+          `/private-league/${league.id}/users`,
+        );
         const allUsers: { [key: string]: User } = {};
         response.data.forEach((user: User) => {
           allUsers[user.id] = user;
         });
         setOverrideUsers(allUsers);
       } else {
-        if(secondUserId && currentUser?.id){
-          setOverrideUsers({ [currentUser.id]: currentUser,[secondUserId]:users[secondUserId] })
-        }
-        else if (currentUser?.id) {
+        if (secondUserId && currentUser?.id) {
+          setOverrideUsers({
+            [currentUser.id]: currentUser,
+            [secondUserId]: users[secondUserId],
+          });
+        } else if (currentUser?.id) {
           setOverrideUsers({ [currentUser.id]: currentUser });
         } else {
           setOverrideUsers({});
@@ -709,7 +723,7 @@ const ComparingPage: React.FC = () => {
       showError("Server error.");
     }
   };
-  
+
   // useEffect(() => {
   //   if (Object.keys(selectedUsers).length === 0) {
   //     isCurrentUserSelected.current = false;
@@ -732,13 +746,13 @@ const ComparingPage: React.FC = () => {
     setBetsType("Regular");
     setSelectedSeries(seriesId);
     setSelectedSeriesName(series?.[seriesId] ?? "");
-    for (const userId of Object.keys(selectedUsers)){
-      handleUserSelection(userId,seriesId)
+    for (const userId of Object.keys(selectedUsers)) {
+      handleUserSelection(userId, seriesId);
     }
     // setSelectedLeague(undefined)
     // isCurrentUserSelected.current = false;
   };
-  
+
   if (loading || isLoadingComparison) {
     return (
       <div className="fixed inset-0 flex justify-center items-center  z-50">
@@ -832,21 +846,19 @@ const ComparingPage: React.FC = () => {
               <InputLabel>Select Series</InputLabel>
               <CustomSelectInput
                 id="1"
-                value={selectedSeriesName}
+                value={selectedSeries}
                 label={
                   Object.values(series).length === 0
                     ? "- No Series has Ended -"
                     : "Series"
                 }
                 onChange={(e) => {
-                  for (const key in series) {
-                    if (series[key] === e.target.value) {
-                      handleSeriesSelection(key);
-                      break;
-                    }
-                  }
+                  handleSeriesSelection(e.target.value);
                 }}
-                options={Object.values(series)}
+                optionsForCompare={Object.entries(series).map(([id, name]) => ({
+                  id,
+                  name,
+                }))}
               />
             </FormControl>
           </div>
@@ -893,7 +905,7 @@ const ComparingPage: React.FC = () => {
                   value={Object.keys(selectedUsers)
                     .map(
                       (id) =>
-                        Object.values(users).find((user) => user.id === id)!
+                        Object.values(users).find((user) => user.id === id)!,
                     )
                     .filter(Boolean)}
                   onChange={(event, newValues) => {
@@ -934,7 +946,7 @@ const ComparingPage: React.FC = () => {
                   value={Object.keys(selectedUsers)
                     .map(
                       (id) =>
-                        Object.values(users).find((user) => user.id === id)!
+                        Object.values(users).find((user) => user.id === id)!,
                     )
                     .filter(Boolean)}
                   onChange={(event, newValues) => {
@@ -990,7 +1002,8 @@ const ComparingPage: React.FC = () => {
                   control={<Radio size="small" color="default" />}
                   label="Regular"
                 />
-                {allSeriesBets[selectedSeries].spontaneousBets.length > 0 && (
+                {(allSeriesBets[selectedSeries]?.spontaneousBets?.length ?? 0) >
+                  0 && (
                   <FormControlLabel
                     value="Spontaneous"
                     control={<Radio size="small" color="default" />}
@@ -1094,7 +1107,10 @@ const ComparingPage: React.FC = () => {
                         isLoading={isLoadingUser}
                       />
                     ) : userChampGuessses?.[userId] ? (
-                      <ChampGuessColumn guessData={userChampGuessses[userId]} stage= {selectedStage} />
+                      <ChampGuessColumn
+                        guessData={userChampGuessses[userId]}
+                        stage={selectedStage}
+                      />
                     ) : (
                       <p> No guess data available</p> // Placeholder for undefined data
                     )}

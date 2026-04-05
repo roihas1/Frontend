@@ -19,11 +19,11 @@ import {
   Zoom,
 } from "@mui/material";
 import {
+  CreateTournamentDto,
   MatchupCategory,
   nbaTeamsList,
   PlayerMatchupBet,
   PlayerMatchupType,
-  PlayoffTournament,
   SpontaneousBet,
 } from "../types";
 import SelectSeriesDropdown from "../components/forPages/SelectSeriesDropdown";
@@ -31,6 +31,7 @@ import ButtonGroup from "../components/forPages/ButtonGroup";
 import BetForm from "../components/forPages/BetForm";
 import ActionButtons from "../components/forPages/ActionButtons";
 import BetsTabs from "../components/forPages/betsTabs";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 function seriesTeam1Name(s: Series): string {
   return (s.team1?.trim() || s.team1Relation?.name?.trim() || "") as string;
@@ -161,7 +162,14 @@ const UpdateBetsPage: React.FC = () => {
   const [showSeriesResultForm, setshowSeriesResultForm] =
     useState<boolean>(false);
   const [wonTeam, setWonTeam] = useState<string>("");
-  const [tournaments, setTournaments] = useState<PlayoffTournament[]>([]);
+  const [showCreateTournamentForm, setShowCreateTournamentForm] =
+    useState<boolean>(false);
+  const [newTournamentName, setNewTournamentName] = useState<string>("");
+  const [newTournamentYear, setNewTournamentYear] = useState<string>(() =>
+    String(new Date().getFullYear()),
+  );
+  const [newTournamentSportType, setNewTournamentSportType] =
+    useState<string>("NBA");
   const [createSeriesTournamentId, setCreateSeriesTournamentId] =
     useState<string>("");
 
@@ -177,44 +185,34 @@ const UpdateBetsPage: React.FC = () => {
 
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
+  const {
+    selectedTournamentId,
+    tournaments,
+    refreshTournaments,
+    setSelectedTournamentId,
+  } = useTournament();
   // checkTokenExpiration();
   // Fetch all series
   useEffect(() => {
+    if (!selectedTournamentId) {
+      setSeriesList([]);
+      setFilteredSeriesList([]);
+      setSelectedSeries(null);
+      return;
+    }
+
     const fetchSeries = async () => {
       try {
         const response = await axiosInstance.get("/series");
         setSeriesList(response.data);
         setFilteredSeriesList(response.data);
+        setSelectedSeries(null);
       } catch {
         showError("Failed to fetch series.");
       }
     };
     fetchSeries();
-  }, []);
-
-  useEffect(() => {
-    const fetchTournaments = async () => {
-      try {
-        const response = await axiosInstance.get("/tournaments");
-        setTournaments(response.data);
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error) && error.response?.data) {
-          const data = error.response.data as { message?: string | string[] };
-          const detail = Array.isArray(data.message)
-            ? data.message.join(", ")
-            : data.message;
-          showError(
-            detail
-              ? `Failed to fetch tournaments. ${detail}`
-              : "Failed to fetch tournaments.",
-          );
-        } else {
-          showError("Failed to fetch tournaments. Unexpected error occurred.");
-        }
-      }
-    };
-    fetchTournaments();
-  }, []);
+  }, [selectedTournamentId, showError]);
 
   useEffect(() => {
     if (!showCreateSeriesForm) {
@@ -712,6 +710,10 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleCloseChampionsBets = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTournamentId) {
+      showError("Please select a tournament first.");
+      return;
+    }
 
     if (window.confirm("Are you sure you want to close Champions Bets?")) {
       setLoading(true);
@@ -735,6 +737,7 @@ const UpdateBetsPage: React.FC = () => {
         .filter(Boolean);
       try {
         await axiosInstance.patch("/playoffs-stage/closeGuess", {
+          tournamentId: selectedTournamentId,
           westernConferenceFinal: westernFinalsTeams,
           easternConferenceFinal: easternFinalsTeams,
           finals: finalsTeams,
@@ -802,6 +805,10 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleCreateNewStage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTournamentId) {
+      showError("Please select a tournament first.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -809,6 +816,7 @@ const UpdateBetsPage: React.FC = () => {
         name: stageName,
         startDate,
         timeOfStart: stageTime,
+        tournamentId: selectedTournamentId,
       });
 
       showSuccessMessage("Stage created.");
@@ -823,6 +831,62 @@ const UpdateBetsPage: React.FC = () => {
       setIsInEdit(false);
     }
   };
+
+  const handleCreateTournament = () => {
+    setIsInEdit(true);
+    setShowCreateTournamentForm(true);
+  };
+
+  const handleSubmitCreateTournament = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newTournamentName.trim();
+    const year = parseInt(newTournamentYear, 10);
+    if (!name) {
+      showError("Please enter a tournament name.");
+      return;
+    }
+    if (!Number.isFinite(year) || year < 1900 || year > 2100) {
+      showError("Please enter a valid year between 1900 and 2100.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload: CreateTournamentDto = {
+        sportType: newTournamentSportType,
+        year,
+        name,
+      };
+      const response = await axiosInstance.post("/tournaments", payload);
+      const created = response.data as { id?: string } | undefined;
+      if (created?.id) {
+        setSelectedTournamentId(created.id);
+      }
+      await refreshTournaments();
+      showSuccessMessage("Tournament created.");
+      setNewTournamentName("");
+      setNewTournamentYear(String(new Date().getFullYear()));
+      setNewTournamentSportType("NBA");
+      setShowCreateTournamentForm(false);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.data) {
+        const data = error.response.data as { message?: string | string[] };
+        const detail = Array.isArray(data.message)
+          ? data.message.join(", ")
+          : data.message;
+        showError(
+          detail
+            ? `Failed to create tournament. ${detail}`
+            : "Failed to create tournament.",
+        );
+      } else {
+        showError("Failed to create tournament.");
+      }
+    } finally {
+      setLoading(false);
+      setIsInEdit(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 bg-gray-100 bg-opacity-80 flex justify-center items-center">
@@ -842,6 +906,7 @@ const UpdateBetsPage: React.FC = () => {
           showCreateSeriesForm={showCreateSeriesForm}
           showPlayoffsStageCreation={showPlayoffsStageCreation}
           showCloseChampionsBets={showCloseChampionsBets}
+          showCreateTournamentForm={showCreateTournamentForm}
           isInEdit={isInEdit}
           handleCreateNewSeries={handleCreateNewSeries}
           handleCloseChampionsBets={() => {
@@ -852,6 +917,7 @@ const UpdateBetsPage: React.FC = () => {
             setIsInEdit(true);
             setShowPlayoffsStageCreation(true);
           }}
+          handleCreateTournament={handleCreateTournament}
         />
         {showCloseChampionsBets && (
           <form onSubmit={handleCloseChampionsBets}>
@@ -932,6 +998,53 @@ const UpdateBetsPage: React.FC = () => {
               onClick1={() => {
                 setIsInEdit(false);
                 setShowPlayoffsStageCreation(false);
+              }}
+              loading={loading}
+            />
+          </form>
+        )}
+        {showCreateTournamentForm && (
+          <form onSubmit={handleSubmitCreateTournament} className="space-y-4">
+            <div>
+              <label className="block text-lg font-semibold">Sport type</label>
+              <select
+                name="sportType"
+                value={newTournamentSportType}
+                onChange={(e) => setNewTournamentSportType(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              >
+                <option value="NBA">NBA</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Year</label>
+              <Input
+                type="number"
+                name="year"
+                inputProps={{ min: 1900, max: 2100 }}
+                value={newTournamentYear}
+                onChange={(e) => setNewTournamentYear(e.target.value)}
+                placeholder="Year"
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Name</label>
+              <Input
+                type="text"
+                name="name"
+                value={newTournamentName}
+                onChange={(e) => setNewTournamentName(e.target.value)}
+                placeholder="Tournament name"
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              />
+            </div>
+            <ActionButtons
+              text1="Close Edit"
+              text2="Submit"
+              onClick1={() => {
+                setIsInEdit(false);
+                setShowCreateTournamentForm(false);
               }}
               loading={loading}
             />
@@ -1233,7 +1346,8 @@ const UpdateBetsPage: React.FC = () => {
         {/* Select Series */}
         {!showCloseChampionsBets &&
           !showPlayoffsStageCreation &&
-          !showCreateSeriesForm && (
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
             <div className="flex items-center space-x-4 w-full">
               <SelectSeriesDropdown
                 seriesList={seriesListForDropdown}
@@ -1289,7 +1403,11 @@ const UpdateBetsPage: React.FC = () => {
               </Menu>
             </div>
           )}
-        {selectedSeries && (
+        {selectedSeries &&
+          !showCloseChampionsBets &&
+          !showPlayoffsStageCreation &&
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
           <div className="flex justify-center mt-4 space-x-4">
             <button
               onClick={handleUpdateSeriesResult}
@@ -1406,7 +1524,13 @@ const UpdateBetsPage: React.FC = () => {
         )}
 
         {/* Show existing bets for selected series */}
-        {selectedSeries && !showSeriesResultForm && !showUpdateSeriesTime && (
+        {selectedSeries &&
+          !showSeriesResultForm &&
+          !showUpdateSeriesTime &&
+          !showCloseChampionsBets &&
+          !showPlayoffsStageCreation &&
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
           <>
             <h2 className="text-2xl font-semibold mb-4 mt-4">
               Bets for the selected series
@@ -1425,6 +1549,7 @@ const UpdateBetsPage: React.FC = () => {
 
         {/* Create New Bet */}
         {!showCreateSeriesForm &&
+          !showCreateTournamentForm &&
           selectedSeries &&
           !isInEdit &&
           !updateResultSelected &&

@@ -6,7 +6,7 @@ interface CustomSelectInputProps {
   value: string;
   label: string;
   options?: string[];
-  optionsObject?: { name: string; seed: number }[] ;
+  optionsObject?: { name: string; seed: number }[];
   optionsForCompare?: { id: string; name: string }[];
   onChange: (event: SelectChangeEvent<string>) => void;
   isDisabled?: boolean;
@@ -22,25 +22,22 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
   optionsForCompare,
   onChange,
   isDisabled,
- 
 }) => {
- 
   const [open, setOpen] = useState<boolean>(false);
-  
-    const handleOpen = () => {
-      setOpen(true);
-    };
-  
-    const handleClose = () => {
-      setOpen(false);
-    };
 
-    
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
   return (
     <Select
       id={id}
       value={value || ""}
-      label={"Select" +label}
+      label={"Select" + label}
       name={label}
       onChange={onChange}
       open={open}
@@ -58,7 +55,7 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
       }}
       disabled={isDisabled}
     >
-      <MenuItem disabled>{options?.length === 0 ? label :"Select"} </MenuItem>
+      <MenuItem disabled>{options?.length === 0 ? label : "Select"} </MenuItem>
 
       {/* If 'options' is passed */}
       {options &&
@@ -74,9 +71,9 @@ const CustomSelectInput: React.FC<CustomSelectInputProps> = ({
             {option.name}
           </MenuItem>
         ))}
-        {optionsForCompare && 
+      {optionsForCompare &&
         optionsForCompare.map((option) => (
-          <MenuItem key={option.name} value={option.id}>
+          <MenuItem key={option.id} value={option.id}>
             {option.name}
           </MenuItem>
         ))}

@@ -22,6 +22,12 @@ export interface PlayoffTournament {
   name: string;
 }
 
+export interface CreateTournamentDto {
+  sportType: string;
+  year: number;
+  name: string;
+}
+
 export interface BestOf7Bet {
     id: string;
     fantasyPoints: number;

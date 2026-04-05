@@ -9,6 +9,7 @@ import { Box, CircularProgress, Tab, Tabs, Tooltip } from "@mui/material";
 import BetsDisplay from "../forPages/BetsDisplay";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTournament } from "../providers&context/TournamentContext";
 
 export interface Team {
   image: string;
@@ -149,6 +150,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   }>({ teamWin: { 1: 0, 2: 0 }, playerMatchup: {}, spontaneousMacthups: {} });
   const { triggerRefresh } = useMissingBets();
   const queryClient = useQueryClient();
+  const { selectedTournamentId } = useTournament();
 
   const time = series.timeOfStart.split(":");
   series.dateOfStart.setHours(parseInt(time[0]));
@@ -303,7 +305,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           setSelectedNumberOfGames(0); // Reset number of games
           setHasGuesses(false);
           await queryClient.invalidateQueries({
-            queryKey: ["seriesFullData", series?.id],
+            queryKey: ["seriesFullData", series?.id, selectedTournamentId],
           });
           fetchData();
           closeDialog(); // Close the dialog if submission is successful
@@ -325,14 +327,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     return max;
   };
   const { data: fullData, error: queryError } = useQuery({
-    queryKey: ["seriesFullData", series?.id],
+    queryKey: ["seriesFullData", series?.id, selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get(
         `/series/${series.id}/full-data`
       );
       return response.data;
     },
-    enabled: !!isOpen && !!series?.id,
+    enabled: !!isOpen && !!series?.id && !!selectedTournamentId,
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 3,
     gcTime: 1000 * 60 * 4,
@@ -752,8 +754,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
                   <HorizontalBar
                     first={guessPercentage?.teamWin["1"]}
                     second={guessPercentage?.teamWin["2"]}
-                    option1={series.team1}
-                    option2={series.team2}
+                    option1={series.team1 ?? ""}
+                    option2={series.team2 ?? ""}
                   />
                 </div>
               )}

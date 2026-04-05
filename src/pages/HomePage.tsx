@@ -53,6 +53,7 @@ import {
   Modal,
   Zoom,
 } from "@mui/material";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 export interface Series {
   id?: string;
@@ -190,6 +191,8 @@ const HomePage: React.FC = () => {
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
   const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
+  const [hasPlayoffStages, setHasPlayoffStages] = useState(false);
+  const { selectedTournamentId } = useTournament();
 
   const checkIfGuessed = async () => {
     try {
@@ -220,13 +223,16 @@ const HomePage: React.FC = () => {
   };
   // checkTokenExpiration();
   useEffect(() => {
-    if (stage && stage != "Finish") {
+    if (stage && stage != "Finish" && selectedTournamentId) {
       checkIfGuessed();
     }
-  }, [stage]);
+  }, [stage, selectedTournamentId]);
 
   useEffect(() => {
     const fetchHomepageData = async () => {
+      if (!selectedTournamentId) {
+        return;
+      }
       setLoading(true);
       try {
         const response = await axiosInstance.get("/home-page/load");
@@ -239,20 +245,23 @@ const HomePage: React.FC = () => {
           east: Series[];
           finals: Series[];
         } = { west: [], east: [], finals: [] };
+        const unknownTeamLabel = "TBD";
 
         const logoKey = (name: string) =>
           name.toLowerCase().replace(/ /g, "_");
 
         (seriesList ?? []).forEach((element: Series) => {
-          const team1Full =
+          const team1Raw =
             element.team1?.trim() ?? element.team1Relation?.name?.trim() ?? "";
-          const team2Full =
+          const team2Raw =
             element.team2?.trim() ?? element.team2Relation?.name?.trim() ?? "";
+          const team1Full = team1Raw || unknownTeamLabel;
+          const team2Full = team2Raw || unknownTeamLabel;
           const confLower = element.conference?.trim().toLowerCase();
 
-          if (!team1Full || !team2Full || !confLower) {
+          if (!confLower) {
             console.warn(
-              "Skipping series with missing team1, team2, or conference",
+              "Skipping series with missing conference",
               element.id ?? element
             );
             return;
@@ -292,24 +301,36 @@ const HomePage: React.FC = () => {
         setUserPointsPerSeries(userPoints);
         setIspartialGuess(userGuessedAll);
 
-        const upcomingStage = playoffsStages.find((round: Stage) => {
-          const startDate = new Date(round.startDate);
-          const time = round.timeOfStart.split(":");
-          startDate.setHours(parseInt(time[0]));
-          startDate.setMinutes(parseInt(time[1]));
-          return startDate > new Date();
-        });
+        const stages: Stage[] = Array.isArray(playoffsStages)
+          ? playoffsStages
+          : [];
 
-        if (upcomingStage) {
-          const startDate = new Date(upcomingStage.startDate);
-          const time = upcomingStage.timeOfStart.split(":");
-          startDate.setHours(parseInt(time[0]));
-          startDate.setMinutes(parseInt(time[1]));
-
-          setStage(upcomingStage.name);
-          setStageStartDate(startDate); // ✅ Now includes time as well
+        if (stages.length === 0) {
+          setHasPlayoffStages(false);
+          setStage("");
+          setShowInput(false);
+          setShowMobileChampInput(false);
         } else {
-          setStage("Finish");
+          setHasPlayoffStages(true);
+          const upcomingStage = stages.find((round: Stage) => {
+            const startDate = new Date(round.startDate);
+            const time = round.timeOfStart.split(":");
+            startDate.setHours(parseInt(time[0]));
+            startDate.setMinutes(parseInt(time[1]));
+            return startDate > new Date();
+          });
+
+          if (upcomingStage) {
+            const startDate = new Date(upcomingStage.startDate);
+            const time = upcomingStage.timeOfStart.split(":");
+            startDate.setHours(parseInt(time[0]));
+            startDate.setMinutes(parseInt(time[1]));
+
+            setStage(upcomingStage.name);
+            setStageStartDate(startDate); // ✅ Now includes time as well
+          } else {
+            setStage("Finish");
+          }
         }
 
         setLoading(false);
@@ -321,7 +342,7 @@ const HomePage: React.FC = () => {
     };
 
     fetchHomepageData();
-  }, []);
+  }, [selectedTournamentId]);
 
   const sortMatchups = (matchups: Series[]) => {
     return matchups.sort((a, b) => {
@@ -562,59 +583,75 @@ const HomePage: React.FC = () => {
     );
   }
 
+  const championsStagesEmptyState = (
+    <div className="flex-none w-full max-w-sm mx-auto md:mx-0 md:w-1/4 rounded-lg border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-600 shadow-sm self-start">
+      <p className="font-semibold text-gray-800 mb-1">No playoff stages</p>
+      <p>
+        Champion betting will appear after playoff stages are created for this
+        tournament.
+      </p>
+    </div>
+  );
+
   return (
     <div className="relative z-10  bg-gray-100 p-4">
       {/* Mobile View */}
 
       <div className="md:hidden">
-        <div className="flex justify-center">
-          <button
-            className={`px-6 py-2.5 text-base font-semibold rounded-md shadow-md transition-all duration-300 mb-4 tracking-wide
+        {hasPlayoffStages ? (
+          <>
+            <div className="flex justify-center">
+              <button
+                className={`px-6 py-2.5 text-base font-semibold rounded-md shadow-md transition-all duration-300 mb-4 tracking-wide
       ${
         hasGuessedChampions
           ? "bg-gray-300 text-gray-800 hover:bg-gray-300"
           : "bg-colors-nba-yellow text-black ring-2 animate-scale-pulse ring-yellow-500 hover:bg-yellow-400 scale-105"
       }
     `}
-            style={{
-              transform: !hasGuessedChampions ? "translateY(0)" : undefined,
-            }}
-            onClick={() => setShowMobileChampInput(true)}
-          >
-            {hasGuessedChampions
-              ? "Open Champions Bets"
-              : "Guess the Champions"}
-          </button>
-        </div>
+                style={{
+                  transform: !hasGuessedChampions ? "translateY(0)" : undefined,
+                }}
+                onClick={() => setShowMobileChampInput(true)}
+              >
+                {hasGuessedChampions
+                  ? "Open Champions Bets"
+                  : "Guess the Champions"}
+              </button>
+            </div>
 
-        <Modal
-          open={showMobileChampInput}
-          onClose={() => setShowMobileChampInput(false)}
-        >
-          <Box
-            sx={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100dvh",
-              bgcolor: "background.paper",
-              overflowY: "auto",
-              padding: 2,
-              paddingBottom: 6,
-              boxSizing: "border-box",
-              WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
-            }}
-          >
-            <ChampionsInput
-              west={series.west}
-              east={series.east}
-              startDate={stageStartDate}
-              stage={stage}
-              setShowInput={setHasGuessedAndInput}
-            />
-          </Box>
-        </Modal>
+            <Modal
+              open={showMobileChampInput}
+              onClose={() => setShowMobileChampInput(false)}
+            >
+              <Box
+                sx={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100dvh",
+                  bgcolor: "background.paper",
+                  overflowY: "auto",
+                  padding: 2,
+                  paddingBottom: 6,
+                  boxSizing: "border-box",
+                  WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
+                }}
+              >
+                <ChampionsInput
+                  west={series.west}
+                  east={series.east}
+                  startDate={stageStartDate}
+                  stage={stage}
+                  setShowInput={setHasGuessedAndInput}
+                />
+              </Box>
+            </Modal>
+          </>
+        ) : (
+          <div className="mb-4 px-2">{championsStagesEmptyState}</div>
+        )}
         {[
           "NBA Finals",
           "Conference Finals",
@@ -854,51 +891,57 @@ const HomePage: React.FC = () => {
 
       <div className="hidden md:flex justify-center">
         <div className="flex gap-8">
-          {showInput && (
-            <div className={`flex-none w-full md:w-1/4`}>
-              <ChampionsInput
-                west={series.west}
-                east={series.east}
-                startDate={stageStartDate}
-                stage={stage}
-                setShowInput={hideInputAfterSubmit}
-              />
-            </div>
-          )}
-          {!showInput && (
-            <div
-              className="flex-none md:w-10 relative cursor-pointer h-10"
-              onClick={() => setShowInput(true)}
-            >
-              <Tooltip
-                title="Champions betting"
-                slots={{
-                  transition: Zoom,
-                }}
-                arrow
-                sx={{
-                  "& .MuiTooltip-tooltip": {
-                    backgroundColor: "#1D428A", // Tooltip background color
-                    color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
-                  },
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="size-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+          {hasPlayoffStages ? (
+            <>
+              {showInput && (
+                <div className={`flex-none w-full md:w-1/4`}>
+                  <ChampionsInput
+                    west={series.west}
+                    east={series.east}
+                    startDate={stageStartDate}
+                    stage={stage}
+                    setShowInput={hideInputAfterSubmit}
                   />
-                </svg>
-              </Tooltip>
-            </div>
+                </div>
+              )}
+              {!showInput && (
+                <div
+                  className="flex-none md:w-10 relative cursor-pointer h-10"
+                  onClick={() => setShowInput(true)}
+                >
+                  <Tooltip
+                    title="Champions betting"
+                    slots={{
+                      transition: Zoom,
+                    }}
+                    arrow
+                    sx={{
+                      "& .MuiTooltip-tooltip": {
+                        backgroundColor: "#1D428A", // Tooltip background color
+                        color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
+                      },
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      className="size-6"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                      />
+                    </svg>
+                  </Tooltip>
+                </div>
+              )}
+            </>
+          ) : (
+            championsStagesEmptyState
           )}
           {/* Western Conference */}
           <div>

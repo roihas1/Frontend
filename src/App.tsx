@@ -22,6 +22,7 @@ import { MissingBetsProvider } from "./components/providers&context/MissingBetsC
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
+import { TournamentProvider } from "./components/providers&context/TournamentContext";
 
 function App() {
   return (
@@ -30,34 +31,36 @@ function App() {
         <SuccessMessageProvider>
           <UserProvider>
             <AuthProvider>
-              <MissingBetsProvider>
-                {/* <PageBackground imageSrc={Logo}/> */}
-                <div className="flex flex-col min-h-screen   bg-gray-100">
-                  <Navbar />
-                  <main className="flex-grow  p-4">
-                    <Routes>
-                      <Route path="/" element={<WelcomePage />} />
-                      <Route path="/login" element={<LoginPage />} />
-                      <Route path="/home" element={<HomePage />} />
-                      <Route path="/signup" element={<SignUpPage />} />
-                      <Route path="/updateBets" element={<UpdateBetsPage />} />
-                      <Route
-                        path="/leagues"
-                        element={<LeaguesSelectionPage />}
-                      />
-                      <Route path="/league" element={<LeaguesPage />} />
-                      <Route path="/comparing" element={<ComparingPage />} />
-                      <Route path="/HowtoPlay" element={<HowToPlayPage />} />
-                      <Route path="/redirect" element={<OAuthRedirectPage />} />
-                      <Route path="/manageLeague" element={<ManageLeague />} />
-                      <Route path='/privacyPolicy' element={<PrivacyPolicyPage/>} />
-                      <Route path='/TermsOfuse' element={<TermsOfUsePage/>}/>
-                      <Route path='/AboutUs' element={<AboutUsPage/>}/>
-                    </Routes>
-                  </main>
-                  <Footer />
-                </div>
+              <TournamentProvider>
+                <MissingBetsProvider>
+                  {/* <PageBackground imageSrc={Logo}/> */}
+                  <div className="flex flex-col min-h-screen   bg-gray-100">
+                    <Navbar />
+                    <main className="flex-grow  p-4">
+                      <Routes>
+                        <Route path="/" element={<WelcomePage />} />
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/home" element={<HomePage />} />
+                        <Route path="/signup" element={<SignUpPage />} />
+                        <Route path="/updateBets" element={<UpdateBetsPage />} />
+                        <Route
+                          path="/leagues"
+                          element={<LeaguesSelectionPage />}
+                        />
+                        <Route path="/league" element={<LeaguesPage />} />
+                        <Route path="/comparing" element={<ComparingPage />} />
+                        <Route path="/HowtoPlay" element={<HowToPlayPage />} />
+                        <Route path="/redirect" element={<OAuthRedirectPage />} />
+                        <Route path="/manageLeague" element={<ManageLeague />} />
+                        <Route path='/privacyPolicy' element={<PrivacyPolicyPage/>} />
+                        <Route path='/TermsOfuse' element={<TermsOfUsePage/>}/>
+                        <Route path='/AboutUs' element={<AboutUsPage/>}/>
+                      </Routes>
+                    </main>
+                    <Footer />
+                  </div>
                 </MissingBetsProvider>
+              </TournamentProvider>
             </AuthProvider>
           </UserProvider>
         </SuccessMessageProvider>
