@@ -8,6 +8,7 @@ import SubmitButton from "../common/SubmitButton";
 import CustomSelectInput from "../form/CustomSelectInput";
 import ChampionGuessSummary from "../forPages/ChampionGuessSummary";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTournament } from "../providers&context/TournamentContext";
 
 interface ChampionsInputProps {
   west: Series[];
@@ -111,6 +112,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   // const [isLoading, setLoading] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const queryClient = useQueryClient(); 
+  const { selectedTournamentId } = useTournament();
 
   const { showSuccessMessage } = useSuccessMessage();
   const { showError } = useError();
@@ -237,9 +239,14 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       setValidationError("Please fill in all the required fields.");
       return;
     }
+    if (!selectedTournamentId) {
+      showError("Please select a tournament first.");
+      return;
+    }
     try {
       if (stage === "Before playoffs") {
         await axiosInstance.post("/champions-guess/update/beforePlayoffs", {
+          tournamentId: selectedTournamentId,
           champTeamGuess: {
             team: selectedChampion,
           },
@@ -267,6 +274,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         });
       } else if (stage === "Round 1" || stage === "Round 2") {
         await axiosInstance.post("/champions-guess/update/afterFirstRound", {
+          tournamentId: selectedTournamentId,
           champTeamGuess: {
             team: selectedChampion,
           },
@@ -276,7 +284,9 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
           stage,
         });
       }
-      await queryClient.invalidateQueries({ queryKey: ["userGuesses", stage] });
+      await queryClient.invalidateQueries({
+        queryKey: ["userGuesses", stage, selectedTournamentId],
+      });
     } catch (error) {
       console.log(error);
       showError(`Failed to update champion guess ${error}`);
@@ -292,14 +302,15 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     isLoading,
     isError,
   } = useQuery<UserGuessesResponse>({
-    queryKey: ["userGuesses", stage],
+    queryKey: ["userGuesses", stage, selectedTournamentId],
     queryFn: async () => {
       const res = await axiosInstance.get(
         `/playoffs-stage/userGuesses/${stage}`
       );
       return res.data;
     },
-    enabled: stage !== "Finish",
+    enabled:
+      !!stage && stage !== "Finish" && !!selectedTournamentId,
     retry: 1,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import axios from "axios";
 import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
@@ -18,6 +19,7 @@ import {
   Zoom,
 } from "@mui/material";
 import {
+  CreateTournamentDto,
   MatchupCategory,
   nbaTeamsList,
   PlayerMatchupBet,
@@ -29,8 +31,46 @@ import ButtonGroup from "../components/forPages/ButtonGroup";
 import BetForm from "../components/forPages/BetForm";
 import ActionButtons from "../components/forPages/ActionButtons";
 import BetsTabs from "../components/forPages/betsTabs";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
-// Enum for matchup type
+function seriesTeam1Name(s: Series): string {
+  return (s.team1?.trim() || s.team1Relation?.name?.trim() || "") as string;
+}
+
+function seriesTeam2Name(s: Series): string {
+  return (s.team2?.trim() || s.team2Relation?.name?.trim() || "") as string;
+}
+
+function flattenPlayerMatchupBets(raw: unknown): PlayerMatchupBet[] {
+  if (raw == null || !Array.isArray(raw) || raw.length === 0) return [];
+  const first = raw[0];
+  if (
+    first &&
+    typeof first === "object" &&
+    "id" in first &&
+    typeof (first as PlayerMatchupBet).id === "string"
+  ) {
+    return raw as PlayerMatchupBet[];
+  }
+  return (raw as PlayerMatchupBet[][]).flat();
+}
+
+/** `YYYY-MM-DD` for date inputs; tolerates Date, ISO string, or calendar date string from API */
+function dateOfStartToInputValue(d: Date | string | undefined): string {
+  if (d == null) return "";
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().split("T")[0];
+}
+
+/** Payload for PATCH: preserve plain calendar strings; otherwise normalize to `YYYY-MM-DD` */
+function toApiDateString(d: Date | string | undefined): string | undefined {
+  if (d == null) return undefined;
+  if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().split("T")[0];
+}
 
 const UpdateBetsPage: React.FC = () => {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
@@ -70,7 +110,7 @@ const UpdateBetsPage: React.FC = () => {
     { name: string; seed: number; conference: string }[]
   >([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement | SVGSVGElement>(
-    null
+    null,
   );
   const [filteredSeriesList, setFilteredSeriesList] = useState<Series[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>("");
@@ -91,7 +131,7 @@ const UpdateBetsPage: React.FC = () => {
       setFilteredSeriesList(seriesList);
     } else {
       setFilteredSeriesList(
-        seriesList.filter((series) => series.round === filterSelected)
+        seriesList.filter((series) => series.round === filterSelected),
       );
     }
     handleCloseFilter();
@@ -122,36 +162,78 @@ const UpdateBetsPage: React.FC = () => {
   const [showSeriesResultForm, setshowSeriesResultForm] =
     useState<boolean>(false);
   const [wonTeam, setWonTeam] = useState<string>("");
+  const [showCreateTournamentForm, setShowCreateTournamentForm] =
+    useState<boolean>(false);
+  const [newTournamentName, setNewTournamentName] = useState<string>("");
+  const [newTournamentYear, setNewTournamentYear] = useState<string>(() =>
+    String(new Date().getFullYear()),
+  );
+  const [newTournamentSportType, setNewTournamentSportType] =
+    useState<string>("NBA");
+  const [createSeriesTournamentId, setCreateSeriesTournamentId] =
+    useState<string>("");
+
+  const seriesListForDropdown = useMemo(
+    () =>
+      filteredSeriesList.map((s) => ({
+        ...s,
+        team1: seriesTeam1Name(s) || s.team1,
+        team2: seriesTeam2Name(s) || s.team2,
+      })),
+    [filteredSeriesList],
+  );
 
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
+  const {
+    selectedTournamentId,
+    tournaments,
+    refreshTournaments,
+    setSelectedTournamentId,
+  } = useTournament();
   // checkTokenExpiration();
   // Fetch all series
   useEffect(() => {
+    if (!selectedTournamentId) {
+      setSeriesList([]);
+      setFilteredSeriesList([]);
+      setSelectedSeries(null);
+      return;
+    }
+
     const fetchSeries = async () => {
       try {
         const response = await axiosInstance.get("/series");
         setSeriesList(response.data);
         setFilteredSeriesList(response.data);
-      } catch (error) {
+        setSelectedSeries(null);
+      } catch {
         showError("Failed to fetch series.");
-        console.log(error);
       }
     };
     fetchSeries();
-  }, []);
+  }, [selectedTournamentId, showError]);
+
+  useEffect(() => {
+    if (!showCreateSeriesForm) {
+      setCreateSeriesTournamentId("");
+      return;
+    }
+    setCreateSeriesTournamentId(selectedTournamentId ?? "");
+  }, [showCreateSeriesForm, selectedTournamentId]);
 
   // Fetch bets for the selected series
   useEffect(() => {
     if (selectedSeries) {
-      setBets(selectedSeries?.playerMatchupBets ?? []);
+      setBets(flattenPlayerMatchupBets(selectedSeries.playerMatchupBets));
       setSpontaneousBets(selectedSeries?.spontaneousBets ?? []);
       handleResetSelectedBet();
     }
     const temporaryList = seriesList
       .filter((series) => series.conference === "Finals")
-      .map((series) => [series.team1, series.team2])
-      .flat();
+      .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
+      .flat()
+      .filter(Boolean);
     setFinalsTeams(temporaryList);
   }, [selectedSeries, seriesList]);
 
@@ -166,7 +248,7 @@ const UpdateBetsPage: React.FC = () => {
     handleResetSelectedBet();
   };
   const handleCategoriesSelection = (
-    event: SelectChangeEvent<typeof selectedBet.categories>
+    event: SelectChangeEvent<typeof selectedBet.categories>,
   ) => {
     const { value } = event.target;
 
@@ -188,7 +270,7 @@ const UpdateBetsPage: React.FC = () => {
     });
   };
   const handleDateAndTimeSelection = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     event.preventDefault();
     if (event.target.type === "date") {
@@ -200,7 +282,7 @@ const UpdateBetsPage: React.FC = () => {
 
   // Handle form field changes for the selected bet
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     if (selectedBet) {
       const { name, type, value } = e.target;
@@ -300,8 +382,8 @@ const UpdateBetsPage: React.FC = () => {
         if (selectedBet.id) {
           setSpontaneousBets((prevBets) =>
             prevBets.map((bet) =>
-              bet.id === response.data.id ? { ...bet, ...selectedBet } : bet
-            )
+              bet.id === response.data.id ? { ...bet, ...selectedBet } : bet,
+            ),
           );
         } else {
           setSpontaneousBets((prevBets) => [...prevBets, response.data]);
@@ -317,12 +399,12 @@ const UpdateBetsPage: React.FC = () => {
             player2: selectedBet.player2,
             differential: selectedBet.differential,
             typeOfMatchup: selectedBet.typeOfMatchup,
-          }
+          },
         );
         setBets((prevBets) =>
           prevBets.map((bet) =>
-            bet.id === selectedBet.id ? { ...bet, ...selectedBet } : bet
-          )
+            bet.id === selectedBet.id ? { ...bet, ...selectedBet } : bet,
+          ),
         );
         showSuccessMessage("Bet updated successfully!");
       } else {
@@ -353,7 +435,7 @@ const UpdateBetsPage: React.FC = () => {
     setLoading(true);
     if (
       window.confirm(
-        `Are you sure you want to close this series bets? (${selectedSeries?.team1} vs ${selectedSeries?.team2})`
+        `Are you sure you want to close this series bets? (${selectedSeries ? seriesTeam1Name(selectedSeries) : ""} vs ${selectedSeries ? seriesTeam2Name(selectedSeries) : ""})`,
       )
     ) {
       try {
@@ -378,14 +460,14 @@ const UpdateBetsPage: React.FC = () => {
     handleResetSelectedBet();
     setCreateNewBet(true);
   };
-  const handleUpdateMissingBets = async ()=>{
-    try{
-      await axiosInstance.patch(`/user-missing-bets/user/updateAllUsers`)
-      showSuccessMessage(`Update all missing bets to all users!`)
-    }catch(error){
-      showError(`Failed to update Missing Bets ${error}`)
+  const handleUpdateMissingBets = async () => {
+    try {
+      await axiosInstance.patch(`/user-missing-bets/user/updateAllUsers`);
+      showSuccessMessage(`Update all missing bets to all users!`);
+    } catch (error) {
+      showError(`Failed to update Missing Bets ${error}`);
     }
-  }
+  };
   const handleCreateNewSpontaneousBet = () => {
     handleResetSelectedBet();
     setCreateNewBet(true);
@@ -393,7 +475,7 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleDeleteBet = async (
     bet: PlayerMatchupBet | SpontaneousBet,
-    isSpontaneous: boolean
+    isSpontaneous: boolean,
   ) => {
     if (window.confirm("Are you sure you want to delete this bet?")) {
       try {
@@ -425,6 +507,9 @@ const UpdateBetsPage: React.FC = () => {
         conference: newSeries.conference,
         dateOfStart: formattedDate,
         timeOfStart: newSeries.timeOfStart,
+        ...(createSeriesTournamentId
+          ? { tournamentId: createSeriesTournamentId }
+          : {}),
       });
       setSeriesList((prevState) => [...prevState, response.data]); // Update the series list
       setFilteredSeriesList((prevState) => [...prevState, response.data]);
@@ -440,6 +525,7 @@ const UpdateBetsPage: React.FC = () => {
         timeOfStart: "",
         lastUpdate: new Date(),
       });
+      setCreateSeriesTournamentId("");
 
       showSuccessMessage("New series created successfully!");
       setShowCreateSeriesForm(false); // Close the form
@@ -467,7 +553,7 @@ const UpdateBetsPage: React.FC = () => {
   );
 
   const handleInputNewSeriesChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
 
@@ -510,16 +596,16 @@ const UpdateBetsPage: React.FC = () => {
   const handleDeleteSeries = async () => {
     if (selectedSeries) {
       const confirmed = window.confirm(
-        `Are you sure you want to delete the series: ${selectedSeries.team1} vs ${selectedSeries.team2}?`
+        `Are you sure you want to delete the series: ${seriesTeam1Name(selectedSeries)} vs ${seriesTeam2Name(selectedSeries)}?`,
       );
       if (confirmed) {
         try {
           await axiosInstance.delete(`/series/${selectedSeries.id}`);
           setSeriesList((prevState) =>
-            prevState.filter((series) => series.id !== selectedSeries.id)
+            prevState.filter((series) => series.id !== selectedSeries.id),
           ); // Remove the deleted series from the list
           setFilteredSeriesList((prevState) =>
-            prevState.filter((series) => series.id !== selectedSeries.id)
+            prevState.filter((series) => series.id !== selectedSeries.id),
           );
           setSelectedSeries(null); // Clear the selected series
           showSuccessMessage("Series deleted successfully!");
@@ -539,43 +625,43 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     const updateStats = [...selectedBet.currentStats];
-    updateStats[0] +=  player1Stat;
-    updateStats[1] +=  player2Stat;
+    updateStats[0] += player1Stat;
+    updateStats[1] += player2Stat;
     const spontaneous =
       spontaneousBets.filter((bet) => bet.id === selectedBet.id).length > 0
         ? true
         : false;
-  
+
     try {
       if (spontaneous) {
         await axiosInstance.patch(`spontaneous-bet/${selectedBet?.id}/update`, {
           currentStats: updateStats,
         });
-        updateStats[0] -= player1Stat === 100 ? 100: 0;
-        updateStats[1] -= player2Stat === 100 ? 100: 0;
+        updateStats[0] -= player1Stat === 100 ? 100 : 0;
+        updateStats[1] -= player2Stat === 100 ? 100 : 0;
         setSpontaneousBets((prevBets) =>
           prevBets.map((bet) =>
             bet.id === selectedBet.id
               ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
-              : bet
-          )
+              : bet,
+          ),
         );
       } else {
         await axiosInstance.patch(
           `/player-matchup-bet/${selectedBet?.id}/update`,
           {
             currentStats: updateStats,
-          }
+          },
         );
-        updateStats[0] -= player1Stat === 100 ? 100: 0;
-        updateStats[1] -= player2Stat === 100 ? 100: 0;
+        updateStats[0] -= player1Stat === 100 ? 100 : 0;
+        updateStats[1] -= player2Stat === 100 ? 100 : 0;
         setBets((prevBets) =>
           prevBets.map(
             (bet) =>
               bet.id === selectedBet.id
                 ? { ...bet, currentStats: updateStats } // Update the selected bet's currentStats
-                : bet // Keep other bets unchanged
-          )
+                : bet, // Keep other bets unchanged
+          ),
         );
       }
       setUpdateResultSelected(false);
@@ -626,25 +712,34 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleCloseChampionsBets = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTournamentId) {
+      showError("Please select a tournament first.");
+      return;
+    }
 
     if (window.confirm("Are you sure you want to close Champions Bets?")) {
       setLoading(true);
       const easternFinalsTeams = seriesList
         .filter(
           (series) =>
-            series.conference === "East" && series.round === "Conference Finals"
+            series.conference === "East" &&
+            series.round === "Conference Finals",
         )
-        .map((series) => [series.team1, series.team2])
-        .flat();
+        .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
+        .flat()
+        .filter(Boolean);
       const westernFinalsTeams = seriesList
         .filter(
           (series) =>
-            series.conference === "West" && series.round === "Conference Finals"
+            series.conference === "West" &&
+            series.round === "Conference Finals",
         )
-        .map((series) => [series.team1, series.team2])
-        .flat();
+        .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
+        .flat()
+        .filter(Boolean);
       try {
         await axiosInstance.patch("/playoffs-stage/closeGuess", {
+          tournamentId: selectedTournamentId,
           westernConferenceFinal: westernFinalsTeams,
           easternConferenceFinal: easternFinalsTeams,
           finals: finalsTeams,
@@ -666,20 +761,21 @@ const UpdateBetsPage: React.FC = () => {
     const teamList: { name: string; seed: number; conference: string }[] = [];
     if (seriesList.length > 7) {
       seriesList.forEach((series) => {
-        if (!teamList.some((team) => team.name === series.team1)) {
+        const n1 = seriesTeam1Name(series);
+        const n2 = seriesTeam2Name(series);
+        if (n1 && !teamList.some((team) => team.name === n1)) {
           teamList.push({
-            name: series.team1,
+            name: n1,
             seed: series.seed1,
-            conference: series.conference,
+            conference: series.conference ?? "",
           });
         }
 
-        // Check if team2 is already in the list
-        if (!teamList.some((team) => team.name === series.team2)) {
+        if (n2 && !teamList.some((team) => team.name === n2)) {
           teamList.push({
-            name: series.team2,
+            name: n2,
             seed: series.seed2,
-            conference: series.conference,
+            conference: series.conference ?? "",
           });
         }
       });
@@ -691,14 +787,14 @@ const UpdateBetsPage: React.FC = () => {
   const handleSeriesSelection = (e: React.ChangeEvent<{ value: unknown }>) => {
     const series = seriesList.find((s) => s.id === e.target.value);
     setSelectedSeries(series || null);
-    setBets(series?.playerMatchupBets || []);
+    setBets(flattenPlayerMatchupBets(series?.playerMatchupBets));
   };
   const hadnleSubmitUpdateSeriesTime = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await axiosInstance.patch(`series/${selectedSeries?.id}/updateTime`, {
-        dateOfStart: selectedSeries?.dateOfStart,
+        dateOfStart: toApiDateString(selectedSeries?.dateOfStart),
         timeOfStart: selectedSeries?.timeOfStart,
       });
       showSuccessMessage(`Date and Time updated!`);
@@ -711,6 +807,10 @@ const UpdateBetsPage: React.FC = () => {
   };
   const handleCreateNewStage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedTournamentId) {
+      showError("Please select a tournament first.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -718,6 +818,7 @@ const UpdateBetsPage: React.FC = () => {
         name: stageName,
         startDate,
         timeOfStart: stageTime,
+        tournamentId: selectedTournamentId,
       });
 
       showSuccessMessage("Stage created.");
@@ -732,13 +833,69 @@ const UpdateBetsPage: React.FC = () => {
       setIsInEdit(false);
     }
   };
-    if (loading) {
-      return (
-        <div className="fixed inset-0 z-50 bg-gray-100 bg-opacity-80 flex justify-center items-center">
-          <CircularProgress />
-        </div>
-      );
+
+  const handleCreateTournament = () => {
+    setIsInEdit(true);
+    setShowCreateTournamentForm(true);
+  };
+
+  const handleSubmitCreateTournament = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newTournamentName.trim();
+    const year = parseInt(newTournamentYear, 10);
+    if (!name) {
+      showError("Please enter a tournament name.");
+      return;
     }
+    if (!Number.isFinite(year) || year < 1900 || year > 2100) {
+      showError("Please enter a valid year between 1900 and 2100.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload: CreateTournamentDto = {
+        sportType: newTournamentSportType,
+        year,
+        name,
+      };
+      const response = await axiosInstance.post("/tournaments", payload);
+      const created = response.data as { id?: string } | undefined;
+      if (created?.id) {
+        setSelectedTournamentId(created.id);
+      }
+      await refreshTournaments();
+      showSuccessMessage("Tournament created.");
+      setNewTournamentName("");
+      setNewTournamentYear(String(new Date().getFullYear()));
+      setNewTournamentSportType("NBA");
+      setShowCreateTournamentForm(false);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.data) {
+        const data = error.response.data as { message?: string | string[] };
+        const detail = Array.isArray(data.message)
+          ? data.message.join(", ")
+          : data.message;
+        showError(
+          detail
+            ? `Failed to create tournament. ${detail}`
+            : "Failed to create tournament.",
+        );
+      } else {
+        showError("Failed to create tournament.");
+      }
+    } finally {
+      setLoading(false);
+      setIsInEdit(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-gray-100 bg-opacity-80 flex justify-center items-center">
+        <CircularProgress />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col  ">
@@ -751,6 +908,7 @@ const UpdateBetsPage: React.FC = () => {
           showCreateSeriesForm={showCreateSeriesForm}
           showPlayoffsStageCreation={showPlayoffsStageCreation}
           showCloseChampionsBets={showCloseChampionsBets}
+          showCreateTournamentForm={showCreateTournamentForm}
           isInEdit={isInEdit}
           handleCreateNewSeries={handleCreateNewSeries}
           handleCloseChampionsBets={() => {
@@ -761,6 +919,7 @@ const UpdateBetsPage: React.FC = () => {
             setIsInEdit(true);
             setShowPlayoffsStageCreation(true);
           }}
+          handleCreateTournament={handleCreateTournament}
         />
         {showCloseChampionsBets && (
           <form onSubmit={handleCloseChampionsBets}>
@@ -846,6 +1005,53 @@ const UpdateBetsPage: React.FC = () => {
             />
           </form>
         )}
+        {showCreateTournamentForm && (
+          <form onSubmit={handleSubmitCreateTournament} className="space-y-4">
+            <div>
+              <label className="block text-lg font-semibold">Sport type</label>
+              <select
+                name="sportType"
+                value={newTournamentSportType}
+                onChange={(e) => setNewTournamentSportType(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              >
+                <option value="NBA">NBA</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Year</label>
+              <Input
+                type="number"
+                name="year"
+                inputProps={{ min: 1900, max: 2100 }}
+                value={newTournamentYear}
+                onChange={(e) => setNewTournamentYear(e.target.value)}
+                placeholder="Year"
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Name</label>
+              <Input
+                type="text"
+                name="name"
+                value={newTournamentName}
+                onChange={(e) => setNewTournamentName(e.target.value)}
+                placeholder="Tournament name"
+                className="w-full p-3 border border-gray-300 rounded-2xl mt-2 bg-white"
+              />
+            </div>
+            <ActionButtons
+              text1="Close Edit"
+              text2="Submit"
+              onClick1={() => {
+                setIsInEdit(false);
+                setShowCreateTournamentForm(false);
+              }}
+              loading={loading}
+            />
+          </form>
+        )}
 
         {/* Create New Series Form */}
         {showCreateSeriesForm && teamsList?.length > 15 && (
@@ -862,6 +1068,23 @@ const UpdateBetsPage: React.FC = () => {
                 <option value="West">West</option>
                 <option value="East">East</option>
                 <option value="Finals">Finals</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Tournament</label>
+              <select
+                name="tournamentId"
+                value={createSeriesTournamentId}
+                onChange={(e) => setCreateSeriesTournamentId(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
+              >
+                <option value="">-- Select tournament --</option>
+                {tournaments.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.year})
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -946,11 +1169,7 @@ const UpdateBetsPage: React.FC = () => {
               <input
                 type="date"
                 name="dateOfStart"
-                value={
-                  newSeries.dateOfStart
-                    ? newSeries.dateOfStart.toISOString().split("T")[0]
-                    : ""
-                }
+                value={dateOfStartToInputValue(newSeries.dateOfStart)}
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
                 required
@@ -987,6 +1206,23 @@ const UpdateBetsPage: React.FC = () => {
               >
                 <option value="West">West</option>
                 <option value="East">East</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-lg font-semibold">Tournament</label>
+              <select
+                name="tournamentId"
+                value={createSeriesTournamentId}
+                onChange={(e) => setCreateSeriesTournamentId(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-2"
+                required
+              >
+                <option value="">-- Select tournament --</option>
+                {tournaments.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} ({t.year})
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -1085,11 +1321,7 @@ const UpdateBetsPage: React.FC = () => {
               <input
                 type="date"
                 name="dateOfStart"
-                value={
-                  newSeries.dateOfStart
-                    ? newSeries.dateOfStart.toISOString().split("T")[0]
-                    : ""
-                }
+                value={dateOfStartToInputValue(newSeries.dateOfStart)}
                 onChange={handleInputNewSeriesChange}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               />
@@ -1116,10 +1348,11 @@ const UpdateBetsPage: React.FC = () => {
         {/* Select Series */}
         {!showCloseChampionsBets &&
           !showPlayoffsStageCreation &&
-          !showCreateSeriesForm && (
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
             <div className="flex items-center space-x-4 w-full">
               <SelectSeriesDropdown
-                seriesList={filteredSeriesList}
+                seriesList={seriesListForDropdown}
                 selectedSeries={selectedSeries}
                 handleSeriesSelection={handleSeriesSelection}
               />
@@ -1172,7 +1405,11 @@ const UpdateBetsPage: React.FC = () => {
               </Menu>
             </div>
           )}
-        {selectedSeries && (
+        {selectedSeries &&
+          !showCloseChampionsBets &&
+          !showPlayoffsStageCreation &&
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
           <div className="flex justify-center mt-4 space-x-4">
             <button
               onClick={handleUpdateSeriesResult}
@@ -1215,22 +1452,15 @@ const UpdateBetsPage: React.FC = () => {
               <input
                 type="date"
                 name="dateOfStart"
-                value={
-                  selectedSeries.dateOfStart
-                    ? new Date(selectedSeries.dateOfStart)
-                        .toISOString()
-                        .split("T")[0]
-                    : ""
-                }
+                value={dateOfStartToInputValue(selectedSeries.dateOfStart)}
                 onChange={(e) => {
-                  
                   setSelectedSeries((prevSeries) =>
                     prevSeries
                       ? {
                           ...prevSeries,
                           dateOfStart: new Date(e.target.value),
                         }
-                      : null
+                      : null,
                   );
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
@@ -1249,7 +1479,7 @@ const UpdateBetsPage: React.FC = () => {
                           ...prevSeries,
                           timeOfStart: e.target.value,
                         }
-                      : null
+                      : null,
                   );
                 }}
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
@@ -1280,8 +1510,8 @@ const UpdateBetsPage: React.FC = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg mt-2"
               >
                 <option value="">-- Select Winning Team --</option>
-                <option value={1}>{selectedSeries.team1}</option>
-                <option value={2}>{selectedSeries.team2}</option>
+                <option value={1}>{seriesTeam1Name(selectedSeries)}</option>
+                <option value={2}>{seriesTeam2Name(selectedSeries)}</option>
               </select>
             </div>
             <ActionButtons
@@ -1296,7 +1526,13 @@ const UpdateBetsPage: React.FC = () => {
         )}
 
         {/* Show existing bets for selected series */}
-        {selectedSeries && !showSeriesResultForm && !showUpdateSeriesTime && (
+        {selectedSeries &&
+          !showSeriesResultForm &&
+          !showUpdateSeriesTime &&
+          !showCloseChampionsBets &&
+          !showPlayoffsStageCreation &&
+          !showCreateSeriesForm &&
+          !showCreateTournamentForm && (
           <>
             <h2 className="text-2xl font-semibold mb-4 mt-4">
               Bets for the selected series
@@ -1315,13 +1551,19 @@ const UpdateBetsPage: React.FC = () => {
 
         {/* Create New Bet */}
         {!showCreateSeriesForm &&
+          !showCreateTournamentForm &&
           selectedSeries &&
           !isInEdit &&
           !updateResultSelected &&
           !showSeriesResultForm &&
           !showUpdateSeriesTime && (
             <div className="flex justify-center space-x-2 mt-4">
-              <SubmitButton loading={loading} text={"Update Missing Bets"} disabled={false} onClick={handleUpdateMissingBets}/>
+              <SubmitButton
+                loading={loading}
+                text={"Update Missing Bets"}
+                disabled={false}
+                onClick={handleUpdateMissingBets}
+              />
               <SubmitButton
                 loading={loading}
                 text="Create New Bet"

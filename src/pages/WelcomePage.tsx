@@ -1,15 +1,21 @@
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useRef } from "react";
 import Logo from "../assets/siteLogo/gray_trans.png";
 import Demo from "../assets/video/Demo.mp4";
 import cover from "../assets/images/cover.png";
+import { useAuth } from "../components/providers&context/AuthContext";
 
 const WelcomePage = () => {
+  const { isLoggedIn } = useAuth();
   const howItWorksRef = useRef<HTMLDivElement | null>(null);
 
   const scrollToSteps = () => {
     howItWorksRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  if (isLoggedIn) {
+    return <Navigate to="/home" replace />;
+  }
 
   return (
     <div className="bg-gray-100 flex flex-col items-center overflow-x-hidden">

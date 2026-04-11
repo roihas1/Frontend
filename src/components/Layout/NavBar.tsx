@@ -9,6 +9,10 @@ import Title from "../../assets/siteLogo/title_straight_shadow.png";
 import NavLink from "./NavLink";
 import MissingBets from "./MissinigBets";
 import { useAuth } from "../providers&context/AuthContext";
+import { useTournament } from "../providers&context/TournamentContext";
+import { FormControl, MenuItem, Select } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 
 const Navbar: React.FC = () => {
   const { role, setRole } = useUser();
@@ -17,6 +21,9 @@ const Navbar: React.FC = () => {
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
   const { isLoggedIn, logout } = useAuth();
+  const { tournaments, selectedTournamentId, setSelectedTournamentId } =
+    useTournament();
+  const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const isActive = (path: string) => {
@@ -35,18 +42,56 @@ const Navbar: React.FC = () => {
       await axiosInstance.patch("/auth/logout", {
         username: localStorage.getItem("username"),
       });
-      showSuccessMessage("You logged out, see you again!");
-      logout();
-      setRole("");
-      navigate("/");
     } catch (error) {
-      showError("Failed to log out. Please try again later.");
+      const status = (error as AxiosError)?.response?.status;
+      if (status !== 401) {
+        showError("Failed to log out. Please try again later.");
+        return;
+      }
+      // 401 means token is already invalid; continue local logout for clean UX.
     }
+    showSuccessMessage("You logged out, see you again!");
+    logout({ reason: "manual" });
+    setRole("");
+    navigate("/");
+  };
+
+  const handleTournamentChange = async (nextTournamentId: string) => {
+    setSelectedTournamentId(nextTournamentId);
+    await queryClient.invalidateQueries();
+  };
+
+  const renderTournamentPicker = () => {
+    if (!isLoggedIn || tournaments.length === 0) {
+      return null;
+    }
+
+    return (
+      <FormControl size="small" sx={{ minWidth: 170 }}>
+        <Select
+          value={selectedTournamentId ?? ""}
+          displayEmpty
+          onChange={(event) => {
+            const nextTournamentId = event.target.value;
+            if (nextTournamentId) {
+              void handleTournamentChange(nextTournamentId);
+            }
+          }}
+          inputProps={{ "aria-label": "Tournament picker" }}
+        >
+          {tournaments.map((tournament) => (
+            <MenuItem key={tournament.id} value={tournament.id}>
+              {tournament.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    );
   };
 
   return (
     <nav className="bg-gray-100 border-b-2 shadow-md  top-0 z-30">
-      <div className="max-w-screen-xl flex items-center justify-between mx-auto px-4 py-2">
+      <div className="max-w-screen-xl flex items-center justify-between mx-auto px-3 py-2">
         {/* Logo and Title */}
         <Link
           to="/home"
@@ -56,16 +101,16 @@ const Navbar: React.FC = () => {
             opacity: isLoggedIn ? 1 : 0.5,
           }}
         >
-          <img src={Logo} className="h-14 w-auto" alt="NBA Logo" />
+          <img src={Logo} className="h-12 lg:h-14 w-auto" alt="NBA Logo" />
           <img
             src={Title}
-            className="h-12 w-auto hidden sm:block"
+            className="h-10 lg:h-12 w-auto hidden sm:block"
             alt="Title"
           />
         </Link>
 
         {/* Desktop Navigation - Unchanged */}
-        <div className="hidden md:flex space-x-8 items-center">
+        <div className="hidden xl:flex space-x-5 items-center">
           <NavLink
             to="/home"
             title="Home"
@@ -105,6 +150,7 @@ const Navbar: React.FC = () => {
             isActive={isActive("/AboutUs")}
             isLoggedIn={isLoggedIn}
           />
+          {renderTournamentPicker()}
           <MissingBets />
           <div className="flex items-center">
             <button
@@ -123,7 +169,7 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+          className="xl:hidden p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           {isMenuOpen ? (
@@ -170,7 +216,7 @@ const Navbar: React.FC = () => {
       <div
         className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-40 transform ${
           isMenuOpen ? "translate-x-0" : "translate-x-full"
-        } transition-transform duration-300 ease-in-out md:hidden`}
+        } transition-transform duration-300 ease-in-out xl:hidden`}
       >
         <div className="flex flex-col h-full p-6 space-y-6">
           <button
@@ -238,6 +284,7 @@ const Navbar: React.FC = () => {
             isLoggedIn={isLoggedIn}
             handleUserClick={() => setIsMenuOpen(false)}
           />
+          {renderTournamentPicker()}
           <MissingBets />
           <button
             onClick={handleLogout}

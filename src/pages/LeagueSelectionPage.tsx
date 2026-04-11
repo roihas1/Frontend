@@ -15,6 +15,7 @@ import ActionButtons from "../components/forPages/ActionButtons";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 export interface League {
   id?: string;
@@ -38,6 +39,7 @@ const LeaguesSelectionPage: React.FC = () => {
   // const [overallLeague, setOverallLeague] = useState<League | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { selectedTournamentId } = useTournament();
 
   const handleOpenModal = (league: League) => {
     setSelectedLeague(league);
@@ -61,11 +63,12 @@ const LeaguesSelectionPage: React.FC = () => {
     data: privateLeagues,
     isError,
   } = useQuery({
-    queryKey: ["private-leagues"],
+    queryKey: ["private-leagues", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get(`/private-league`);
       return response.data;
     },
+    enabled: !!selectedTournamentId,
     staleTime: 3 * 60 * 1000,
     gcTime: 3 * 60 * 1000,
   });
@@ -77,11 +80,12 @@ const LeaguesSelectionPage: React.FC = () => {
   }, [isError]);
 
   const { data: overallUsers, isError: isOverallError } = useQuery({
-    queryKey: ["overall-league"],
+    queryKey: ["overall-league", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get("/auth/standings");
       return response.data;
     },
+    enabled: !!selectedTournamentId,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -109,7 +113,9 @@ const LeaguesSelectionPage: React.FC = () => {
     },
     onSuccess: (data: any) => {
       showSuccessMessage(data.message);
-      queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
+      queryClient.invalidateQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
       setShowJoinLeague(false);
       setLeagueCode("");
     },
@@ -148,11 +154,12 @@ const LeaguesSelectionPage: React.FC = () => {
   //   }
   // };
   const { data: currentUser, isError: isUserError } = useQuery<User>({
-    queryKey: ["current-user"],
+    queryKey: ["current-user", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get("/auth/user");
       return response.data;
     },
+    enabled: !!selectedTournamentId,
     staleTime: 30 * 60 * 1000, // 30 minutes (stays fresh)
     gcTime: 60 * 60 * 1000,    // 1 hour (kept in cache)
   });
@@ -179,8 +186,12 @@ const LeaguesSelectionPage: React.FC = () => {
       showSuccessMessage(`${leagueName} created.`);
       setShowCreateNewLeague(false);
 
-      await queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
-      await queryClient.refetchQueries({ queryKey: ["private-leagues"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
     } catch {
       showError(`Failed to create new league.`);
     }
@@ -191,8 +202,12 @@ const LeaguesSelectionPage: React.FC = () => {
       await axiosInstance.patch(`/private-league/${league?.id}/leaveLeague`);
       showSuccessMessage(`Leaved the league.`);
       handleCloseModal();
-      await queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
-      await queryClient.refetchQueries({ queryKey: ["private-leagues"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
+      await queryClient.refetchQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
     } catch (error) {
       showError(`Failed to leave league.`);
     }

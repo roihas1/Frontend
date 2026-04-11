@@ -13,6 +13,7 @@ import { useError } from "../components/providers&context/ErrorProvider";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { League } from "./LeagueSelectionPage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTournament } from "../components/providers&context/TournamentContext";
 
 const ManageLeague: React.FC = () => {
   const location = useLocation();
@@ -24,6 +25,7 @@ const ManageLeague: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [league, setLeague] = useState<League>();
+  const { selectedTournamentId } = useTournament();
 
   useEffect(() => {
     const settingLeague = () => {
@@ -44,7 +46,7 @@ const ManageLeague: React.FC = () => {
     if (league) {
       fetchLeagueUsers();
     }
-  }, [league]);
+  }, [league, selectedTournamentId]);
 
   const handleUpdateLeagueName = async () => {
     try {
@@ -75,7 +77,9 @@ const ManageLeague: React.FC = () => {
     },
     onSuccess: () => {
       showSuccessMessage("League was deleted.");
-      queryClient.invalidateQueries({ queryKey: ["private-leagues"] });
+      queryClient.invalidateQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      });
       navigate("/leagues");
     },
     onError: (error: any) => {
