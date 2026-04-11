@@ -1,6 +1,4 @@
 // src/types/index.ts
-import Cookies from "js-cookie";
-import axiosInstance from "../api/axiosInstance";
 
 
 export interface Guess {
@@ -115,37 +113,6 @@ export interface BestOf7Bet {
     playerMatchupGuesses: PlayerMatchupGuess[];
   }
 
-  export const checkTokenExpiration = () => {
-    
-    const tokenExpiry = Cookies.get("tokenExpiry");
-    if (tokenExpiry && Date.now() > parseInt(tokenExpiry)) {
-      // Token has expired
-      Cookies.remove("token");
-      Cookies.remove("tokenExpiry");
-
-      alert("Your session has expired. Please log in again.");
-      
-      handleLogout();
-       // Redirect to login page
-    }
-  };
-  export const handleLogout = async () => {
-    try {
-      await axiosInstance.patch("/auth/logout", {
-        username: localStorage.getItem("username"),
-      });
-      Cookies.remove("token");
-      Cookies.remove("tokenExpiry");
-      localStorage.removeItem('username');
-      localStorage.removeItem('role');
-      localStorage.removeItem('token');
-      
-      
-      window.location.href = '/login';
-    } catch (error) {
-      alert("Failed to logout.Please try again later.");
-    }
-  };
   export enum PlayerMatchupType {
     UNDEROVER = "UNDER/OVER",
     PLAYERMATCHUP = "PLAYERMATCHUP",

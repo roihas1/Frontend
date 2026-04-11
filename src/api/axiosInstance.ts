@@ -8,6 +8,29 @@ const axiosInstance = axios.create({
   baseURL: baseUrl, // Replace with your backend URL
 });
 
+let isSessionExpiryHandled = false;
+
+type ForceLogoutDetail = {
+  sessionExpired?: boolean;
+};
+
+const handleSessionExpiredOnce = () => {
+  // Dedupe parallel 401 responses so forced logout runs only once.
+  if (isSessionExpiryHandled) {
+    return;
+  }
+  isSessionExpiryHandled = true;
+  window.dispatchEvent(
+    new CustomEvent<ForceLogoutDetail>("forceLogout", {
+      detail: { sessionExpired: true },
+    })
+  );
+};
+
+export const resetSessionExpiryHandling = () => {
+  // Reset after successful login so future expiries can be handled again.
+  isSessionExpiryHandled = false;
+};
 
 const hasValidToken = (): boolean => {
   return !!Cookies.get("auth_token"); // Token is valid as long as it's in cookies
@@ -29,7 +52,7 @@ const resolvePath = (url: string): string => {
 
 const isAuthRequest = (url: string) => {
   const path = resolvePath(url);
-  return path === "/auth/signin" || path === "/auth/signup";
+  return path === "/auth/signin" || path === "/auth/signup" || path === "/auth/logout";
 };
 
 const isTournamentListGetRequest = (method: string, url: string) => {
@@ -80,21 +103,6 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
   return Object.getPrototypeOf(value) === Object.prototype;
 };
 
-
-const handleLogout = () => {
-  alert("Your session has expired. Please log in again.");
-  const username = localStorage.getItem("username");
-
-  // Send logout request to backend
-  axios.patch(`${import.meta.env.VITE_BASE_URL}auth/logout`, { username });
-
-  
-  window.dispatchEvent(new Event("forceLogout"));
-  
-
-};
-
-
 axiosInstance.interceptors.request.use(
   (config) => {
     const method = (config.method || "get").toLowerCase();
@@ -107,8 +115,8 @@ axiosInstance.interceptors.request.use(
 
    
     if (!hasValidToken()) {
-      handleLogout();
-      return Promise.reject(new Error("Token expired, logging out..."));
+      // Missing token is a local auth failure; forced logout flow is owned by 401 handler.
+      return Promise.reject(new Error("Unauthorized: missing auth token"));
     }
 
     const token = Cookies.get("auth_token");
@@ -153,8 +161,11 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      handleLogout(); // Log out on unauthorized access
+    const status = error?.response?.status;
+    const url = error?.config?.url || "";
+    if (status === 401 && !isAuthRequest(url)) {
+      // Single source of truth for forced session-expiry handling.
+      handleSessionExpiredOnce();
     }
     return Promise.reject(error);
   }

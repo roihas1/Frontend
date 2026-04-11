@@ -12,6 +12,7 @@ import { useAuth } from "../providers&context/AuthContext";
 import { useTournament } from "../providers&context/TournamentContext";
 import { FormControl, MenuItem, Select } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 
 const Navbar: React.FC = () => {
   const { role, setRole } = useUser();
@@ -41,13 +42,18 @@ const Navbar: React.FC = () => {
       await axiosInstance.patch("/auth/logout", {
         username: localStorage.getItem("username"),
       });
-      showSuccessMessage("You logged out, see you again!");
-      logout();
-      setRole("");
-      navigate("/");
     } catch (error) {
-      showError("Failed to log out. Please try again later.");
+      const status = (error as AxiosError)?.response?.status;
+      if (status !== 401) {
+        showError("Failed to log out. Please try again later.");
+        return;
+      }
+      // 401 means token is already invalid; continue local logout for clean UX.
     }
+    showSuccessMessage("You logged out, see you again!");
+    logout({ reason: "manual" });
+    setRole("");
+    navigate("/");
   };
 
   const handleTournamentChange = async (nextTournamentId: string) => {
