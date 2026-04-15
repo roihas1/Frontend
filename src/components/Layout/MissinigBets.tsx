@@ -14,6 +14,7 @@ import { useError } from "../providers&context/ErrorProvider";
 // import { useSuccessMessage } from "../providers&context/successMassageProvider";
 import axiosInstance from "../../api/axiosInstance";
 import { logos, Series } from "../../pages/HomePage";
+import defaultLogo from "../../assets/logos/defaultLogoTBD.png";
 import TeamDialog from "../form/TeamDialog";
 import { useAuth } from "../providers&context/AuthContext";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
@@ -28,6 +29,59 @@ interface MissingBetsData {
     spontaneousBets: SpontaneousBet[];
   };
 }
+
+const teamAliasesToFullName: Record<string, string> = {
+  hawks: "Atlanta Hawks",
+  celtics: "Boston Celtics",
+  nets: "Brooklyn Nets",
+  hornets: "Charlotte Hornets",
+  bulls: "Chicago Bulls",
+  cavs: "Cleveland Cavaliers",
+  cavaliers: "Cleveland Cavaliers",
+  mavs: "Dallas Mavericks",
+  nuggets: "Denver Nuggets",
+  pistons: "Detroit Pistons",
+  warriors: "Golden State Warriors",
+  rockets: "Houston Rockets",
+  pacers: "Indiana Pacers",
+  clippers: "Los Angeles Clippers",
+  lakers: "Los Angeles Lakers",
+  grizzlies: "Memphis Grizzlies",
+  heat: "Miami Heat",
+  bucks: "Milwaukee Bucks",
+  wolves: "Minnesota Timberwolves",
+  timberwolves: "Minnesota Timberwolves",
+  pelicans: "New Orleans Pelicans",
+  knicks: "New York Knicks",
+  thunder: "Oklahoma City Thunder",
+  okc: "Oklahoma City Thunder",
+  magic: "Orlando Magic",
+  suns: "Phoenix Suns",
+  sixers: "Philadelphia 76ers",
+  "76ers": "Philadelphia 76ers",
+  blazers: "Portland Trail Blazers",
+  kings: "Sacramento Kings",
+  spurs: "San Antonio Spurs",
+  raptors: "Toronto Raptors",
+  jazz: "Utah Jazz",
+  wizards: "Washington Wizards",
+};
+
+const normalizeName = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/\s+/g, " ");
+
+const resolveTeamLogo = (teamName?: string) => {
+  if (!teamName) return defaultLogo;
+  const normalizedInput = normalizeName(teamName);
+  const normalizedTeamName =
+    teamAliasesToFullName[normalizedInput] ?? teamName.trim();
+  const logoKey = normalizedTeamName.toLowerCase().replace(/ /g, "_");
+  return logos[logoKey] ?? defaultLogo;
+};
 
 const MissingBets = () => {
   const [badgeContent, setBadgeContent] = useState<number>(0);
@@ -51,10 +105,10 @@ const MissingBets = () => {
       const responsePoints = await axiosInstance.get(`user-series-points/user`);
       setSeriesPoints(responsePoints.data[id]);
       const series: Series = response.data;
-      const team1Name = series.team1 ?? "";
-      const team2Name = series.team2 ?? "";
-      const team1Logo = logos[team1Name.toLowerCase().replace(/ /g, "_")];
-      const team2Logo = logos[team2Name.toLowerCase().replace(/ /g, "_")];
+      const team1Name = series.team1Relation?.name ?? series.team1 ?? "";
+      const team2Name = series.team2Relation?.name ?? series.team2 ?? "";
+      const team1Logo = resolveTeamLogo(team1Name);
+      const team2Logo = resolveTeamLogo(team2Name);
       series.dateOfStart = new Date(response.data.dateOfStart);
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;
@@ -96,13 +150,13 @@ const MissingBets = () => {
     if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
     }
-  }, [refreshTrigger, isLoggedIn, selectedTournamentId]);
+  }, [fetchMissingBets, refreshTrigger, isLoggedIn, selectedTournamentId]);
 
   useEffect(() => {
     if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
     }
-  }, [isLoggedIn, selectedTournamentId]);
+  }, [fetchMissingBets, isLoggedIn, selectedTournamentId]);
 
   useEffect(() => {
     if (selectedSeries) {

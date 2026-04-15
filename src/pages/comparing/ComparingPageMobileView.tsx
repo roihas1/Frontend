@@ -168,7 +168,20 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
           },
         }}
       >
-        <DialogTitle>How comparison works</DialogTitle>
+        <DialogTitle sx={{ pr: 6 }}>
+          How comparison works
+          <IconButton
+            aria-label="Close instructions"
+            onClick={handleCloseModal}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+            }}
+          >
+            <Close />
+          </IconButton>
+        </DialogTitle>
         <DialogContent dividers>
           <InstructionPaper />
         </DialogContent>

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import axiosInstance, { resetSessionExpiryHandling } from "../api/axiosInstance";
+import axiosInstance, {
+  resetSessionExpiryHandling,
+} from "../api/axiosInstance";
 import { useError } from "../components/providers&context/ErrorProvider";
 import AuthCard from "../components/Layout/AuthCard";
 import FormInput from "../components/form/FormInput";
@@ -78,7 +80,10 @@ const LoginPage: React.FC = () => {
   }, [checkAuthStatus]);
 
   useEffect(() => {
-    if (location.state && (location.state as { sessionExpired?: boolean }).sessionExpired) {
+    if (
+      location.state &&
+      (location.state as { sessionExpired?: boolean }).sessionExpired
+    ) {
       // Show expiry message once, then clear navigation state to avoid repeats.
       showError("Session expired, please log in again.");
       navigate(location.pathname, { replace: true, state: null });
@@ -100,10 +105,12 @@ const LoginPage: React.FC = () => {
       const expiresAt = decodeJwtExpMs(accessToken) ?? Date.now() + expiresInMs;
       const expiresInSeconds = Math.max(
         1,
-        Math.ceil((expiresAt - Date.now()) / 1000)
+        Math.ceil((expiresAt - Date.now()) / 1000),
       );
 
-      Cookies.set("auth_token", accessToken, { expires: expiresInSeconds / (24 * 60 * 60) });
+      Cookies.set("auth_token", accessToken, {
+        expires: expiresInSeconds / (24 * 60 * 60),
+      });
       // Persist absolute expiry for timer-based logout in AuthContext.
       localStorage.setItem(AUTH_EXPIRES_AT_KEY, String(expiresAt));
       localStorage.setItem("username", username);
@@ -134,7 +141,9 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL
+      const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL
+        ? window.RUNTIME_CONFIG.VITE_BASE_URL
+        : import.meta.env.VITE_BASE_URL;
       window.location.href = `${baseUrl}auth/google/login`;
     } catch {
       showError(`Failed to login with Google. Try again later.`);
@@ -157,7 +166,6 @@ const LoginPage: React.FC = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              
             />
             <FormInput
               id="password"
@@ -166,24 +174,34 @@ const LoginPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-            
             />
             <div className="flex justify-center">
-              <SubmitButton loading={loading} text="Login" onClick={() => {}} className="w-full sm:w-auto" />
+              <SubmitButton
+                loading={loading}
+                text="Login"
+                onClick={() => {}}
+                className="w-full sm:w-auto"
+              />
             </div>
           </form>
 
           <div className="my-4 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{" "}
-              <Link to="/signup" className="text-colors-nba-blue hover:text-colors-nba-red">
+              <Link
+                to="/signup"
+                className="text-colors-nba-blue hover:text-colors-nba-red"
+              >
                 Sign Up
               </Link>
             </p>
           </div>
           <Divider className="text-gray-400 text-xs">or continue with</Divider>
           <div className="flex justify-center mt-4">
-            <button onClick={handleGoogleLogin} className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80">
+            <button
+              onClick={handleGoogleLogin}
+              className="w-12 h-12 flex items-center justify-center border border-gray-300 rounded-xl p-2 hover:opacity-80"
+            >
               <img src={googleLogo} alt="Google Login" className="w-8 h-8" />
             </button>
           </div>
@@ -192,7 +210,11 @@ const LoginPage: React.FC = () => {
 
       {/* Right Side: Logo (Hidden on Mobile) */}
       <div className="hidden sm:flex w-3/5 items-center justify-center">
-        <img src={Logo} alt="app logo" className="w-4/5 max-w-xs md:max-w-2xl" />
+        <img
+          src={Logo}
+          alt="app logo"
+          className="w-4/5 max-w-xs md:max-w-2xl"
+        />
       </div>
     </div>
   );

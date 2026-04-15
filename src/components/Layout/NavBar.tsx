@@ -78,6 +78,20 @@ const Navbar: React.FC = () => {
             }
           }}
           inputProps={{ "aria-label": "Tournament picker" }}
+          sx={{
+            borderRadius: "12px",
+            backgroundColor: "#f3f4f6",
+            boxShadow: "0 2px 10px rgba(0, 0, 0, 0.12)",
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+          }}
         >
           {tournaments.map((tournament) => (
             <MenuItem key={tournament.id} value={tournament.id}>

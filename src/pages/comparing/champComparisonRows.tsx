@@ -43,24 +43,30 @@ function rowsForStage(stage: string): RowDef[] {
     {
       label: "Champion",
       actual: "—",
-      getUserCell: (g) => ({
-        text:
-          g?.championTeamGuesses?.length > 0
-            ? g.championTeamGuesses[0].team
-            : "- No guess -",
-        highlight: false,
-      }),
+      getUserCell: (g) => {
+        const guesses = g?.championTeamGuesses;
+        return {
+          text:
+            guesses && guesses.length > 0
+              ? guesses[0].team
+              : "- No guess -",
+          highlight: false,
+        };
+      },
     },
     {
       label: "MVP",
       actual: "—",
-      getUserCell: (g) => ({
-        text:
-          g?.mvpGuesses?.length > 0
-            ? g.mvpGuesses[0].player
-            : "- No guess -",
-        highlight: false,
-      }),
+      getUserCell: (g) => {
+        const guesses = g?.mvpGuesses;
+        return {
+          text:
+            guesses && guesses.length > 0
+              ? guesses[0].player
+              : "- No guess -",
+          highlight: false,
+        };
+      },
     },
   ];
 

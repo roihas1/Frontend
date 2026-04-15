@@ -93,6 +93,10 @@ const isTournamentScopedMutationPath = (path: string) => {
   if (path === "/playoffs-stage" || path.startsWith("/playoffs-stage/")) {
     return true;
   }
+  // Private leagues: create, join, leave, update name, remove users, etc.
+  if (path.startsWith("/private-league")) {
+    return true;
+  }
   return false;
 };
 

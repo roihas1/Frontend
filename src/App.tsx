@@ -23,6 +23,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
 import { TournamentProvider } from "./components/providers&context/TournamentContext";
+import InstallAppButton from "./components/pwa/InstallAppButton";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
                       </Routes>
                     </main>
                     <Footer />
+                    <InstallAppButton />
                   </div>
                 </MissingBetsProvider>
               </TournamentProvider>

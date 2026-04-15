@@ -55,7 +55,8 @@ const SignUpPage: React.FC = () => {
       if (error.response) {
         showError(
           "Failed to sign up: " +
-            (error.response.data.message || JSON.stringify(error.response.data))
+            (error.response.data.message ||
+              JSON.stringify(error.response.data)),
         );
       } else if (error.request) {
         showError("Failed to sign up: No response from server.");
@@ -150,7 +151,6 @@ const SignUpPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              
             </div>
 
             <InputField

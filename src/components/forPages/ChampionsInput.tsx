@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Series } from "../../pages/HomePage"; // Assuming `Series` type is correctly imported
-import { InputLabel, FormControl, CircularProgress } from "@mui/material";
+import {
+  InputLabel,
+  FormControl,
+  CircularProgress,
+  Autocomplete,
+  TextField,
+} from "@mui/material";
 import axiosInstance from "../../api/axiosInstance";
 import { useSuccessMessage } from "../providers&context/successMassageProvider";
 import { useError } from "../providers&context/ErrorProvider";
@@ -118,64 +124,75 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const { showError } = useError();
 
   // Function to get teams from the selected round
-  const getTeamsForRound = (round: "east" | "west" | "finals") => {
+  const getTeamsForRound = (round: "east" | "west" | "finals"): string[] => {
+    const uniqDefined = (items: (string | undefined)[]) =>
+      [...new Set(items.filter((t): t is string => Boolean(t)))];
     switch (round) {
       case "east":
-        return [
-          ...new Set(east.flatMap((series) => [series.team1, series.team2])),
-        ];
+        return uniqDefined(east.flatMap((series) => [series.team1, series.team2]));
       case "west":
-        return [
-          ...new Set(west.flatMap((series) => [series.team1, series.team2])),
-        ];
+        return uniqDefined(west.flatMap((series) => [series.team1, series.team2]));
       case "finals":
-        return [
-          ...new Set([
-            ...west.flatMap((series) => [series.team1, series.team2]),
-            ...east.flatMap((series) => [series.team1, series.team2]),
-          ]),
-        ];
+        return uniqDefined([
+          ...west.flatMap((series) => [series.team1, series.team2]),
+          ...east.flatMap((series) => [series.team1, series.team2]),
+        ]);
       default:
         return [];
     }
   };
   const playersList: string[] = [
-    "Shai Gilgeous-Alexander",
-    "Jalen Williams",
-    "Chet Holmgren",
-    "Jalen Green",
+    "",
+    "Aaron Gordon",
     "Alperen Sengun",
-    "Fred VanVleet",
-    "Luka Doncic",
-    "LeBron James",
-    "Austin Reaves",
-    "Nikola Jokic",
-    "Jamal Murray",
-    "James Harden",
-    "Norman Powell",
-    "Kawhi Leonard",
-    "Ivica Zubac",
-    "Stephen Curry",
-    "Jimmy Butler III",
+    "Amen Thompson",
     "Anthony Edwards",
-    "Julius Randle",
-    "Ja Morant",
-    "Donovan Mitchell",
+    "Austin Reaves",
+    "Bam Adebayo",
+    "Brandon Ingram",
+    "Brandon Miller",
+    "Cade Cunningham",
+    "Chet Holmgren",
     "Darius Garland",
+    "Deni Avdija",
+    "Derrick White",
+    "Desmond Bane",
+    "Devin Booker",
+    "Devin Vassell",
+    "Dillon Brooks",
+    "Donovan Mitchell",
     "Evan Mobley",
+    "Franz Wagner",
+    "Jalen Brunson",
+    "Jalen Duren",
+    "Jalen Green",
+    "Jalen Johnson",
+    "Jalen Williams",
+    "James Harden",
+    "Jamal Murray",
     "Jayson Tatum",
     "Jaylen Brown",
-    "Derrick White",
-    "Jalen Brunson",
+    "Joel Embiid",
     "Karl-Anthony Towns",
+    "Kawhi Leonard",
+    "Kevin Durant",
+    "LaMelo Ball",
+    "LeBron James",
+    "Luka Doncic",
+    "Nickeil Alexander-Walker",
+    "Nikola Jokic",
     "OG Anunoby",
-    "Mikal Bridges",
-    "Josh Hart",
-    "Pascal Siakam",
-    "Tyrese Haliburton",
-    "Giannis Antetokounmpo",
-    "Cade Cunningham",
-  ];
+    "Paolo Banchero",
+    "Paul George",
+    "RJ Barrett",
+    "Scottie Barnes",
+    "Shai Gilgeous-Alexander",
+    "Stephen Curry",
+    "Stephon Castle",
+    "Tyrese Maxey",
+    "Victor Wembanyama",
+  ].sort((a, b) => a.localeCompare(b));
+  const mvpOptions = playersList.filter(Boolean);
 
   // Validate fields
   const validateFields = () => {
@@ -530,13 +547,23 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
             <div className="space-y-4">
               <h3 className="text-xl mt-2 font-semibold text-gray-700">MVP</h3>
               <FormControl fullWidth required>
-                <InputLabel>MVP</InputLabel>
-                <CustomSelectInput
+                <Autocomplete
                   id="MVP choice"
-                  label="MVP"
-                  value={selectedMvp}
-                  options={playersList}
-                  onChange={(e) => setSelectedMvp(e.target.value)}
+                  options={mvpOptions}
+                  value={selectedMvp || null}
+                  onChange={(_, newValue) => setSelectedMvp(newValue ?? "")}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="MVP"
+                      required
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "1rem",
+                        },
+                      }}
+                    />
+                  )}
                 />
               </FormControl>
             </div>

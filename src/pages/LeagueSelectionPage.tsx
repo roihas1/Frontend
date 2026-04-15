@@ -59,10 +59,7 @@ const LeaguesSelectionPage: React.FC = () => {
     setSelectedLeague(null);
   };
 
-  const {
-    data: privateLeagues,
-    isError,
-  } = useQuery({
+  const { data: privateLeagues, isError } = useQuery({
     queryKey: ["private-leagues", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get(`/private-league`);
@@ -108,7 +105,9 @@ const LeaguesSelectionPage: React.FC = () => {
   const handleShowJoinLeague = () => setShowJoinLeague(true);
   const joinLeagueMutation = useMutation({
     mutationFn: async (code: string) => {
-      const response = await axiosInstance.post(`/private-league/joinLeague`, { code });
+      const response = await axiosInstance.post(`/private-league/joinLeague`, {
+        code,
+      });
       return response.data;
     },
     onSuccess: (data: any) => {
@@ -135,7 +134,7 @@ const LeaguesSelectionPage: React.FC = () => {
     }
     joinLeagueMutation.mutate(leagueCode);
   };
-  
+
   // const handleJoinLeague = async () => {
   //   if (!leagueCode) return showError(`Must enter a league code`);
   //   try {
@@ -161,15 +160,15 @@ const LeaguesSelectionPage: React.FC = () => {
     },
     enabled: !!selectedTournamentId,
     staleTime: 30 * 60 * 1000, // 30 minutes (stays fresh)
-    gcTime: 60 * 60 * 1000,    // 1 hour (kept in cache)
+    gcTime: 60 * 60 * 1000, // 1 hour (kept in cache)
   });
-  
+
   useEffect(() => {
     if (isUserError) {
       showError("Failed to fetch user info");
     }
   }, [isUserError]);
-  
+
   // const fetchUser = async () => {
   //   try {
   //     const response = await axiosInstance.get("/auth/user");
