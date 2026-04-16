@@ -77,6 +77,20 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          // Dev SW is served at /dev-sw.js, so precached registerSW.js resolves to /registerSW.js
+          // and 404. Registration uses virtual:pwa-register; strip it from the precache manifest.
+          globIgnores: ["**/registerSW.js"],
+          manifestTransforms: [
+            async (entries) => ({
+              manifest: entries.filter(
+                (e) =>
+                  typeof e.url === "string" &&
+                  !e.url.endsWith("registerSW.js") &&
+                  e.url !== "registerSW.js",
+              ),
+              warnings: [],
+            }),
+          ],
           navigateFallback: "index.html",
           navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching,

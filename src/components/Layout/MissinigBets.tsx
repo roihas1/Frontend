@@ -83,6 +83,18 @@ const resolveTeamLogo = (teamName?: string) => {
   return logos[logoKey] ?? defaultLogo;
 };
 
+const resolveDisplayTeamName = (
+  teamName?: string,
+  relationName?: string
+) => {
+  const candidate = teamName?.trim() || relationName?.trim() || "";
+  if (!candidate) return "";
+  const normalized = normalizeName(candidate);
+  const fullName = teamAliasesToFullName[normalized] ?? candidate;
+  // Keep display consistent with bracket cards (short nicknames)
+  return fullName.split(" ").slice(-1)[0] || fullName;
+};
+
 const MissingBets = () => {
   const [badgeContent, setBadgeContent] = useState<number>(0);
   const [missingBetsData, setMissiningBetsData] = useState<MissingBetsData>();
@@ -109,6 +121,8 @@ const MissingBets = () => {
       const team2Name = series.team2Relation?.name ?? series.team2 ?? "";
       const team1Logo = resolveTeamLogo(team1Name);
       const team2Logo = resolveTeamLogo(team2Name);
+      series.team1 = resolveDisplayTeamName(series.team1, series.team1Relation?.name);
+      series.team2 = resolveDisplayTeamName(series.team2, series.team2Relation?.name);
       series.dateOfStart = new Date(response.data.dateOfStart);
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;

@@ -43,7 +43,7 @@ const LeaguesPage: React.FC = () => {
   const fetchUsers = async (
     cursor?: { totalPoints: number; id: string },
     prevCursor?: { totalPoints: number; id: string },
-    newLimit?: number
+    newLimit?: number,
   ) => {
     try {
       const response = await axiosInstance.get("/auth/standings", {
@@ -112,9 +112,33 @@ const LeaguesPage: React.FC = () => {
   return (
     <div className="flex flex-col">
       <div className="p-4 md:p-8 max-w-full md:max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
-        <h1 className="text-4xl font-semibold mb-8 text-center text-colors-nba-blue">
-          Ranking
-        </h1>
+        <div className="flex flex-col gap-4 mb-8">
+          <button
+            type="button"
+            onClick={() => navigate("/leagues")}
+            className="self-start inline-flex gap-2 items-center px-4 py-2 bg-colors-nba-blue opacity-90 hover:opacity-100 text-white rounded-md transition-opacity"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-4 shrink-0"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+              />
+            </svg>
+            All leagues
+          </button>
+          <h1 className="text-4xl font-semibold text-center text-colors-nba-blue">
+            Ranking
+          </h1>
+        </div>
         {loading ? (
           <div className="text-center text-lg text-gray-500">Loading...</div>
         ) : (
