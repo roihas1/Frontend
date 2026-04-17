@@ -75,6 +75,7 @@ function championDisplayLine(raw: Record<string, unknown>): string {
   const guess = mergeNestedGuess(raw);
   return (
     resolveTeamLabel(guess.team) ||
+    resolveTeamLabel(guess.teamRelation) ||
     resolveTeamLabel(guess.championTeam) ||
     resolveTeamLabel(guess.champTeamGuess) ||
     (typeof guess.teamName === "string" ? guess.teamName.trim() : "") ||

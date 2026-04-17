@@ -25,12 +25,31 @@ interface ChampionsInputProps {
 }
 interface UserGuessesResponse {
   conferenceFinalGuesses: {
-    team1: string;
-    team2: string;
+    team1?: string;
+    team2?: string;
+    team1Relation?: { name: string } | null;
+    team2Relation?: { name: string } | null;
     conference: string;
+    stage?: {
+      startDate?: string;
+      timeOfStart?: string;
+    };
   }[];
-  championTeamGuesses: { team: string }[];
-  mvpGuesses: { player: string }[];
+  championTeamGuesses: {
+    team?: string;
+    teamRelation?: { name: string } | null;
+    stage?: {
+      startDate?: string;
+      timeOfStart?: string;
+    };
+  }[];
+  mvpGuesses: {
+    player: string;
+    stage?: {
+      startDate?: string;
+      timeOfStart?: string;
+    };
+  }[];
 }
 
 export const nbaTeamsNicknamesReversed: { [key: string]: string } = {
@@ -125,6 +144,29 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   const getFullTeamName = (team: string): string => {
     return nbaTeamsNicknames[team] ?? team;
+  };
+
+  const getGuessTimestamp = (stageInfo?: {
+    startDate?: string;
+    timeOfStart?: string;
+  }): number => {
+    if (!stageInfo?.startDate) {
+      return 0;
+    }
+    const datePart = stageInfo.startDate;
+    const timePart = stageInfo.timeOfStart ?? "00:00:00";
+    const parsed = Date.parse(`${datePart}T${timePart}`);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  const getConferenceTeamName = (
+    guess: UserGuessesResponse["conferenceFinalGuesses"][number],
+    side: "team1" | "team2"
+  ): string | undefined => {
+    if (side === "team1") {
+      return guess.team1Relation?.name ?? guess.team1;
+    }
+    return guess.team2Relation?.name ?? guess.team2;
   };
 
   // Function to get teams from the selected round
@@ -344,52 +386,104 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
 
   useEffect(() => {
     if (!isSuccess || !guesses) return;
-  
+
     let hasGuesses = false;
-  
+
     if (
       guesses.conferenceFinalGuesses.length > 0 &&
       stage === "Before playoffs"
     ) {
-      for (const guess of guesses.conferenceFinalGuesses) {
+      const conferencePriority = guesses.conferenceFinalGuesses
+        .slice()
+        .sort(
+          (a, b) => getGuessTimestamp(b.stage) - getGuessTimestamp(a.stage)
+        );
+
+      for (const guess of conferencePriority) {
+        const team1Name = getConferenceTeamName(guess, "team1");
+        const team2Name = getConferenceTeamName(guess, "team2");
+
+        if (!team1Name || !team2Name) {
+          continue;
+        }
+
+        const mappedTeam1 = nbaTeamsNicknamesReversed[team1Name] ?? team1Name;
+        const mappedTeam2 = nbaTeamsNicknamesReversed[team2Name] ?? team2Name;
+
         switch (guess.conference) {
           case "East":
-            setSelectedEasternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-            setSelectedEasternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-            hasGuesses = true;
+            if (!selectedEasternTeam1 && !selectedEasternTeam2) {
+              setSelectedEasternTeam1(mappedTeam1);
+              setSelectedEasternTeam2(mappedTeam2);
+              hasGuesses = true;
+            }
             break;
           case "West":
-            setSelectedWesternTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-            setSelectedWesternTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-            hasGuesses = true;
+            if (!selectedWesternTeam1 && !selectedWesternTeam2) {
+              setSelectedWesternTeam1(mappedTeam1);
+              setSelectedWesternTeam2(mappedTeam2);
+              hasGuesses = true;
+            }
             break;
           case "Finals":
-            setSelectedFinalsTeam1(nbaTeamsNicknamesReversed[guess.team1]);
-            setSelectedFinalsTeam2(nbaTeamsNicknamesReversed[guess.team2]);
-            hasGuesses = true;
+            if (!selectedFinalsTeam1 && !selectedFinalsTeam2) {
+              setSelectedFinalsTeam1(mappedTeam1);
+              setSelectedFinalsTeam2(mappedTeam2);
+              hasGuesses = true;
+            }
             break;
         }
       }
     }
-  
+
     if (guesses.championTeamGuesses.length > 0) {
-      setSelectedChampion(
-        nbaTeamsNicknamesReversed[guesses.championTeamGuesses[0].team] ??
-          guesses.championTeamGuesses[0].team
-      );
+      const latestChampion = guesses.championTeamGuesses
+        .slice()
+        .sort(
+          (a, b) => getGuessTimestamp(b.stage) - getGuessTimestamp(a.stage)
+        )
+        .find((guess) => (guess.teamRelation?.name ?? guess.team)?.trim());
+
+      const championTeamName =
+        latestChampion?.teamRelation?.name ?? latestChampion?.team ?? "";
+
+      if (championTeamName) {
+        setSelectedChampion(
+          nbaTeamsNicknamesReversed[championTeamName] ?? championTeamName
+        );
+      }
       hasGuesses = true;
     }
-  
+
     if (guesses.mvpGuesses.length > 0) {
-      setSelectedMvp(guesses.mvpGuesses[0].player);
+      const latestMvp = guesses.mvpGuesses
+        .slice()
+        .sort(
+          (a, b) => getGuessTimestamp(b.stage) - getGuessTimestamp(a.stage)
+        )
+        .find((guess) => guess.player?.trim());
+
+      if (latestMvp?.player) {
+        setSelectedMvp(latestMvp.player);
+      }
       hasGuesses = true;
     }
-  
+
     if (hasGuesses) {
       setGuessesFilled(true);
     }
-  }, [isSuccess, guesses, stage]);
-  
+  }, [
+    isSuccess,
+    guesses,
+    stage,
+    selectedEasternTeam1,
+    selectedEasternTeam2,
+    selectedWesternTeam1,
+    selectedWesternTeam2,
+    selectedFinalsTeam1,
+    selectedFinalsTeam2,
+  ]);
+
 
   // Get the teams for each round
   const easternTeams = getTeamsForRound("east");
