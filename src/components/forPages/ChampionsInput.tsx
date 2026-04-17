@@ -123,6 +123,10 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const { showSuccessMessage } = useSuccessMessage();
   const { showError } = useError();
 
+  const getFullTeamName = (team: string): string => {
+    return nbaTeamsNicknames[team] ?? team;
+  };
+
   // Function to get teams from the selected round
   const getTeamsForRound = (round: "east" | "west" | "finals"): string[] => {
     const uniqDefined = (items: (string | undefined)[]) =>
@@ -265,7 +269,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         await axiosInstance.post("/champions-guess/update/beforePlayoffs", {
           tournamentId: selectedTournamentId,
           champTeamGuess: {
-            team: selectedChampion,
+            team: getFullTeamName(selectedChampion),
           },
           conferenceFinalGuess: [
             {
@@ -293,7 +297,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
         await axiosInstance.post("/champions-guess/update/afterFirstRound", {
           tournamentId: selectedTournamentId,
           champTeamGuess: {
-            team: selectedChampion,
+            team: getFullTeamName(selectedChampion),
           },
           mvpGuess: {
             player: selectedMvp,
@@ -369,7 +373,10 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     }
   
     if (guesses.championTeamGuesses.length > 0) {
-      setSelectedChampion(guesses.championTeamGuesses[0].team);
+      setSelectedChampion(
+        nbaTeamsNicknamesReversed[guesses.championTeamGuesses[0].team] ??
+          guesses.championTeamGuesses[0].team
+      );
       hasGuesses = true;
     }
   
