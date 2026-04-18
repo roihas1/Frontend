@@ -62,7 +62,11 @@ const isTournamentListGetRequest = (method: string, url: string) => {
 const isTournamentScopedGetPath = (path: string) => {
   if (!path) return false;
 
-  if (path === "/auth/user" || path === "/auth/standings" || path === "/auth/search") {
+  if (
+    path === "/auth/user" ||
+    path.startsWith("/auth/standings") ||
+    path === "/auth/search"
+  ) {
     return true;
   }
 

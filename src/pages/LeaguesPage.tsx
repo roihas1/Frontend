@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../api/axiosInstance";
+import { serializeQueryParamsWithNull } from "../api/serializeQueryParams";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   FormControl,
@@ -11,6 +12,7 @@ import {
 } from "@mui/material";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { useTournament } from "../components/providers&context/TournamentContext";
+import LeagueStandingsMyPlace from "../components/forPages/LeagueStandingsMyPlace";
 
 interface User {
   id: string;
@@ -23,11 +25,12 @@ interface User {
 
 const LeaguesPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [standingsLoading, setStandingsLoading] = useState<boolean>(true);
   const [currentUser, setCurrentUser] = useState<User>();
   const [offset, setOffset] = useState<number>(0);
   const location = useLocation();
   const league = location.state?.league;
+  const isOverallLeague = league?.name === "Overall";
   const [nextCursor, setNextCursor] = useState<
     { totalPoints: number; id: string } | undefined
   >(undefined);
@@ -45,6 +48,7 @@ const LeaguesPage: React.FC = () => {
     prevCursor?: { totalPoints: number; id: string },
     newLimit?: number,
   ) => {
+    setStandingsLoading(true);
     try {
       const response = await axiosInstance.get("/auth/standings", {
         params: {
@@ -53,8 +57,9 @@ const LeaguesPage: React.FC = () => {
           prevCursorPoints: prevCursor?.totalPoints,
           prevCursorId: prevCursor?.id,
           limit: newLimit ?? limit,
-          leagueId: league.id,
+          leagueId: isOverallLeague ? null : league?.id ?? null,
         },
+        paramsSerializer: serializeQueryParamsWithNull,
       });
       setUsers(response.data.data);
       setNextCursor(response.data.nextCursor);
@@ -70,7 +75,7 @@ const LeaguesPage: React.FC = () => {
       console.error("Error fetching users:", error);
       showError(`Server error.`);
     } finally {
-      setLoading(false);
+      setStandingsLoading(false);
     }
   };
 
@@ -80,15 +85,12 @@ const LeaguesPage: React.FC = () => {
   };
 
   const fetchUser = async () => {
-    setLoading(true);
     try {
       const response = await axiosInstance.get("/auth/user");
       setCurrentUser(response.data);
     } catch (error) {
       console.error("Error fetching users:", error);
       showError(`Server error.`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -104,10 +106,87 @@ const LeaguesPage: React.FC = () => {
   }));
 
   useEffect(() => {
-    if (!selectedTournamentId) return;
+    if (!selectedTournamentId) {
+      setStandingsLoading(false);
+      return;
+    }
+    if (!league) {
+      setStandingsLoading(false);
+      return;
+    }
+    if (!isOverallLeague && !league.id) {
+      setStandingsLoading(false);
+      return;
+    }
     fetchUsers();
     fetchUser();
-  }, [selectedTournamentId]);
+  }, [selectedTournamentId, league, isOverallLeague]);
+
+  if (!league) {
+    return (
+      <div className="flex flex-col">
+        <div className="p-4 md:p-8 max-w-full md:max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
+          <button
+            type="button"
+            onClick={() => navigate("/leagues")}
+            className="inline-flex gap-2 items-center px-4 py-2 bg-colors-nba-blue opacity-90 hover:opacity-100 text-white rounded-md transition-opacity"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-4 shrink-0"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+              />
+            </svg>
+            All leagues
+          </button>
+          <p className="text-center text-gray-600 mt-6">No league selected.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isOverallLeague && !league.id) {
+    return (
+      <div className="flex flex-col">
+        <div className="p-4 md:p-8 max-w-full md:max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
+          <button
+            type="button"
+            onClick={() => navigate("/leagues")}
+            className="inline-flex gap-2 items-center px-4 py-2 bg-colors-nba-blue opacity-90 hover:opacity-100 text-white rounded-md transition-opacity"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-4 shrink-0"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+              />
+            </svg>
+            All leagues
+          </button>
+          <p className="text-center text-gray-600 mt-6">No league selected.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const standingsLeagueId: string | null = isOverallLeague ? null : league.id;
 
   return (
     <div className="flex flex-col">
@@ -139,7 +218,13 @@ const LeaguesPage: React.FC = () => {
             Ranking
           </h1>
         </div>
-        {loading ? (
+        {selectedTournamentId && (
+          <LeagueStandingsMyPlace
+            leagueId={standingsLeagueId}
+            tournamentId={selectedTournamentId}
+          />
+        )}
+        {standingsLoading ? (
           <div className="text-center text-lg text-gray-500">Loading...</div>
         ) : (
           <div className="w-full overflow-x-auto">
