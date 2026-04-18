@@ -70,6 +70,8 @@ export function useComparingPageModel() {
     useState<UserChampGuessesMap>();
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const isCurrentUserSelected = useRef<boolean>(false);
+  /** Prevents repeated init + GET /private-league/.../users when callbacks churn after overrideUsers loads. */
+  const comparisonSecondUserInitRef = useRef<string | undefined>(undefined);
 
   const queryClient = useQueryClient();
 
@@ -225,9 +227,14 @@ export function useComparingPageModel() {
           setOverrideUsers(allUsers);
         } else {
           if (secondUserId && currentUser?.id) {
+            const secondFromComparison = (
+              comparisonData?.allUsers as User[] | undefined
+            )?.find((u) => u.id === secondUserId);
             setOverrideUsers({
               [currentUser.id]: currentUser,
-              [secondUserId]: users[secondUserId],
+              ...(secondFromComparison
+                ? { [secondUserId]: secondFromComparison }
+                : {}),
             });
           } else if (currentUser?.id) {
             setOverrideUsers({ [currentUser.id]: currentUser });
@@ -239,7 +246,7 @@ export function useComparingPageModel() {
         showError("Server error.");
       }
     },
-    [secondUserId, currentUser, users, showError],
+    [secondUserId, currentUser, comparisonData, showError],
   );
 
   const handleUserSelection = useCallback(
@@ -410,7 +417,7 @@ export function useComparingPageModel() {
       await loadLeagueUsers(league);
     }
 
-    if (allSeriesBets && users) {
+    if (allSeriesBets) {
       await Promise.all([
         handleUserSelection(currentUser?.id ?? "", seriesKey),
         secondUserId
@@ -424,7 +431,6 @@ export function useComparingPageModel() {
     allSeriesBets,
     league,
     loadLeagueUsers,
-    users,
     handleUserSelection,
     currentUser?.id,
     secondUserId,
@@ -432,12 +438,18 @@ export function useComparingPageModel() {
   ]);
 
   useEffect(() => {
+    comparisonSecondUserInitRef.current = undefined;
+  }, [secondUserId, selectedTournamentId]);
+
+  useEffect(() => {
     if (
       !isLoadingComparison &&
       allSeriesBets &&
       Object.keys(allSeriesBets).length > 0 &&
-      secondUserId
+      secondUserId &&
+      comparisonSecondUserInitRef.current !== secondUserId
     ) {
+      comparisonSecondUserInitRef.current = secondUserId;
       void setInitialsComprison();
     }
   }, [isLoadingComparison, allSeriesBets, secondUserId, setInitialsComprison]);

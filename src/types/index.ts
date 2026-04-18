@@ -162,3 +162,23 @@ export interface BestOf7Bet {
     { teamName: "Utah Jazz", conference: "West" },
     { teamName: "Washington Wizards", conference: "East" },
   ];
+
+/** From GET /home-page/load → `leagueStandingsPreview` */
+export interface LeagueStandingsPreviewGlobal {
+  position: number;
+  totalPoints: number;
+  /** e.g. "Global" */
+  label?: string;
+}
+
+export interface LeagueStandingsPreviewPrivateRow {
+  id: string;
+  name: string;
+  position: number;
+  totalPoints: number;
+}
+
+export interface LeagueStandingsPreviewData {
+  global: LeagueStandingsPreviewGlobal;
+  privateLeagues: LeagueStandingsPreviewPrivateRow[];
+}

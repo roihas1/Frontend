@@ -35,12 +35,15 @@ import Logo from "../assets/siteLogo/logo_color_trans.png";
 import axiosInstance from "../api/axiosInstance";
 import {
   BestOf7Bet,
+  LeagueStandingsPreviewData,
+  LeagueStandingsPreviewPrivateRow,
   PlayerMatchupBet,
   PlayoffTournament,
   SpontaneousBet,
   TeamRelation,
 } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
+import HomeLeagueStandingsPreview from "../components/forPages/HomeLeagueStandingsPreview";
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
 import defaultLogo from "../assets/logos/defaultLogoTBD.png";
@@ -54,6 +57,7 @@ import {
   Zoom,
 } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
+import { useLeagueStandingsPreview } from "../components/providers&context/LeagueStandingsPreviewContext";
 
 export interface Series {
   id?: string;
@@ -166,6 +170,53 @@ export const logos: Record<string, string> = {
   utah_jazz: utahJazzLogo,
   washington_wizards: washingtonWizardsLogo,
 };
+
+function parseLeagueStandingsPreview(
+  raw: unknown,
+): LeagueStandingsPreviewData | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const o = raw as Record<string, unknown>;
+  const g = o.global;
+  if (!g || typeof g !== "object") {
+    return null;
+  }
+  const gg = g as Record<string, unknown>;
+  const position = Number(gg.position);
+  const totalPoints = Number(gg.totalPoints);
+  if (!Number.isFinite(position) || !Number.isFinite(totalPoints)) {
+    return null;
+  }
+  const label =
+    typeof gg.label === "string" && gg.label.trim() ? gg.label : "Global";
+  const plRaw = o.privateLeagues;
+  const privateLeagues: LeagueStandingsPreviewPrivateRow[] = Array.isArray(
+    plRaw,
+  )
+    ? (plRaw
+        .map((row) => {
+          if (!row || typeof row !== "object") {
+            return null;
+          }
+          const r = row as Record<string, unknown>;
+          const id = String(r.id ?? "");
+          const name = String(r.name ?? "");
+          const pos = Number(r.position);
+          const pts = Number(r.totalPoints);
+          if (!id || !Number.isFinite(pos) || !Number.isFinite(pts)) {
+            return null;
+          }
+          return { id, name, position: pos, totalPoints: pts };
+        })
+        .filter(Boolean) as LeagueStandingsPreviewPrivateRow[])
+    : [];
+  return {
+    global: { position, totalPoints, label },
+    privateLeagues,
+  };
+}
+
 const HomePage: React.FC = () => {
   const { showError } = useError();
   const [series, setSeries] = useState<{
@@ -193,6 +244,7 @@ const HomePage: React.FC = () => {
   const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
   const [hasPlayoffStages, setHasPlayoffStages] = useState(false);
   const { selectedTournamentId } = useTournament();
+  const { setStandingsPreviewFromHomeLoad } = useLeagueStandingsPreview();
 
   const checkIfGuessed = async () => {
     try {
@@ -231,13 +283,27 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchHomepageData = async () => {
       if (!selectedTournamentId) {
+        setStandingsPreviewFromHomeLoad({ data: null, loading: false });
         return;
       }
       setLoading(true);
+      setStandingsPreviewFromHomeLoad({ data: null, loading: true });
       try {
         const response = await axiosInstance.get("/home-page/load");
-        const { userGuessedAll, seriesList, playoffsStages, userPoints } =
-          response.data;
+        const {
+          userGuessedAll,
+          seriesList,
+          playoffsStages,
+          userPoints,
+          leagueStandingsPreview: leagueStandingsPreviewRaw,
+        } = response.data;
+
+        const leagueStandingsPreview =
+          parseLeagueStandingsPreview(leagueStandingsPreviewRaw);
+        setStandingsPreviewFromHomeLoad({
+          data: leagueStandingsPreview,
+          loading: false,
+        });
 
         // Organize series by conference
         const updatedSeries: {
@@ -247,8 +313,7 @@ const HomePage: React.FC = () => {
         } = { west: [], east: [], finals: [] };
         const unknownTeamLabel = "TBD";
 
-        const logoKey = (name: string) =>
-          name.toLowerCase().replace(/ /g, "_");
+        const logoKey = (name: string) => name.toLowerCase().replace(/ /g, "_");
 
         (seriesList ?? []).forEach((element: Series) => {
           const team1Raw =
@@ -262,7 +327,7 @@ const HomePage: React.FC = () => {
           if (!confLower) {
             console.warn(
               "Skipping series with missing conference",
-              element.id ?? element
+              element.id ?? element,
             );
             return;
           }
@@ -272,7 +337,7 @@ const HomePage: React.FC = () => {
             console.warn(
               "Skipping series with invalid conference",
               element.id ?? element,
-              element.conference
+              element.conference,
             );
             return;
           }
@@ -292,7 +357,7 @@ const HomePage: React.FC = () => {
             console.warn(
               "Skipping series row due to error",
               element.id ?? element,
-              rowErr
+              rowErr,
             );
           }
         });
@@ -337,12 +402,16 @@ const HomePage: React.FC = () => {
       } catch (error) {
         console.log(error);
         showError("Failed to load homepage data.");
+        setStandingsPreviewFromHomeLoad({ data: null, loading: false });
         setLoading(false);
       }
     };
 
     fetchHomepageData();
-  }, [selectedTournamentId]);
+    return () => {
+      setStandingsPreviewFromHomeLoad({ data: null, loading: true });
+    };
+  }, [selectedTournamentId, setStandingsPreviewFromHomeLoad]);
 
   const sortMatchups = (matchups: Series[]) => {
     return matchups.sort((a, b) => {
@@ -410,14 +479,14 @@ const HomePage: React.FC = () => {
           positionToPlace
             ? "mt-40"
             : roundName === "Conference Semifinals" &&
-              placeholderCount === 1 &&
-              idx === 0
-            ? "mt-2 mb-40"
-            : roundName === "Conference Semifinals" &&
-              placeholderCount === 2 &&
-              idx === 1
-            ? "mt-48"
-            : "mt-6"
+                placeholderCount === 1 &&
+                idx === 0
+              ? "mt-2 mb-40"
+              : roundName === "Conference Semifinals" &&
+                  placeholderCount === 2 &&
+                  idx === 1
+                ? "mt-48"
+                : "mt-6"
         }`}
       >
         <div className="flex flex-col items-center justify-center rounded-md">
@@ -662,8 +731,8 @@ const HomePage: React.FC = () => {
           const conferencesWithMatchups = ["finals", "west", "east"].filter(
             (conference) =>
               series[conference as keyof typeof series].some(
-                (matchup) => matchup.round === round
-              )
+                (matchup) => matchup.round === round,
+              ),
           );
 
           if (conferencesWithMatchups.length === 0) return null; // Skip if no matchups in this round
@@ -688,8 +757,8 @@ const HomePage: React.FC = () => {
                   conference === "west"
                     ? "Western Conference"
                     : conference === "east"
-                    ? "Eastern Conference"
-                    : "NBA Finals";
+                      ? "Eastern Conference"
+                      : "NBA Finals";
 
                 return (
                   <div key={conference} className="mb-4">
@@ -848,7 +917,7 @@ const HomePage: React.FC = () => {
                                     "he-IL",
                                     {
                                       timeZone: "Asia/Jerusalem",
-                                    }
+                                    },
                                   )}
                                 </span>
                               ) : (
@@ -887,10 +956,10 @@ const HomePage: React.FC = () => {
         })}
       </div>
 
-      {/* Desktop View */}
+      {/* Desktop View: standings sidebar + bracket */}
 
-      <div className="hidden md:flex justify-center">
-        <div className="flex gap-8">
+      <div className="hidden md:flex w-full max-w-[100vw] justify-center items-start gap-4 xl:gap-6 px-0 sm:px-1">
+        <div className="flex gap-8 min-w-0 flex-1 overflow-x-auto pb-2 justify-center">
           {hasPlayoffStages ? (
             <>
               {showInput && (
@@ -951,21 +1020,21 @@ const HomePage: React.FC = () => {
             <div className="flex gap-16 relative z-10">
               <Round
                 matchups={series.west.filter(
-                  (elem) => elem.round === "First Round"
+                  (elem) => elem.round === "First Round",
                 )}
                 roundName="First Round"
                 className="h-[450px]"
               />
               <Round
                 matchups={series.west.filter(
-                  (elem) => elem.round === "Conference Semifinals"
+                  (elem) => elem.round === "Conference Semifinals",
                 )}
                 roundName="Conference Semifinals"
                 className="h-[450px] mt-20"
               />
               <Round
                 matchups={series.west.filter(
-                  (elem) => elem.round === "Conference Finals"
+                  (elem) => elem.round === "Conference Finals",
                 )}
                 roundName="Conference Finals"
                 className="h-[450px] mt-52"
@@ -992,27 +1061,30 @@ const HomePage: React.FC = () => {
             <div className="flex gap-16 relative z-10">
               <Round
                 matchups={series.east.filter(
-                  (elem) => elem.round === "Conference Finals"
+                  (elem) => elem.round === "Conference Finals",
                 )}
                 roundName="Conference Finals"
                 className="h-[450px] mt-52"
               />
               <Round
                 matchups={series.east.filter(
-                  (elem) => elem.round === "Conference Semifinals"
+                  (elem) => elem.round === "Conference Semifinals",
                 )}
                 roundName="Conference Semifinals"
                 className="h-[450px] mt-20"
               />
               <Round
                 matchups={series.east.filter(
-                  (elem) => elem.round === "First Round"
+                  (elem) => elem.round === "First Round",
                 )}
                 roundName="First Round"
                 className="h-[450px]"
               />
             </div>
           </div>
+        </div>
+        <div className="sticky top-4 z-10 shrink-0 self-start pt-1">
+          <HomeLeagueStandingsPreview variant="desktop" />
         </div>
       </div>
     </div>

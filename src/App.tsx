@@ -1,6 +1,11 @@
 // import { useState } from 'react'
 import "./App.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import { ErrorProvider } from "./components/providers&context/ErrorProvider";
@@ -23,7 +28,47 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
 import { TournamentProvider } from "./components/providers&context/TournamentContext";
+import { LeagueStandingsPreviewProvider } from "./components/providers&context/LeagueStandingsPreviewContext";
 import InstallAppButton from "./components/pwa/InstallAppButton";
+import HomeLeagueStandingsPreview from "./components/forPages/HomeLeagueStandingsPreview";
+
+function AppShell() {
+  const { pathname } = useLocation();
+
+  return (
+    <MissingBetsProvider>
+      {/* <PageBackground imageSrc={Logo}/> */}
+      <div className="flex flex-col min-h-screen   bg-gray-100">
+        <Navbar />
+        {pathname === "/home" && (
+          <div className="md:hidden px-4 mt-3">
+            <HomeLeagueStandingsPreview variant="mobile" />
+          </div>
+        )}
+        <main className="flex-grow  p-4">
+          <Routes>
+            <Route path="/" element={<WelcomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/updateBets" element={<UpdateBetsPage />} />
+            <Route path="/leagues" element={<LeaguesSelectionPage />} />
+            <Route path="/league" element={<LeaguesPage />} />
+            <Route path="/comparing" element={<ComparingPage />} />
+            <Route path="/HowtoPlay" element={<HowToPlayPage />} />
+            <Route path="/redirect" element={<OAuthRedirectPage />} />
+            <Route path="/manageLeague" element={<ManageLeague />} />
+            <Route path="/privacyPolicy" element={<PrivacyPolicyPage />} />
+            <Route path="/TermsOfuse" element={<TermsOfUsePage />} />
+            <Route path="/AboutUs" element={<AboutUsPage />} />
+          </Routes>
+        </main>
+        <Footer />
+        <InstallAppButton />
+      </div>
+    </MissingBetsProvider>
+  );
+}
 
 function App() {
   return (
@@ -33,35 +78,9 @@ function App() {
           <UserProvider>
             <AuthProvider>
               <TournamentProvider>
-                <MissingBetsProvider>
-                  {/* <PageBackground imageSrc={Logo}/> */}
-                  <div className="flex flex-col min-h-screen   bg-gray-100">
-                    <Navbar />
-                    <main className="flex-grow  p-4">
-                      <Routes>
-                        <Route path="/" element={<WelcomePage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/home" element={<HomePage />} />
-                        <Route path="/signup" element={<SignUpPage />} />
-                        <Route path="/updateBets" element={<UpdateBetsPage />} />
-                        <Route
-                          path="/leagues"
-                          element={<LeaguesSelectionPage />}
-                        />
-                        <Route path="/league" element={<LeaguesPage />} />
-                        <Route path="/comparing" element={<ComparingPage />} />
-                        <Route path="/HowtoPlay" element={<HowToPlayPage />} />
-                        <Route path="/redirect" element={<OAuthRedirectPage />} />
-                        <Route path="/manageLeague" element={<ManageLeague />} />
-                        <Route path='/privacyPolicy' element={<PrivacyPolicyPage/>} />
-                        <Route path='/TermsOfuse' element={<TermsOfUsePage/>}/>
-                        <Route path='/AboutUs' element={<AboutUsPage/>}/>
-                      </Routes>
-                    </main>
-                    <Footer />
-                    <InstallAppButton />
-                  </div>
-                </MissingBetsProvider>
+                <LeagueStandingsPreviewProvider>
+                  <AppShell />
+                </LeagueStandingsPreviewProvider>
               </TournamentProvider>
             </AuthProvider>
           </UserProvider>
