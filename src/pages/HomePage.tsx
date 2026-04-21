@@ -52,8 +52,8 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
-  CircularProgress,
   Modal,
+  Skeleton,
   Zoom,
 } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
@@ -646,8 +646,36 @@ const HomePage: React.FC = () => {
     };
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <CircularProgress />
+      <div className="relative z-10 bg-gray-100 p-4">
+        <div className="md:hidden space-y-4">
+          <Skeleton variant="rounded" height={52} />
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="space-y-2">
+              <Skeleton variant="text" width="42%" height={34} />
+              <Skeleton variant="rounded" height={92} />
+              <Skeleton variant="rounded" height={92} />
+            </div>
+          ))}
+        </div>
+
+        <div className="hidden md:flex w-full max-w-[100vw] justify-center items-start gap-4 xl:gap-6 px-0 sm:px-1">
+          <div className="flex gap-8 min-w-0 flex-1 overflow-x-auto pb-2 justify-center">
+            <div className="flex-none w-1/4 min-w-[220px] space-y-3">
+              <Skeleton variant="text" width="60%" height={32} />
+              <Skeleton variant="rounded" height={320} />
+            </div>
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <div key={idx} className="w-[190px] flex-none space-y-3">
+                <Skeleton variant="text" width="70%" height={28} />
+                <Skeleton variant="rounded" height={118} />
+                <Skeleton variant="rounded" height={118} />
+              </div>
+            ))}
+          </div>
+          <div className="sticky top-4 z-10 shrink-0 self-start pt-1 w-[280px]">
+            <Skeleton variant="rounded" height={270} />
+          </div>
+        </div>
       </div>
     );
   }

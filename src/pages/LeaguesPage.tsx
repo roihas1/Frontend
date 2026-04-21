@@ -7,6 +7,7 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
+  Skeleton,
   Tooltip,
   Zoom,
 } from "@mui/material";
@@ -104,6 +105,9 @@ const LeaguesPage: React.FC = () => {
     ...user,
     rank: offset + index + 1,
   }));
+  const pageStart = users.length > 0 ? offset + 1 : 0;
+  const pageEnd = users.length > 0 ? offset + users.length : 0;
+  const headerTitle = `${league.name} standings`;
 
   useEffect(() => {
     if (!selectedTournamentId) {
@@ -191,7 +195,8 @@ const LeaguesPage: React.FC = () => {
   return (
     <div className="flex flex-col">
       <div className="p-4 md:p-8 max-w-full md:max-w-7xl mx-auto bg-white rounded-lg shadow-lg">
-        <div className="flex flex-col gap-4 mb-8">
+        <div className="pb-4 mb-6">
+          <div className="flex flex-col gap-4 pt-1">
           <button
             type="button"
             onClick={() => navigate("/leagues")}
@@ -215,8 +220,9 @@ const LeaguesPage: React.FC = () => {
             All leagues
           </button>
           <h1 className="text-4xl font-semibold text-center text-colors-nba-blue">
-            Ranking
+            {headerTitle}
           </h1>
+          </div>
         </div>
         {selectedTournamentId && (
           <LeagueStandingsMyPlace
@@ -225,12 +231,39 @@ const LeaguesPage: React.FC = () => {
           />
         )}
         {standingsLoading ? (
-          <div className="text-center text-lg text-gray-500">Loading...</div>
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[360px] space-y-2">
+              <div className="grid grid-cols-[80px_1fr_100px] gap-2">
+                <Skeleton variant="rounded" height={42} />
+                <Skeleton variant="rounded" height={42} />
+                <Skeleton variant="rounded" height={42} />
+              </div>
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-[80px_1fr_100px] gap-2 items-center"
+                >
+                  <Skeleton variant="rounded" height={48} />
+                  <Skeleton variant="rounded" height={48} />
+                  <Skeleton variant="rounded" height={48} />
+                </div>
+              ))}
+              <div className="grid grid-cols-3 gap-2 mt-3">
+                <Skeleton variant="rounded" height={38} />
+                <Skeleton variant="rounded" height={38} />
+                <Skeleton variant="rounded" height={38} />
+              </div>
+            </div>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="w-full py-12 text-center text-gray-600">
+            <p className="text-lg font-medium">No standings yet in this league.</p>
+          </div>
         ) : (
           <div className="w-full overflow-x-auto">
             <div className="max-h-screen overflow-y-auto min-w-[360px]">
               <table className="min-w-full table-auto border-separate border-spacing-0.5">
-                <thead className="bg-colors-nba-blue text-white">
+                <thead className="sticky top-0 z-10 bg-colors-nba-blue text-white">
                   <tr>
                     <th className="px-4 py-3 text-center">Rank</th>
                     <th className="px-4 py-3">Player</th>
@@ -285,63 +318,76 @@ const LeaguesPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-between mt-4">
-              <button
-                className="flex gap-2 items-center px-4 py-2 bg-colors-nba-blue opacity-90 text-white rounded-md disabled:opacity-50"
-                onClick={() => fetchUsers(undefined, prevCursor)}
-                disabled={!prevCursor}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="size-4"
+            <div className="mt-4 flex flex-col gap-3">
+              <div className="grid grid-cols-3 items-center gap-2">
+                <button
+                  className="flex w-full justify-center gap-2 items-center px-3 sm:px-4 py-2 bg-colors-nba-blue opacity-90 text-white rounded-md disabled:opacity-50"
+                  onClick={() => fetchUsers(undefined, prevCursor)}
+                  disabled={!prevCursor}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                  />
-                </svg>
-                Previous
-              </button>
-              <FormControl>
-                <Select
-                  labelId="limit"
-                  id="limitSelection"
-                  value={limit}
-                  onChange={handleLimitSelection}
-                  sx={{ borderRadius: "1rem" }}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+                    />
+                  </svg>
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Prev</span>
+                </button>
+                <span className="px-3 py-2 rounded-full bg-gray-100 text-sm font-medium text-gray-700 whitespace-nowrap text-center">
+                  Ranks {pageStart}-{pageEnd}
+                </span>
+                <button
+                  className="flex w-full justify-center gap-2 items-center px-3 sm:px-4 py-2 bg-colors-nba-blue text-white rounded-md disabled:opacity-50"
+                  onClick={() => fetchUsers(nextCursor)}
+                  disabled={!nextCursor}
                 >
-                  <MenuItem value={5}>5</MenuItem>
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={20}>20</MenuItem>
-                  <MenuItem value={50}>50</MenuItem>
-                </Select>
-              </FormControl>
-              <button
-                className="flex gap-2 items-center px-4 py-2 bg-colors-nba-blue text-white rounded-md disabled:opacity-50"
-                onClick={() => fetchUsers(nextCursor)}
-                disabled={!nextCursor}
-              >
-                Next
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="size-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                  />
-                </svg>
-              </button>
+                  <span className="hidden sm:inline">Next</span>
+                  <span className="sm:hidden">Next</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="size-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex justify-center">
+                <FormControl className="w-full sm:w-auto max-w-[180px]">
+                  <Select
+                    labelId="limit"
+                    id="limitSelection"
+                    value={limit}
+                    onChange={handleLimitSelection}
+                    sx={{
+                      borderRadius: "1rem",
+                      minWidth: { xs: 96, sm: 88 },
+                      "& .MuiSelect-select": { py: { xs: 1, sm: 1.25 } },
+                    }}
+                  >
+                    <MenuItem value={5}>5 users</MenuItem>
+                    <MenuItem value={10}>10 users</MenuItem>
+                    <MenuItem value={20}>20 users</MenuItem>
+                    <MenuItem value={50}>50 users</MenuItem>
+                  </Select>
+                </FormControl>
+              </div>
             </div>
           </div>
         )}

@@ -211,11 +211,16 @@ export function useComparingPageModel() {
 
   const loadLeagueUsers = useCallback(
     async (leagueArg: League) => {
-      setSelectedUsers({});
-      isCurrentUserSelected.current = false;
+      const shouldPreserveSelectedUsers = showChampSelection;
+      const previousSelectedUsers = selectedUsers;
+      if (!shouldPreserveSelectedUsers) {
+        setSelectedUsers({});
+        isCurrentUserSelected.current = false;
+      }
       setSelectedLeague(leagueArg);
 
       try {
+        let nextUsers: { [key: string]: User } = {};
         if (leagueArg.name !== "Overall") {
           const response = await axiosInstance.get(
             `/private-league/${leagueArg.id}/users`,
@@ -224,29 +229,47 @@ export function useComparingPageModel() {
           response.data.forEach((user: User) => {
             allUsers[user.id] = user;
           });
+          nextUsers = allUsers;
           setOverrideUsers(allUsers);
         } else {
-          if (secondUserId && currentUser?.id) {
-            const secondFromComparison = (
-              comparisonData?.allUsers as User[] | undefined
-            )?.find((u) => u.id === secondUserId);
-            setOverrideUsers({
-              [currentUser.id]: currentUser,
-              ...(secondFromComparison
-                ? { [secondUserId]: secondFromComparison }
-                : {}),
-            });
-          } else if (currentUser?.id) {
-            setOverrideUsers({ [currentUser.id]: currentUser });
-          } else {
-            setOverrideUsers({});
-          }
+          const allComparisonUsers = (comparisonData?.allUsers as User[] | undefined) ?? [];
+          nextUsers = allComparisonUsers.reduce(
+            (acc, user) => {
+              acc[user.id] = user;
+              return acc;
+            },
+            {} as { [key: string]: User },
+          );
+          setOverrideUsers(nextUsers);
+        }
+
+        if (shouldPreserveSelectedUsers) {
+          const nextSelectedUsers = Object.keys(previousSelectedUsers).reduce(
+            (acc, userId) => {
+              if (nextUsers[userId]) {
+                acc[userId] = previousSelectedUsers[userId];
+              }
+              return acc;
+            },
+            {} as { [key: string]: string },
+          );
+          setSelectedUsers(nextSelectedUsers);
+          isCurrentUserSelected.current = Boolean(
+            currentUser?.id && nextSelectedUsers[currentUser.id],
+          );
         }
       } catch {
         showError("Server error.");
       }
     },
-    [secondUserId, currentUser, comparisonData, showError],
+    [
+      showChampSelection,
+      selectedUsers,
+      secondUserId,
+      currentUser,
+      comparisonData,
+      showError,
+    ],
   );
 
   const handleUserSelection = useCallback(
@@ -550,10 +573,6 @@ export function useComparingPageModel() {
       }
 
       if (ids.length > Object.keys(selectedUsers).length) {
-        if (!ids.includes(currentUser?.id ?? "")) {
-          void handleUserSelection(currentUser?.id ?? "");
-        }
-
         for (const id of ids) {
           if (!(id in selectedUsers)) {
             if (selectedSeries || selectedStage) {
@@ -575,7 +594,6 @@ export function useComparingPageModel() {
       selectedUsers,
       maxSelectedUsers,
       isMobile,
-      currentUser?.id,
       handleUserSelection,
       selectedSeries,
       selectedStage,

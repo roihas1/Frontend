@@ -61,13 +61,15 @@ const Navbar: React.FC = () => {
     await queryClient.invalidateQueries();
   };
 
-  const renderTournamentPicker = () => {
+  const renderTournamentPicker = (variant: "desktop" | "mobile" = "desktop") => {
     if (!isLoggedIn || tournaments.length === 0) {
       return null;
     }
 
+    const isMobile = variant === "mobile";
+
     return (
-      <FormControl size="small" sx={{ minWidth: 170 }}>
+      <FormControl size="small" sx={{ minWidth: isMobile ? 120 : 170 }}>
         <Select
           value={selectedTournamentId ?? ""}
           displayEmpty
@@ -91,6 +93,13 @@ const Navbar: React.FC = () => {
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
               border: "none",
             },
+            ...(isMobile && {
+              "& .MuiSelect-select": {
+                py: 0.75,
+                pr: 3,
+                fontSize: "0.85rem",
+              },
+            }),
           }}
         >
           {tournaments.map((tournament) => (
@@ -164,7 +173,7 @@ const Navbar: React.FC = () => {
             isActive={isActive("/AboutUs")}
             isLoggedIn={isLoggedIn}
           />
-          {renderTournamentPicker()}
+          {renderTournamentPicker("desktop")}
           <MissingBets />
           <div className="flex items-center">
             <button
@@ -182,42 +191,45 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="xl:hidden p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-7 h-7"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18 18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-7 h-7"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
-          )}
-        </button>
+        <div className="xl:hidden flex items-center gap-2">
+          {renderTournamentPicker("mobile")}
+          <button
+            className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-7 h-7"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-7 h-7"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Navigation - Slide-in Menu */}
@@ -298,7 +310,6 @@ const Navbar: React.FC = () => {
             isLoggedIn={isLoggedIn}
             handleUserClick={() => setIsMenuOpen(false)}
           />
-          {renderTournamentPicker()}
           <MissingBets />
           <button
             onClick={handleLogout}

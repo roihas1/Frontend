@@ -52,7 +52,6 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
     selectedLeague,
     usersGuesses,
     userChampGuesses,
-    searchResults,
     comparisonType,
     betsType,
     showSeriesSelection,
@@ -68,7 +67,6 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
     handleLeagueSelection,
     handleSeriesSelection,
     handleSelectionUsers,
-    handleSearchChange,
     handleClearSelectedUsers,
     handleRemoveUser,
     getFantasyPoints,
@@ -78,6 +76,7 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
     () => Object.keys(selectedUsers),
     [selectedUsers],
   );
+  const selectedUsersCount = selectedUserIds.length;
 
   const userShortNames = useMemo(() => {
     const m: Record<string, string> = {};
@@ -125,36 +124,67 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
 
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          position: "sticky",
+          top: 8,
+          zIndex: 12,
+          backgroundColor: "rgba(243,244,246,0.95)",
+          backdropFilter: "blur(2px)",
+          borderBottom: "1px solid",
+          borderColor: "divider",
           mb: 2,
+          pb: 1,
         }}
       >
-        <Typography variant="h6" component="h1">
-          Compare
-        </Typography>
-        <IconButton
-          size="small"
-          aria-label="Instructions"
-          onClick={handleOpenModal}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 1,
+          }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            width={22}
-            height={22}
+          <Typography variant="h6" component="h1">
+            Compare
+          </Typography>
+          <IconButton
+            size="small"
+            aria-label="Instructions"
+            onClick={handleOpenModal}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-            />
-          </svg>
-        </IconButton>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              width={22}
+              height={22}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+              />
+            </svg>
+          </IconButton>
+        </Box>
+
+        <ToggleButtonGroup
+          exclusive
+          fullWidth
+          value={comparisonType}
+          onChange={handleComparisonMode}
+          size="small"
+          sx={{ mb: 1.5 }}
+        >
+          <ToggleButton value="Series">Series</ToggleButton>
+          <ToggleButton value="Champ">Champ</ToggleButton>
+        </ToggleButtonGroup>
+
+        <Typography variant="caption" color="text.secondary" display="block">
+          {selectedLeague?.name ?? "No league"} · {selectedUsersCount} users ·{" "}
+          {comparisonType}
+        </Typography>
       </Box>
 
       <Dialog
@@ -186,18 +216,6 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
           <InstructionPaper />
         </DialogContent>
       </Dialog>
-
-      <ToggleButtonGroup
-        exclusive
-        fullWidth
-        value={comparisonType}
-        onChange={handleComparisonMode}
-        size="small"
-        sx={{ mb: 2 }}
-      >
-        <ToggleButton value="Series">Series</ToggleButton>
-        <ToggleButton value="Champ">Champ</ToggleButton>
-      </ToggleButtonGroup>
 
       {showSeriesSelection && series && (
         <FormControl fullWidth sx={{ mb: 2 }}>
@@ -286,7 +304,7 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
         <Autocomplete
           multiple
           limitTags={2}
-          options={searchResults}
+          options={Object.values(users)}
           disableCloseOnSelect
           getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
           value={selectedUserIds
@@ -305,7 +323,6 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
           renderInput={(params) => (
             <TextField
               {...params}
-              onChange={handleSearchChange}
               label="Search users"
               margin="normal"
               fullWidth
