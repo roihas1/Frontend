@@ -4,12 +4,17 @@ import { nbaTeamsNicknamesReversed } from "./ChampionsInput";
 
 interface TeamGuess {
   conference: string;
-  team1: string;
-  team2: string;
+  team1?: string;
+  team2?: string;
+  team1Relation?: { name?: string | null } | null;
+  team2Relation?: { name?: string | null } | null;
 }
 
 interface GuessData {
-  championTeamGuesses: { team: string }[];
+  championTeamGuesses: {
+    team?: string;
+    teamRelation?: { name?: string | null } | null;
+  }[];
   mvpGuesses: { player: string }[];
   conferenceFinalGuesses: TeamGuess[];
 }
@@ -36,6 +41,11 @@ const TeamGuessRow = ({ team1, team2 }: { team1?: string; team2?: string }) => {
     </div>
   );
 };
+
+const resolveTeamName = (
+  team?: string,
+  relation?: { name?: string | null } | null,
+) => relation?.name ?? team;
 
 // Reusable Component for Individual Guesses (Paper with Tooltip)
 const GuessPaper = ({ text }: { text: string }) => {
@@ -75,7 +85,12 @@ const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({
     const guess = guessData.conferenceFinalGuesses.find(
       (g) => g.conference === conference
     );
-    return guess ? { team1: guess.team1, team2: guess.team2 } : null;
+    return guess
+      ? {
+          team1: resolveTeamName(guess.team1, guess.team1Relation),
+          team2: resolveTeamName(guess.team2, guess.team2Relation),
+        }
+      : null;
   };
 
   const eastTeams = getTeamsByConference("East");
@@ -85,7 +100,14 @@ const ChampGuessColumn: React.FC<ChampGuessColumnProps> = ({
     <div className="flex flex-col space-y-2">
       {/* Champion Team Guess */}
       {guessData.championTeamGuesses.length > 0 ? (
-        <GuessPaper text={guessData.championTeamGuesses[0].team} />
+        <GuessPaper
+          text={
+            resolveTeamName(
+              guessData.championTeamGuesses[0].team,
+              guessData.championTeamGuesses[0].teamRelation,
+            ) ?? "-Looser didn't guess-"
+          }
+        />
       ) : (
         <GuessPaper text="-Looser didn't guess-" />
       )}

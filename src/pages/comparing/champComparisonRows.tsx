@@ -5,19 +5,31 @@ import { UserChampGuessesMap } from "./useComparingPageModel";
 
 type TeamGuess = {
   conference: string;
-  team1: string;
-  team2: string;
+  team1?: string;
+  team2?: string;
+  team1Relation?: { name?: string | null } | null;
+  team2Relation?: { name?: string | null } | null;
 };
 
 type ChampGuess = {
   conferenceFinalGuesses: TeamGuess[];
-  championTeamGuesses: { team: string }[];
+  championTeamGuesses: {
+    team?: string;
+    teamRelation?: { name?: string | null } | null;
+  }[];
   mvpGuesses: { player: string }[];
 };
 
 function nick(team?: string) {
   if (!team) return "- No guess -";
   return nbaTeamsNicknamesReversed[team] ?? team;
+}
+
+function resolveTeamName(
+  team?: string,
+  relation?: { name?: string | null } | null,
+) {
+  return relation?.name ?? team;
 }
 
 function getTeamsByConference(
@@ -27,7 +39,12 @@ function getTeamsByConference(
   const g = guessData?.conferenceFinalGuesses?.find(
     (x) => x.conference === conference,
   );
-  return g ? { team1: g.team1, team2: g.team2 } : null;
+  return g
+    ? {
+        team1: resolveTeamName(g.team1, g.team1Relation),
+        team2: resolveTeamName(g.team2, g.team2Relation),
+      }
+    : null;
 }
 
 type RowDef = {
@@ -48,7 +65,8 @@ function rowsForStage(stage: string): RowDef[] {
         return {
           text:
             guesses && guesses.length > 0
-              ? guesses[0].team
+              ? resolveTeamName(guesses[0].team, guesses[0].teamRelation) ??
+                "- No guess -"
               : "- No guess -",
           highlight: false,
         };
@@ -70,7 +88,7 @@ function rowsForStage(stage: string): RowDef[] {
     },
   ];
 
-  if (stage !== "Before playoffs") {
+  if (stage.toLowerCase() !== "before playoffs") {
     return base;
   }
 
