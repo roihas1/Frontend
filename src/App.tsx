@@ -27,6 +27,7 @@ import { MissingBetsProvider } from "./components/providers&context/MissingBetsC
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
+import GuessStatsPage from "./pages/GuessStatsPage";
 import { TournamentProvider } from "./components/providers&context/TournamentContext";
 import { LeagueStandingsPreviewProvider } from "./components/providers&context/LeagueStandingsPreviewContext";
 import InstallAppButton from "./components/pwa/InstallAppButton";
@@ -55,6 +56,7 @@ function AppShell() {
             <Route path="/leagues" element={<LeaguesSelectionPage />} />
             <Route path="/league" element={<LeaguesPage />} />
             <Route path="/comparing" element={<ComparingPage />} />
+            <Route path="/guess-stats" element={<GuessStatsPage />} />
             <Route path="/HowtoPlay" element={<HowToPlayPage />} />
             <Route path="/redirect" element={<OAuthRedirectPage />} />
             <Route path="/manageLeague" element={<ManageLeague />} />

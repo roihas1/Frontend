@@ -114,7 +114,7 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-gray-100 border-b-2 shadow-md  top-0 z-30">
-      <div className="max-w-screen-xl flex items-center justify-between mx-auto px-3 py-2">
+      <div className="max-w-screen-2xl flex items-center justify-between mx-auto px-3 py-2">
         {/* Logo and Title */}
         <Link
           to="/home"
@@ -133,7 +133,7 @@ const Navbar: React.FC = () => {
         </Link>
 
         {/* Desktop Navigation - Unchanged */}
-        <div className="hidden xl:flex space-x-5 items-center">
+        <div className="hidden xl:flex gap-2 2xl:gap-3 items-center">
           <NavLink
             to="/home"
             title="Home"
@@ -150,6 +150,12 @@ const Navbar: React.FC = () => {
             to="/comparing"
             title="Comparison"
             isActive={isActive("/comparing")}
+            isLoggedIn={isLoggedIn}
+          />
+          <NavLink
+            to="/guess-stats"
+            title="Guess Stats"
+            isActive={isActive("/guess-stats")}
             isLoggedIn={isLoggedIn}
           />
           <NavLink
@@ -283,6 +289,13 @@ const Navbar: React.FC = () => {
             to="/comparing"
             title="🔍 Comparison"
             isActive={isActive("/comparing")}
+            isLoggedIn={isLoggedIn}
+            handleUserClick={() => setIsMenuOpen(false)}
+          />
+          <NavLink
+            to="/guess-stats"
+            title="📊 Guess Stats"
+            isActive={isActive("/guess-stats")}
             isLoggedIn={isLoggedIn}
             handleUserClick={() => setIsMenuOpen(false)}
           />

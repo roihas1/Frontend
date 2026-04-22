@@ -359,13 +359,34 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           spontaneousGuesses,
           percentages,
         } = fullData;
+        const toBetGuessEntries = (
+          value: unknown
+        ): Array<{ betId: string; guess: number }> => {
+          if (!Array.isArray(value)) return [];
+          return value.filter((item): item is { betId: string; guess: number } => {
+            if (typeof item !== "object" || item === null) return false;
+            const typed = item as { betId?: unknown; guess?: unknown };
+            return (
+              typeof typed.betId === "string" && typeof typed.guess === "number"
+            );
+          });
+        };
+
+        const seriesMatchupGuesses = toBetGuessEntries(
+          userGuesses["playerMatchupGuess"]
+        );
+        const spontaneousGuessesList = toBetGuessEntries(
+          spontaneousGuesses ??
+            userGuesses?.["spontanouesGuess"] ??
+            userGuesses?.["spontaneousGuess"]
+        );
         if (userGuesses["teamWinGuess"]) {
           // setHasGuesses(true);
           setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
         }
-        if (userGuesses["playerMatchupGuess"].length > 0) {
-          userGuesses["playerMatchupGuess"].forEach((element: any) => {
-            handlePlayerSelectionForSeries(element["betId"], element["guess"]);
+        if (seriesMatchupGuesses.length > 0) {
+          seriesMatchupGuesses.forEach((element) => {
+            handlePlayerSelectionForSeries(element.betId, element.guess);
           });
           // setHasGuesses(true);
         }
@@ -380,11 +401,11 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           setHasGuesses(false);
         }
 
-        if (spontaneousGuesses?.length > 0) {
-          spontaneousGuesses.forEach((element: any) => {
+        if (spontaneousGuessesList.length > 0) {
+          spontaneousGuessesList.forEach((element) => {
             setSelectedPlayerForBetSpontaneous((prevState) => ({
               ...prevState,
-              [element["betId"]]: element["guess"],
+              [element.betId]: element.guess,
             }));
           });
         }
@@ -398,13 +419,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           teamWinGuess: userGuesses["teamWinGuess"]?.guess,
           bestOf7Guess: userGuesses["bestOf7Guess"]?.guess,
           playerMatchupGuess: Object.fromEntries(
-            userGuesses["playerMatchupGuess"].map((g: any) => [
-              g.betId,
-              g.guess,
-            ])
+            seriesMatchupGuesses.map((g) => [g.betId, g.guess])
           ),
           spontaneousGuesses: Object.fromEntries(
-            spontaneousGuesses.map((g: any) => [g.betId, g.guess])
+            spontaneousGuessesList.map((g) => [g.betId, g.guess])
           ),
         });
       } catch (error) {
