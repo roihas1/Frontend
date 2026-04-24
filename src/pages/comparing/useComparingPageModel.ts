@@ -70,10 +70,16 @@ export function useComparingPageModel() {
     useState<UserChampGuessesMap>();
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const isCurrentUserSelected = useRef<boolean>(false);
+  const selectedUsersRef = useRef(selectedUsers);
   /** Prevents repeated init + GET /private-league/.../users when callbacks churn after overrideUsers loads. */
   const comparisonSecondUserInitRef = useRef<string | undefined>(undefined);
+  const inFlightChampRefetchesRef = useRef<Set<string>>(new Set());
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    selectedUsersRef.current = selectedUsers;
+  }, [selectedUsers]);
 
   const {
     data: comparisonData,
@@ -162,6 +168,15 @@ export function useComparingPageModel() {
       [];
     return [...(list as League[]), { name: "Overall", users: [] }];
   }, [comparisonData]);
+
+  const selectedUserIds = useMemo(
+    () => Object.keys(selectedUsers).sort(),
+    [selectedUsers],
+  );
+  const selectedUserIdsKey = useMemo(
+    () => selectedUserIds.join("|"),
+    [selectedUserIds],
+  );
 
   const debouncedSearch = useMemo(
     () =>
@@ -265,7 +280,6 @@ export function useComparingPageModel() {
     [
       showChampSelection,
       selectedUsers,
-      secondUserId,
       currentUser,
       comparisonData,
       showError,
@@ -274,12 +288,16 @@ export function useComparingPageModel() {
 
   const handleUserSelection = useCallback(
     async (userId: string, seriesId?: string, forceRefetch = false) => {
+      const selectedUsersSnapshot = selectedUsersRef.current;
       if (!allSeriesBets || Object.keys(allSeriesBets).length === 0) {
         showError(`No series bets available yet.`);
         return;
       }
-      const addingNew = !(userId in selectedUsers);
-      if (addingNew && Object.keys(selectedUsers).length >= maxSelectedUsers) {
+      const addingNew = !(userId in selectedUsersSnapshot);
+      if (
+        addingNew &&
+        Object.keys(selectedUsersSnapshot).length >= maxSelectedUsers
+      ) {
         showError(
           isMobile
             ? `You can compare up to ${maxSelectedUsers} users on mobile. Remove someone to add another.`
@@ -296,13 +314,22 @@ export function useComparingPageModel() {
         return;
       }
 
+      let champRefetchKey: string | null = null;
+      if (showChampSelection && forceRefetch) {
+        champRefetchKey = `${selectedStage}:${userId}:${selectedTournamentId ?? "no-tournament"}`;
+        if (inFlightChampRefetchesRef.current.has(champRefetchKey)) {
+          return;
+        }
+        inFlightChampRefetchesRef.current.add(champRefetchKey);
+      }
+
       setIsLoadingUser(true);
       try {
         const user = users[userId];
         const name = `${user?.firstName} ${user?.lastName}`;
         const shouldForceRefetch = !!seriesId || forceRefetch;
 
-        if (!(userId in selectedUsers) || shouldForceRefetch) {
+        if (!(userId in selectedUsersSnapshot) || shouldForceRefetch) {
           const isCurrentUser = userId === currentUser?.id;
           const id = seriesId ? seriesId : selectedSeries;
 
@@ -334,24 +361,23 @@ export function useComparingPageModel() {
             }));
           } else if (showChampSelection) {
             const queryKey = [
-              isCurrentUser ? "champGuessesSelf" : "champGuesses",
+              "champComparisonGuesses",
+              isCurrentUser ? "self" : "user",
               selectedStage,
               userId,
               selectedTournamentId,
             ];
-            let cached = queryClient.getQueryData(queryKey);
-
-            if (!cached) {
-              const { data } = await axiosInstance.get(
-                `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`,
-              );
-              cached = data;
-              queryClient.setQueryDefaults(queryKey, {
-                staleTime: 5 * 60 * 1000,
-                gcTime: 10 * 60 * 1000,
-              });
-              queryClient.setQueryData(queryKey, cached);
-            }
+            const cached = await queryClient.ensureQueryData({
+              queryKey,
+              queryFn: async () => {
+                const response = await axiosInstance.get(
+                  `playoffs-stage/getUserGuesses/${selectedStage}/${userId}`,
+                );
+                return response.data;
+              },
+              staleTime: 5 * 60 * 1000,
+              gcTime: 10 * 60 * 1000,
+            });
 
             setUserChampGuesses((prev) => ({
               ...prev,
@@ -359,29 +385,43 @@ export function useComparingPageModel() {
             }));
           }
 
-          if (!isCurrentUserSelected.current && userId === currentUser?.id) {
-            setSelectedUsers((prevSelectedUsers) => ({
-              [userId]: name,
+          setSelectedUsers((prevSelectedUsers) => {
+            if (prevSelectedUsers[userId] === name) {
+              if (isCurrentUser) {
+                isCurrentUserSelected.current = true;
+              }
+              return prevSelectedUsers;
+            }
+
+            if (!isCurrentUserSelected.current && isCurrentUser) {
+              isCurrentUserSelected.current = true;
+              return {
+                [userId]: name,
+                ...prevSelectedUsers,
+              };
+            }
+
+            if (isCurrentUser) {
+              isCurrentUserSelected.current = true;
+            }
+            return {
               ...prevSelectedUsers,
-            }));
-            isCurrentUserSelected.current = true;
-          } else {
-            setSelectedUsers((prevSelectedUsers) => ({
-              ...prevSelectedUsers,
               [userId]: name,
-            }));
-          }
+            };
+          });
         }
       } catch (error) {
         console.log(error);
         showError(`Failed to select user`);
       } finally {
+        if (champRefetchKey) {
+          inFlightChampRefetchesRef.current.delete(champRefetchKey);
+        }
         setIsLoadingUser(false);
       }
     },
     [
       allSeriesBets,
-      selectedUsers,
       maxSelectedUsers,
       isMobile,
       showError,
@@ -478,7 +518,8 @@ export function useComparingPageModel() {
   }, [isLoadingComparison, allSeriesBets, secondUserId, setInitialsComprison]);
 
   const removeUser = (obj: { [key: string]: string }, keyToRemove: string) => {
-    const { [keyToRemove]: _, ...newObj } = obj;
+    const { [keyToRemove]: removedUser, ...newObj } = obj;
+    void removedUser;
     return newObj;
   };
 
@@ -537,11 +578,17 @@ export function useComparingPageModel() {
 
   useEffect(() => {
     if (selectedStage && showChampSelection) {
-      for (const userId of Object.keys(selectedUsers)) {
+      for (const userId of selectedUserIds) {
         void handleUserSelection(userId, undefined, true);
       }
     }
-  }, [selectedStage, showChampSelection, selectedUsers, handleUserSelection]);
+  }, [
+    selectedStage,
+    showChampSelection,
+    selectedUserIds,
+    selectedUserIdsKey,
+    handleUserSelection,
+  ]);
 
   const handleStageSelection = useCallback(
     (event: import("@mui/material").SelectChangeEvent<string>) => {

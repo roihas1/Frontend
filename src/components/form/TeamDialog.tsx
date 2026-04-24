@@ -118,6 +118,7 @@ interface TeamDialogProps {
   userPoints: number;
   intialSelectedTab?: number;
   intialGamesTab?: number;
+  // Deprecated for post-submit refresh: this component now relies on query invalidation.
   fetchData?: () => void;
 }
 
@@ -128,7 +129,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   userPoints,
   intialSelectedTab,
   intialGamesTab,
-  fetchData = () => {},
 }) => {
   const [selectedTeam, setSelectedTeam] = useState<number>(-1); // Track selected team
   const [selectedPlayerForBet, setSelectedPlayerForBet] = useState<{
@@ -276,44 +276,45 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const handleSubmit = async () => {
     // Validate input
     setValidationError(null);
-    if (formValidation()) {
-      setLoading(true);
-      if (!hasGuesses) {
-        try {
-          if (selectedTab === 0) {
-            await axiosInstance.post(`/series/${series.id}/createGuesses`, {
-              teamWinGuess: selectedTeam,
-              bestOf7Guess: selectedNumberOfGames,
-              playermatchupGuess: selectedPlayerForBet,
-            });
-          } else {
-            await axiosInstance.post(`spontaneous-guess/update`, {
-              spontaneousGuesses: selectedPlayerForBetSpontaneous,
-              seriesId: series.id,
-            });
-          }
-          await delay(100);
-          if (hasNewGuesses()) {
-            await axiosInstance.patch(`user-missing-bets/user/updateBets`);
-          }
+    if (!formValidation() || hasGuesses) {
+      return;
+    }
 
-          showSuccessMessage("Guesses were updated.");
-          setLoading(false);
-          setSelectedTeam(-1); // Reset selected team
-          setSelectedPlayerForBet({}); // Reset selected players for bets
-          setSelectedPlayerForBetSpontaneous({});
-          setSelectedNumberOfGames(0); // Reset number of games
-          setHasGuesses(false);
-          await queryClient.invalidateQueries({
-            queryKey: ["seriesFullData", series?.id, selectedTournamentId],
-          });
-          fetchData();
-          closeDialog(); // Close the dialog if submission is successful
-          triggerRefresh();
-        } catch {
-          showError("An unexpected error occurred.");
-        }
+    setLoading(true);
+    try {
+      if (selectedTab === 0) {
+        await axiosInstance.post(`/series/${series.id}/createGuesses`, {
+          teamWinGuess: selectedTeam,
+          bestOf7Guess: selectedNumberOfGames,
+          playermatchupGuess: selectedPlayerForBet,
+        });
+      } else {
+        await axiosInstance.post(`spontaneous-guess/update`, {
+          spontaneousGuesses: selectedPlayerForBetSpontaneous,
+          seriesId: series.id,
+        });
       }
+      await delay(100);
+      if (hasNewGuesses()) {
+        await axiosInstance.patch(`user-missing-bets/user/updateBets`);
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ["seriesFullData", series?.id, selectedTournamentId],
+      });
+
+      showSuccessMessage("Guesses were updated.");
+      setSelectedTeam(-1); // Reset selected team
+      setSelectedPlayerForBet({}); // Reset selected players for bets
+      setSelectedPlayerForBetSpontaneous({});
+      setSelectedNumberOfGames(0); // Reset number of games
+      setHasGuesses(false);
+      closeDialog(); // Close the dialog if submission is successful
+      triggerRefresh();
+    } catch {
+      showError("An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
   };
 
