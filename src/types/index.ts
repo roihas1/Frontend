@@ -182,3 +182,10 @@ export interface LeagueStandingsPreviewData {
   global: LeagueStandingsPreviewGlobal;
   privateLeagues: LeagueStandingsPreviewPrivateRow[];
 }
+
+export interface LeagueMessage {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: string;
+}
