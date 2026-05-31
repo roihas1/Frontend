@@ -491,16 +491,34 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
   const finalsTeams = getTeamsForRound("finals");
   if (stage === "Finish") {
     return (
-      <div className="bg-white p-6 mx-auto shadow-lg rounded-lg">
-        <h3 className="text-lg font-bold text-center text-gray-800 mb-4">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 sm:p-6 mx-auto">
+        <h3 className="text-lg sm:text-xl font-semibold text-center text-colors-nba-blue">
           Champions Betting - Previous Guesses
         </h3>
+        <p className="text-xs text-gray-500 text-center mt-1 mb-4">
+          Your picks from earlier rounds
+        </p>
         <ChampionGuessSummary stage={stage} />
         <button
           type="button"
           onClick={() => setShowInput("Close")}
-          className="text-colors-nba-red hover:scale-110 transition-transform mt-6"
+          className="w-full min-h-[48px] flex items-center justify-center gap-1.5 text-sm font-medium text-colors-nba-blue active:bg-gray-50 rounded-lg mt-4 sm:w-auto sm:mx-auto sm:px-4 hover:underline"
         >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+            className="size-4 shrink-0"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m4.5 15.75 7.5-7.5 7.5 7.5"
+            />
+          </svg>
           Collapse Previous Guesses
         </button>
       </div>
@@ -510,11 +528,16 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     timeZone: "Asia/Jerusalem",
   });
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white shadow-lg rounded-xl border border-gray-200 space-y-6">
       {stage !== "Before playoffs" && (
-        <h3 className="text-md font-bold text-center text-gray-800">
-          Previous Guesses
-        </h3>
+        <div className="text-center">
+          <h3 className="text-lg sm:text-xl font-semibold text-colors-nba-blue">
+            Previous Guesses
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Your picks from earlier rounds
+          </p>
+        </div>
       )}
       <ChampionGuessSummary stage={stage} />
       <h3 className="text-lg font-bold text-center text-gray-800">{`Champions Betting - ${
@@ -702,7 +725,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
           <button
             type="button"
             onClick={() => setShowInput("Close")}
-            className="text-colors-nba-red hover:scale-110 transition-transform"
+            className="text-colors-nba-blue hover:scale-110 transition-transform"
           >
             Close
           </button>

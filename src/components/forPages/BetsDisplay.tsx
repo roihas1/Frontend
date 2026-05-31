@@ -19,6 +19,19 @@ const BetsDisplay: React.FC<BetsDisplayProps> = ({
   isStartDatePassed,
   guessPercentage,
 }) => {
+  const getBetOptionLabel = (
+    playerName: string,
+    typeOfMatchup: string,
+    playerIndex: 1 | 2,
+    differential?: number
+  ) => {
+    if (typeOfMatchup === "UNDER/OVER") {
+      const threshold = differential ?? 0;
+      return `${playerName} (${playerIndex === 1 ? "Under" : "Over"} ${threshold})`;
+    }
+    return playerName;
+  };
+
   const isPlayerLeading = (
     games1: number,
     stats1: number,
@@ -80,7 +93,14 @@ const BetsDisplay: React.FC<BetsDisplayProps> = ({
                         : "border-gray-300 bg-gray-100 text-gray-900"
                     } hover:bg-gray-200 relative`}
                 >
-                  <p className="font-semibold">{bet.player1}</p>
+                  <p className="font-semibold">
+                    {getBetOptionLabel(
+                      bet.player1,
+                      bet.typeOfMatchup,
+                      1,
+                      bet.differential
+                    )}
+                  </p>
                   <p className="text-sm">
                     {bet.playerGames[0] === 0
                       ? 0
@@ -125,7 +145,14 @@ const BetsDisplay: React.FC<BetsDisplayProps> = ({
                         : "border-gray-300 bg-gray-100 text-gray-900"
                     } hover:bg-gray-200 relative`}
                 >
-                  <p className="font-semibold">{bet.player2}</p>
+                  <p className="font-semibold">
+                    {getBetOptionLabel(
+                      bet.player2,
+                      bet.typeOfMatchup,
+                      2,
+                      bet.differential
+                    )}
+                  </p>
                   <p className="text-sm">
                     {bet.playerGames[1] === 0
                       ? 0
@@ -155,8 +182,18 @@ const BetsDisplay: React.FC<BetsDisplayProps> = ({
                 <HorizontalBar
                   first={guessPercentage[bet.id]["1"]}
                   second={guessPercentage[bet.id]["2"]}
-                  option1={bet.player1}
-                  option2={bet.player2}
+                  option1={getBetOptionLabel(
+                    bet.player1,
+                    bet.typeOfMatchup,
+                    1,
+                    bet.differential
+                  )}
+                  option2={getBetOptionLabel(
+                    bet.player2,
+                    bet.typeOfMatchup,
+                    2,
+                    bet.differential
+                  )}
                 />
               </div>
             )}

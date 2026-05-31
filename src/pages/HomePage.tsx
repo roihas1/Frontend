@@ -54,6 +54,7 @@ import {
   Box,
   Modal,
   Skeleton,
+  Slide,
   Zoom,
 } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
@@ -699,20 +700,17 @@ const HomePage: React.FC = () => {
           <>
             <div className="flex justify-center">
               <button
-                className={`px-6 py-2.5 text-base font-semibold rounded-md shadow-md transition-all duration-300 mb-4 tracking-wide
+                className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-4 tracking-wide
       ${
         hasGuessedChampions
-          ? "bg-gray-300 text-gray-800 hover:bg-gray-300"
-          : "bg-colors-nba-yellow text-black ring-2 animate-scale-pulse ring-yellow-500 hover:bg-yellow-400 scale-105"
+          ? "bg-white border border-colors-nba-blue/25 text-colors-nba-blue shadow-md shadow-blue-900/10 active:scale-[0.97] active:bg-blue-50"
+          : "bg-colors-nba-yellow text-black shadow-lg shadow-yellow-500/25 ring-1 ring-yellow-500/40 animate-scale-pulse active:scale-[0.97]"
       }
     `}
-                style={{
-                  transform: !hasGuessedChampions ? "translateY(0)" : undefined,
-                }}
                 onClick={() => setShowMobileChampInput(true)}
               >
                 {hasGuessedChampions
-                  ? "Open Champions Bets"
+                  ? "My champion picks"
                   : "Guess the Champions"}
               </button>
             </div>
@@ -720,30 +718,125 @@ const HomePage: React.FC = () => {
             <Modal
               open={showMobileChampInput}
               onClose={() => setShowMobileChampInput(false)}
+              closeAfterTransition
+              slotProps={{
+                backdrop: {
+                  sx: { backgroundColor: "rgba(0, 0, 0, 0.25)" },
+                },
+              }}
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "center",
+              }}
             >
-              <Box
-                sx={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100dvh",
-                  bgcolor: "background.paper",
-                  overflowY: "auto",
-                  padding: 2,
-                  paddingBottom: 6,
-                  boxSizing: "border-box",
-                  WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
-                }}
+              <Slide
+                direction="down"
+                in={showMobileChampInput}
+                mountOnEnter
+                unmountOnExit
               >
-                <ChampionsInput
-                  west={series.west}
-                  east={series.east}
-                  startDate={stageStartDate}
-                  stage={stage}
-                  setShowInput={setHasGuessedAndInput}
-                />
-              </Box>
+                <Box
+                  role="dialog"
+                  aria-labelledby="mobile-champions-curtain-title"
+                  sx={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    width: "100%",
+                    maxHeight: "90dvh",
+                    bgcolor: "background.paper",
+                    borderBottomLeftRadius: 16,
+                    borderBottomRightRadius: 16,
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    outline: "none",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      flexShrink: 0,
+                      px: 2,
+                      pt: 1.5,
+                      pb: 1.5,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    <Box
+                      aria-hidden
+                      sx={{
+                        width: 40,
+                        height: 4,
+                        bgcolor: "grey.300",
+                        borderRadius: 2,
+                        mx: "auto",
+                        mb: 1.5,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                      }}
+                    >
+                      <h2
+                        id="mobile-champions-curtain-title"
+                        className="text-base font-semibold text-colors-nba-blue"
+                      >
+                        Champions Bets
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => setShowMobileChampInput(false)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-sm font-medium text-colors-nba-blue active:bg-gray-100"
+                        aria-label="Close champions bets"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                          className="size-5"
+                          aria-hidden
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18 18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </Box>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      flex: "1 1 auto",
+                      minHeight: 0,
+                      overflowY: "auto",
+                      px: 2,
+                      py: 2,
+                      pb: 3,
+                      WebkitOverflowScrolling: "touch",
+                    }}
+                  >
+                    <ChampionsInput
+                      west={series.west}
+                      east={series.east}
+                      startDate={stageStartDate}
+                      stage={stage}
+                      setShowInput={setHasGuessedAndInput}
+                    />
+                  </Box>
+                </Box>
+              </Slide>
             </Modal>
           </>
         ) : (
