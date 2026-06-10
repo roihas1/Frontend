@@ -41,6 +41,59 @@ function seriesTeam2Name(s: Series): string {
   return (s.team2?.trim() || s.team2Relation?.name?.trim() || "") as string;
 }
 
+type TeamOption = { id: string; name: string };
+
+function teamOptionFromRelation(
+  id: string | undefined,
+  name: string | undefined,
+): TeamOption | null {
+  const trimmedId = id?.trim();
+  const trimmedName = name?.trim();
+  if (!trimmedId || !trimmedName) {
+    return null;
+  }
+  return { id: trimmedId, name: trimmedName };
+}
+
+function finalsTeamOptionsFromSeries(seriesList: Series[]): TeamOption[] {
+  return seriesList
+    .filter((series) => series.conference === "Finals")
+    .flatMap((series) => [
+      teamOptionFromRelation(
+        series.team1Relation?.id,
+        series.team1Relation?.name ?? series.team1,
+      ),
+      teamOptionFromRelation(
+        series.team2Relation?.id,
+        series.team2Relation?.name ?? series.team2,
+      ),
+    ])
+    .filter((team): team is TeamOption => team !== null);
+}
+
+function conferenceFinalTeamIdsFromSeries(
+  seriesList: Series[],
+  conference: "East" | "West",
+): string[] | null {
+  const matchingSeries = seriesList.filter(
+    (series) =>
+      series.conference === conference &&
+      series.round === "Conference Finals",
+  );
+
+  const teamIds: string[] = [];
+  for (const series of matchingSeries) {
+    const team1Id = series.team1Relation?.id?.trim();
+    const team2Id = series.team2Relation?.id?.trim();
+    if (!team1Id || !team2Id) {
+      return null;
+    }
+    teamIds.push(team1Id, team2Id);
+  }
+
+  return teamIds;
+}
+
 function flattenPlayerMatchupBets(raw: unknown): PlayerMatchupBet[] {
   if (raw == null || !Array.isArray(raw) || raw.length === 0) return [];
   const first = raw[0];
@@ -144,7 +197,7 @@ const UpdateBetsPage: React.FC = () => {
     useState<boolean>(false);
   const [mvpPlayer, setMvpPlayer] = useState<string>("");
   const [championTeam, setChampionTeam] = useState<string>("");
-  const [finalsTeams, setFinalsTeams] = useState<string[]>([]);
+  const [finalsTeams, setFinalsTeams] = useState<TeamOption[]>([]);
   const [showUpdateSeriesTime, setShowUpdateSeriesTime] =
     useState<boolean>(false);
   const [newSeries, setNewSeries] = useState<Series>({
@@ -229,12 +282,7 @@ const UpdateBetsPage: React.FC = () => {
       setSpontaneousBets(selectedSeries?.spontaneousBets ?? []);
       handleResetSelectedBet();
     }
-    const temporaryList = seriesList
-      .filter((series) => series.conference === "Finals")
-      .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
-      .flat()
-      .filter(Boolean);
-    setFinalsTeams(temporaryList);
+    setFinalsTeams(finalsTeamOptionsFromSeries(seriesList));
   }, [selectedSeries, seriesList]);
 
   const handleCloseEditBet = () => {
@@ -717,43 +765,66 @@ const UpdateBetsPage: React.FC = () => {
       return;
     }
 
+    if (!mvpPlayer.trim()) {
+      showError("Please enter the Finals MVP.");
+      return;
+    }
+
+    if (!championTeam) {
+      showError("Please select the champion team.");
+      return;
+    }
+
+    const easternFinalsTeamIds = conferenceFinalTeamIdsFromSeries(
+      seriesList,
+      "East",
+    );
+    if (!easternFinalsTeamIds?.length) {
+      showError(
+        "East Conference Finals teams are missing team IDs. Check the series setup.",
+      );
+      return;
+    }
+
+    const westernFinalsTeamIds = conferenceFinalTeamIdsFromSeries(
+      seriesList,
+      "West",
+    );
+    if (!westernFinalsTeamIds?.length) {
+      showError(
+        "West Conference Finals teams are missing team IDs. Check the series setup.",
+      );
+      return;
+    }
+
+    const finalsTeamIds = finalsTeams.map((team) => team.id);
+    if (finalsTeamIds.length < 2) {
+      showError(
+        "NBA Finals teams are missing team IDs. Check the Finals series setup.",
+      );
+      return;
+    }
+
     if (window.confirm("Are you sure you want to close Champions Bets?")) {
       setLoading(true);
-      const easternFinalsTeams = seriesList
-        .filter(
-          (series) =>
-            series.conference === "East" &&
-            series.round === "Conference Finals",
-        )
-        .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
-        .flat()
-        .filter(Boolean);
-      const westernFinalsTeams = seriesList
-        .filter(
-          (series) =>
-            series.conference === "West" &&
-            series.round === "Conference Finals",
-        )
-        .map((series) => [seriesTeam1Name(series), seriesTeam2Name(series)])
-        .flat()
-        .filter(Boolean);
       try {
         await axiosInstance.patch("/playoffs-stage/closeGuess", {
           tournamentId: selectedTournamentId,
-          westernConferenceFinal: westernFinalsTeams,
-          easternConferenceFinal: easternFinalsTeams,
-          finals: finalsTeams,
-          championTeam,
-          mvp: mvpPlayer,
+          westernConferenceFinal: westernFinalsTeamIds,
+          easternConferenceFinal: easternFinalsTeamIds,
+          finals: finalsTeamIds,
+          championTeamId: championTeam,
+          mvp: mvpPlayer.trim(),
         });
         setShowCloseChampionsBets(false);
         setChampionTeam("");
         setMvpPlayer("");
-        setLoading(false);
         setIsInEdit(false);
         showSuccessMessage("Champions bets closed.");
       } catch (error) {
         showError("Failed to close champions bets");
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -947,12 +1018,11 @@ const UpdateBetsPage: React.FC = () => {
                     borderRadius: "1rem",
                   }}
                 >
-                  <MenuItem key={finalsTeams[0]} value={finalsTeams[0]}>
-                    {finalsTeams[0]}
-                  </MenuItem>
-                  <MenuItem key={finalsTeams[1]} value={finalsTeams[1]}>
-                    {finalsTeams[1]}
-                  </MenuItem>
+                  {finalsTeams.map((team) => (
+                    <MenuItem key={team.id} value={team.id}>
+                      {team.name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
               <ActionButtons
