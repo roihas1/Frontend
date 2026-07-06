@@ -32,6 +32,18 @@ import { TournamentProvider } from "./components/providers&context/TournamentCon
 import { LeagueStandingsPreviewProvider } from "./components/providers&context/LeagueStandingsPreviewContext";
 import InstallAppButton from "./components/pwa/InstallAppButton";
 import HomeLeagueStandingsPreview from "./components/forPages/HomeLeagueStandingsPreview";
+import MaintenancePage from "./pages/MaintenancePage";
+
+const MAINTENANCE_BYPASS_KEY = "btb_bypass_maintenance";
+
+function shouldBypassMaintenance(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has("preview")) {
+    sessionStorage.setItem(MAINTENANCE_BYPASS_KEY, "1");
+    return true;
+  }
+  return sessionStorage.getItem(MAINTENANCE_BYPASS_KEY) === "1";
+}
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -73,6 +85,13 @@ function AppShell() {
 }
 
 function App() {
+  const isMaintenance =
+    window.RUNTIME_CONFIG?.MAINTENANCE_MODE === "true";
+
+  if (isMaintenance && !shouldBypassMaintenance()) {
+    return <MaintenancePage />;
+  }
+
   return (
     <Router>
       <ErrorProvider>

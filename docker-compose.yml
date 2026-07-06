@@ -5,6 +5,7 @@ services:
     restart: always
     environment:
         VITE_BASE_URL: "<api-url>"
+        MAINTENANCE_MODE: "false"
     ports:
       - "8080:80" # Exposes frontend on http://localhost:5173
     networks:

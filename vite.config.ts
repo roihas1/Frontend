@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: "autoUpdate",
-        includeAssets: ["config.js", "vite.svg", "icon-192.png", "icon-512.png"],
+        includeAssets: ["vite.svg", "icon-192.png", "icon-512.png"],
         manifest: {
           id: "/",
           name: "Beyond The Bracket",
@@ -79,14 +79,16 @@ export default defineConfig(({ mode }) => {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           // Dev SW is served at /dev-sw.js, so precached registerSW.js resolves to /registerSW.js
           // and 404. Registration uses virtual:pwa-register; strip it from the precache manifest.
-          globIgnores: ["**/registerSW.js"],
+          globIgnores: ["**/registerSW.js", "**/config.js"],
           manifestTransforms: [
             async (entries) => ({
               manifest: entries.filter(
                 (e) =>
                   typeof e.url === "string" &&
                   !e.url.endsWith("registerSW.js") &&
-                  e.url !== "registerSW.js",
+                  e.url !== "registerSW.js" &&
+                  !e.url.endsWith("config.js") &&
+                  e.url !== "config.js",
               ),
               warnings: [],
             }),
