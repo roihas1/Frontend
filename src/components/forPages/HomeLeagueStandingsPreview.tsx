@@ -49,7 +49,7 @@ function PreviewBody({
           : `${privateLeagues.length} private leagues`;
 
     return (
-      <section className="mb-4 px-1" aria-label="Your league standings">
+      <section className="mb-2 px-1" aria-label="Your league standings">
         <Accordion
           defaultExpanded={false}
           disableGutters
@@ -235,7 +235,7 @@ const HomeLeagueStandingsPreview: React.FC<HomeLeagueStandingsPreviewProps> = ({
       <div
         className={
           variant === "mobile"
-            ? "mb-4 px-1"
+            ? "mb-2 px-1"
             : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"
         }
         aria-busy="true"
@@ -251,7 +251,7 @@ const HomeLeagueStandingsPreview: React.FC<HomeLeagueStandingsPreviewProps> = ({
       <div
         className={
           variant === "mobile"
-            ? "mb-4 px-1"
+            ? "mb-2 px-1"
             : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"
         }
       >

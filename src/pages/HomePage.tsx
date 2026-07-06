@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import NBASeedCard from "../components/forPages/NBASeedCard";
+import MobileSeriesCard from "../components/forPages/MobileSeriesCard";
 // import { Team } from "../components/form/TeamDialog";
 import bostonCelticsLogo from "../assets/logos/boston_logo.png";
 import losAngelesLakersLogo from "../assets/logos/los_angeles_lakers_logo.png";
@@ -47,16 +48,7 @@ import HomeLeagueStandingsPreview from "../components/forPages/HomeLeagueStandin
 import { useError } from "../components/providers&context/ErrorProvider";
 import Tooltip from "@mui/material/Tooltip";
 import defaultLogo from "../assets/logos/defaultLogoTBD.png";
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Modal,
-  Skeleton,
-  Slide,
-  Zoom,
-} from "@mui/material";
+import { Box, Modal, Skeleton, Slide, Zoom } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
 import { useLeagueStandingsPreview } from "../components/providers&context/LeagueStandingsPreviewContext";
 
@@ -239,7 +231,6 @@ const HomePage: React.FC = () => {
     [key: string]: boolean;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const [expanded, setExpanded] = useState<string | false>(false);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
   const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
@@ -641,10 +632,6 @@ const HomePage: React.FC = () => {
     }
     setShowMobileChampInput(false);
   };
-  const handleAccordionChange =
-    (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-      setExpanded(isExpanded ? panel : false);
-    };
   if (loading) {
     return (
       <div className="relative z-10 bg-gray-100 p-4">
@@ -691,16 +678,59 @@ const HomePage: React.FC = () => {
     </div>
   );
 
+  const mobileMatchups = [...series.west, ...series.east, ...series.finals];
+  const now = new Date();
+  const missingSeriesPicks = mobileMatchups.filter(
+    (matchup) => matchup.id && isPartialGuess[matchup.id] === false,
+  ).length;
+  const totalSeriesPoints = Object.values(userPointsPerSeries ?? {}).reduce(
+    (sum, points) => sum + points,
+    0,
+  );
+  const nextSeriesStart = mobileMatchups
+    .filter((matchup) => new Date(matchup.dateOfStart) > now)
+    .sort(
+      (a, b) =>
+        new Date(a.dateOfStart).getTime() - new Date(b.dateOfStart).getTime(),
+    )[0]?.dateOfStart;
+  const nextSeriesStartLabel = nextSeriesStart
+    ? new Date(nextSeriesStart).toLocaleString("he-IL", {
+        timeZone: "Asia/Jerusalem",
+      })
+    : null;
+
   return (
-    <div className="relative z-10  bg-gray-100 p-4">
+    <div className="relative z-10 bg-gray-100 px-4 pb-4 pt-2 md:p-4">
       {/* Mobile View */}
 
       <div className="md:hidden">
+        {mobileMatchups.length > 0 && (
+          <div className="mb-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap gap-2 justify-center">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  missingSeriesPicks > 0
+                    ? "bg-yellow-50 text-yellow-800"
+                    : "bg-green-50 text-green-700"
+                }`}
+              >
+                Missing picks: {missingSeriesPicks}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-colors-nba-blue/10 px-2.5 py-1 text-xs font-semibold text-colors-nba-blue">
+                Series points: {totalSeriesPoints}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+                Next start: {nextSeriesStartLabel ?? "No upcoming starts"}
+              </span>
+            </div>
+          </div>
+        )}
+
         {hasPlayoffStages ? (
           <>
             <div className="flex justify-center">
               <button
-                className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-4 tracking-wide
+                className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-3 tracking-wide
       ${
         hasGuessedChampions
           ? "bg-white border border-colors-nba-blue/25 text-colors-nba-blue shadow-md shadow-blue-900/10 active:scale-[0.97] active:bg-blue-50"
@@ -840,8 +870,9 @@ const HomePage: React.FC = () => {
             </Modal>
           </>
         ) : (
-          <div className="mb-4 px-2">{championsStagesEmptyState}</div>
+          <div className="mb-3 px-2">{championsStagesEmptyState}</div>
         )}
+
         {[
           "NBA Finals",
           "Conference Finals",
@@ -859,10 +890,10 @@ const HomePage: React.FC = () => {
           if (conferencesWithMatchups.length === 0) return null; // Skip if no matchups in this round
 
           return (
-            <div key={round} className="mb-6">
+            <div key={round} className="mb-8 last:mb-0">
               {/* Round Title (Skip "NBA Finals" title) */}
 
-              <h3 className="text-lg font-bold text-center bg-gray-300 p-2 rounded-md mb-2">
+              <h3 className="text-lg font-bold text-center text-colors-nba-blue border-b-2 border-colors-nba-blue/20 pb-2 mt-2 mb-3">
                 {round}
               </h3>
 
@@ -882,193 +913,27 @@ const HomePage: React.FC = () => {
                       : "NBA Finals";
 
                 return (
-                  <div key={conference} className="mb-4">
+                  <div key={conference} className="mb-3">
                     {/* Conference Title (Skip if it's the NBA Finals) */}
                     {conference !== "finals" && (
-                      <h4 className="text-md font-semibold text-center bg-gray-200 p-1 rounded-md mb-2">
+                      <h4 className="text-sm font-medium text-center text-gray-600 border-b border-gray-200 pb-1 mb-2">
                         {conferenceName}
                       </h4>
                     )}
 
-                    {matchupsInRound.map((matchup) => (
-                      <Accordion
-                        key={matchup.id}
-                        expanded={expanded === matchup.id}
-                        onChange={handleAccordionChange(matchup.id ?? "")}
-                        className="mb-2"
-                      >
-                        <AccordionSummary
-                          expandIcon={
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth="1.5"
-                              stroke="currentColor"
-                              className="size-4"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="m19.5 8.25-7.5 7.5-7.5-7.5"
-                              />
-                            </svg>
+                    <div className="space-y-2">
+                      {matchupsInRound.map((matchup) => (
+                        <MobileSeriesCard
+                          key={matchup.id}
+                          series={matchup}
+                          userPoints={
+                            userPointsPerSeries?.[matchup.id ?? ""] ?? 0
                           }
-                          className="bg-gray-200 p-2 rounded-lg"
-                        >
-                          <div className="flex items-center justify-between w-full gap-2">
-                            {/* Logos + Names container */}
-                            <div className="grid grid-cols-[48px_auto_48px] items-center w-full">
-                              {/* Left Logo */}
-                              <div className="w-12 aspect-square flex items-center justify-center">
-                                <img
-                                  src={matchup.logo1}
-                                  alt={matchup.team1}
-                                  className="object-contain max-w-full max-h-full"
-                                  loading="lazy"
-                                />
-                              </div>
-
-                              {/* Team Names stacked */}
-                              <div className="flex flex-col items-center justify-center">
-                                <div className="whitespace-nowrap flex items-center justify-center gap-1">
-                                  <span className="text-md font-semibold">
-                                    {matchup.team1}
-                                  </span>
-                                  <span className="text-sm font-normal p-2 text-gray-600">
-                                    vs
-                                  </span>
-                                  <span className="text-md font-semibold">
-                                    {matchup.team2}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Right Logo */}
-                              <div className="w-12 aspect-square flex items-center justify-center">
-                                <img
-                                  src={matchup.logo2}
-                                  alt={matchup.team2}
-                                  className="object-contain max-w-full max-h-full"
-                                  loading="lazy"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Reserve space for icon regardless */}
-                            <div className="w-10 mr-4 flex justify-end">
-                              {typeof isPartialGuess[matchup.id ?? ""] !==
-                                "undefined" && (
-                                <Tooltip
-                                  title={
-                                    isPartialGuess[matchup.id ?? ""]
-                                      ? "Guessed all"
-                                      : "Missing guesses"
-                                  }
-                                  arrow
-                                  placement="bottom"
-                                  enterTouchDelay={0}
-                                  leaveTouchDelay={2000}
-                                  slots={{ transition: Zoom }}
-                                >
-                                  <div
-                                    className="p-1 rounded-full cursor-default"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {isPartialGuess[matchup.id ?? ""] ? (
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        className="w-6 h-6"
-                                      >
-                                        <circle
-                                          cx="12"
-                                          cy="12"
-                                          r="9"
-                                          fill="green"
-                                        />
-                                        <path
-                                          d="M9 12.75L11.25 15L15 9.75"
-                                          stroke="white"
-                                          strokeWidth="1.5"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          fill="none"
-                                        />
-                                      </svg>
-                                    ) : (
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                        className="w-6 h-6 text-yellow-500"
-                                      >
-                                        <circle
-                                          cx="12"
-                                          cy="12"
-                                          r="9"
-                                          fill="#FDB927"
-                                        />
-                                        <path
-                                          fill="white"
-                                          d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V14.25C12.75 14.6642 12.4142 15 12 15C11.5858 15 11.25 14.6642 11.25 14.25V8.25C11.25 7.83579 11.5858 7.5 12 7.5ZM12 17.25C12.4142 17.25 12.75 17.5858 12.75 18C12.75 18.4142 12.4142 18.75 12 18.75C11.5858 18.75 11.25 18.4142 11.25 18C11.25 17.5858 11.5858 17.25 12 17.25Z"
-                                        />
-                                      </svg>
-                                    )}
-                                  </div>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </div>
-                        </AccordionSummary>
-
-                        <AccordionDetails
-                          className="bg-white"
-                          sx={{ padding: "0px 16px 16px" }}
-                        >
-                          {/* Matchup Details */}
-                          <div className="ml-3 text-sm text-gray-700">
-                            <div className="flex flex-wrap items-center gap-4 mb-1">
-                              {new Date(matchup.dateOfStart) > new Date() ? (
-                                <span>
-                                  <span className="font-semibold">
-                                    The series starts on:{" "}
-                                  </span>
-                                  {new Date(matchup.dateOfStart).toLocaleString(
-                                    "he-IL",
-                                    {
-                                      timeZone: "Asia/Jerusalem",
-                                    },
-                                  )}
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="font-semibold text-gray  -700">
-                                    The series has started!
-                                  </span>
-                                  <span className="font-semibold">
-                                    Points Earned:{" "}
-                                    <span className="text-black">
-                                      {userPointsPerSeries?.[
-                                        matchup.id ?? ""
-                                      ] ?? 0}
-                                    </span>
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          <NBASeedCard
-                            series={matchup}
-                            userPoints={
-                              userPointsPerSeries?.[matchup.id ?? ""] ?? 0
-                            }
-                            fetchData={checkIfGuessSeriesBetting}
-                          />
-                        </AccordionDetails>
-                      </Accordion>
-                    ))}
+                          isGuessComplete={isPartialGuess[matchup.id ?? ""]}
+                          fetchData={checkIfGuessSeriesBetting}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })}

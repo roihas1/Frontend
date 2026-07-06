@@ -54,7 +54,7 @@ function AppShell() {
       <div className="flex flex-col min-h-screen   bg-gray-100">
         <Navbar />
         {pathname === "/home" && (
-          <div className="md:hidden px-4 mt-3">
+          <div className="md:hidden px-4 mt-1">
             <HomeLeagueStandingsPreview variant="mobile" />
           </div>
         )}
