@@ -1,0 +1,14 @@
+---
+description: Styling conventions using Tailwind CSS and Material UI
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# Styling Conventions
+
+- Tailwind CSS is the default styling approach for layout, spacing, color, and typography — use utility classes in `className`, not new CSS files or CSS-in-JS, for plain markup.
+- Use Material UI (`@mui/material`, `@mui/icons-material`) for complex interactive controls (`Select`, `Skeleton`, dialogs, menus) rather than hand-rolling them. Style MUI components via the `sx` prop for things Tailwind can't reach (pseudo-classes like `&.Mui-selected`), and Tailwind `className` for outer layout/spacing.
+- Brand colors are defined in `tailwind.config.js` under `theme.extend.colors.colors` and used as `bg-colors-nba-blue`, `text-colors-nba-red`, etc. Reuse these tokens (and add new ones there) instead of hardcoding brand hex values in `className`/`sx`.
+- Responsive design uses Tailwind breakpoint prefixes (`sm:`, `md:`, `lg:`) directly in `className`, and MUI's `useMediaQuery(theme.breakpoints.down("md"))` when a component needs the breakpoint state in JS (e.g. to switch layouts or change copy).
+- Loading states use MUI `<Skeleton variant="rounded" />` shapes that mirror the eventual content's layout, not spinners.
+- Keep long/conditional class strings readable with template literals (see `SubmitButton.tsx`), and prefer a small ternary over a classnames library (none is currently a dependency).

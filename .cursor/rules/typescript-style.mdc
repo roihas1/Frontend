@@ -1,0 +1,15 @@
+---
+description: TypeScript typing conventions for the frontend
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript Conventions
+
+- `strict` mode is on (`tsconfig.app.json`), including `noUnusedLocals` and `noUnusedParameters` — do not introduce unused variables/params (prefix intentionally-unused destructured values, e.g. `const { [key]: _removed, ...rest } = obj`).
+- Prefer `interface` for object shapes/props and `type` for unions, maps, and function signatures, matching existing usage (e.g. `interface User`, `type LogoutOptions`).
+- Put shared/domain types (entities returned by the API, DTOs, enums used across features) in `src/types/`. Keep component-local prop types and page-local model types colocated with their file instead.
+- Avoid `any`. When the shape of API data is genuinely unknown, type it as `unknown`/`Record<string, unknown>` and narrow explicitly (see `axiosInstance.ts`'s `isPlainObject`), or cast intentionally with a comment explaining why.
+- Use `React.FC<Props>` for component typing and explicit event types from React (`React.ChangeEvent<HTMLInputElement>`, `React.FormEvent`, MUI's `SelectChangeEvent<T>`) for handlers — do not use untyped `any` event params.
+- Wrap `async` calls to context/service functions used as fire-and-forget in `void` (e.g. `void handleUserSelection(id)`) rather than leaving a floating promise or awaiting unnecessarily in non-async callbacks.
+- When intentionally suppressing an exhaustive-deps warning, add a one-line comment above the `eslint-disable-next-line` explaining why, as done in `useComparingPageModel.ts`.

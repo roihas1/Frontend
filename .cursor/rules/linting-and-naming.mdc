@@ -1,0 +1,26 @@
+---
+description: ESLint rules and file/naming conventions
+alwaysApply: true
+---
+
+# Linting & Naming Conventions
+
+## Linting
+
+- ESLint config (`eslint.config.js`) is flat-config based on `@eslint/js` recommended + `typescript-eslint` recommended, plus `eslint-plugin-react-hooks` (`recommended`) and `eslint-plugin-react-refresh` (`only-export-components` warn, `allowConstantExport: true`).
+- Run `npm run lint` before considering frontend changes done; fix violations rather than disabling rules. Only add `eslint-disable` comments as a last resort, scoped to a single line, with a comment explaining why (see `react-hooks/exhaustive-deps` usage in `useComparingPageModel.ts`).
+- Respect `react-hooks/rules-of-hooks` and `exhaustive-deps` — hooks must be called unconditionally at the top level, and `useCallback`/`useMemo`/`useEffect` dependency arrays should be complete.
+- A file exporting a component should primarily export that component (plus closely related constants) to satisfy `react-refresh/only-export-components`.
+
+## Naming
+
+- Components and their files: `PascalCase.tsx` (e.g. `SubmitButton.tsx`, `NavBar.tsx`), default-exported with the same name as the file.
+- Hooks: `useCamelCase.ts` (e.g. `useInstallPrompt.ts`, `useComparingPageModel.ts`), one primary exported hook per file, named export.
+- Plain utility/helper modules: `camelCase.ts` (e.g. `tournamentScope.ts`, `serializeQueryParams.ts`, `comparisonNormalize.ts`).
+- Types/interfaces: `PascalCase` (e.g. `User`, `PlayoffTournament`); enums: `PascalCase` name with `UPPER_SNAKE_CASE` or descriptive string members matching backend values.
+- Booleans: prefix with `is`/`has`/`show` (`isLoggedIn`, `showChampSelection`); handlers: prefix with `handle` (`handleSubmit`).
+
+## Imports
+
+- Use relative imports (`../../types`, `./comparing/useComparingPageModel`) — there are no path aliases configured in `tsconfig.app.json`; don't introduce `@/` imports without also updating the TS and Vite config.
+- Group/keep third-party imports above local imports, as in existing files (React/libraries first, then local modules).

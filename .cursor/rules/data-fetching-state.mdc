@@ -1,0 +1,28 @@
+---
+description: API calls, TanStack Query, and Context/state management conventions
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Data Fetching & State Management
+
+## API calls
+
+- Always call the backend through the shared `axiosInstance` from `src/api/axiosInstance.ts`. Never instantiate a new `axios.create(...)` elsewhere — auth headers, tournament scoping, and 401/session-expiry handling all live in its interceptors.
+- If a new endpoint needs the current tournament auto-injected as a query param/body field, add it to the `isTournamentScopedGetPath` / `isTournamentScopedMutationPath` allow-lists in `axiosInstance.ts` rather than manually appending `tournamentId` at the call site.
+- Read/write the active tournament only through `getTournamentId`/`setTournamentId`/`clearTournamentId` in `src/api/tournamentScope.ts`.
+
+## Server state (TanStack Query)
+
+- Use `useQuery` for page-level data loads and `queryClient.ensureQueryData` for on-demand/cached lookups (e.g. per-user data fetched on selection). Always pass a descriptive `queryKey` array that includes the relevant scoping ids (e.g. `["comparison-page", selectedTournamentId]`).
+- Set explicit `staleTime`/`gcTime` for queries instead of relying on defaults; follow existing magnitudes (minutes, not seconds) used in model hooks.
+- Gate queries that depend on scope with `enabled: Boolean(...)` rather than branching inside `queryFn`.
+- On logout, rely on `queryClient.clear()` (already done in `AuthContext`) — don't hand-roll cache invalidation for auth state changes.
+
+## Client/UI state
+
+- Use React Context (`src/components/providers&context/`) for cross-cutting app state (auth, tournament selection, error/success toasts, missing bets). Each context module exports a `<Thing>Provider` component and a `use<Thing>` hook that throws if called outside the provider.
+- Compose providers by nesting in `src/App.tsx`; keep provider order stable (outer-to-inner reflects dependency direction, e.g. `UserProvider` > `AuthProvider` > `TournamentProvider`).
+- For page-local state, keep it inside the page's `use<PageName>Model` hook rather than lifting it into a new Context unless it's genuinely needed by multiple, unrelated routes.
+- Use `useRef` for values that must be read inside callbacks without causing re-renders/being stale in closures (see `selectedUsersRef` pattern), and comment why the ref exists.
+- Debounce expensive/typed-input-driven calls with `lodash/debounce` inside a `useMemo`, and cancel it in a cleanup `useEffect`.

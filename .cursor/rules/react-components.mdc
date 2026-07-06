@@ -1,0 +1,27 @@
+---
+description: React component conventions (page/model/view split, props, structure)
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# React Component Conventions
+
+- Components are function components typed with `React.FC` (plain, or `React.FC<Props>` when there are props). Default-export the component; named exports are only used for small hook/util pairs colocated with a provider (e.g. `useAuth` next to `AuthProvider`).
+- Props are declared as a local `interface <ComponentName>Props { ... }` directly above the component, not inline or imported from elsewhere unless shared.
+- **Page/model/view split**: keep page files (`src/pages/*.tsx`) thin — they should only call a `use<PageName>Model()` hook and render a skeleton (loading) state or delegate to view components, passing the model down (e.g. `<PageDesktopView {...model} />`). Put all state, effects, handlers, and data-fetching in the `use<PageName>Model.ts` hook, not in the page component.
+- For pages with meaningfully different mobile/desktop layouts, split into `<Page>DesktopView.tsx` and `<Page>MobileView.tsx` and choose between them based on a `useMediaQuery`/`isMobile` flag from the model.
+- Show a `@mui/material` `<Skeleton>`-based loading state (not a spinner-only or blank screen) while a page's model is loading.
+- Use TanStack Query (`useQuery`, `queryClient.ensureQueryData`) for server data fetching inside model hooks; avoid manual `useEffect` + `axiosInstance` + `useState` fetching for new code when a query would do.
+- Keep components pure/presentational when possible — accept data and callbacks via props rather than reaching into contexts, unless the component itself is a page-level or layout component.
+- Name event handler props/functions `handle<Action>` (e.g. `handleSubmit`, `handleUserSelection`) and boolean state `is<Thing>`/`show<Thing>`.
+- Guard context hooks with an explicit error when used outside their provider, matching existing hooks:
+
+```typescript
+export const useThing = () => {
+  const context = useContext(ThingContext);
+  if (!context) {
+    throw new Error("useThing must be used within a ThingProvider");
+  }
+  return context;
+};
+```

@@ -1,0 +1,31 @@
+---
+description: Project architecture and folder structure for the frontend app
+alwaysApply: true
+---
+
+# Architecture Overview
+
+React 18 + Vite + TypeScript SPA (NBA playoff prediction app). Client-side only, talks to a separate NestJS backend over REST via `axiosInstance`. State is Context API + TanStack Query — there is no Redux/Zustand.
+
+## Folder structure
+
+- `src/pages/` — one file per route, wired up in `src/App.tsx`. Page components are thin: they call a `use<PageName>Model` hook and render view components/skeletons based on its state.
+- `src/pages/<pageName>/` — colocated folder for a page's non-trivial logic: `use<PageName>Model.ts` (all state/handlers/effects), plus `*View.tsx` (desktop/mobile variants), data adapters/normalizers (`*Normalize.ts`, `*Adapter.ts`, `*Transformers.ts`).
+- `src/components/forPages/` — feature-specific components used by one or few pages.
+- `src/components/common/` — small generic reusable UI (buttons, modals, backgrounds).
+- `src/components/Layout/` — app shell/navigation components (NavBar, Footer, cards).
+- `src/components/form/` — reusable form inputs/dialogs.
+- `src/components/providers&context/` — React Context providers (`*Context.tsx`, `*Provider.tsx`) — keep new context providers here.
+- `src/components/pwa/` — PWA-specific UI (install prompts).
+- `src/api/` — `axiosInstance.ts` (single configured axios client + interceptors) and small stateless helpers (`tournamentScope.ts`, `serializeQueryParams.ts`). Do not create additional axios instances.
+- `src/auth/` — auth/session helper logic not tied to React (e.g. `sessionSync.ts`) that Contexts consume.
+- `src/hooks/` — standalone reusable hooks not tied to a specific page (`use<Thing>.ts`).
+- `src/types/` — shared domain types/interfaces/enums (`index.ts`, `guessStats.ts`). Add new shared domain types here rather than inlining them in components.
+
+## Routing
+
+All routes are declared in `src/App.tsx` inside `<Routes>`. Route-level pages live directly under `src/pages/`. When adding a page, add a corresponding `<Route path="..." element={<Page />} />` there.
+
+## Config & environment
+
+- Runtime config injected via `window.RUNTIME_CONFIG` (see `public/config.js` / `public/config.template.js`, typed in `src/global.d.ts`), falling back to Vite `import.meta.env`. Follow this pattern (`window.RUNTIME_CONFIG?.X ?? import.meta.env.X`) for any new runtime-configurable value instead of hardcoding or using only build-time env vars.
