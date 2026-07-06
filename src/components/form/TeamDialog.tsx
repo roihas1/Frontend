@@ -251,6 +251,13 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
     return true;
   };
+  const spontaneousValidation = () => {
+    if (Object.keys(selectedPlayerForBetSpontaneous).length === 0) {
+      setValidationError("Select at least one spontaneous bet.");
+      return false;
+    }
+    return true;
+  };
   const hasNewGuesses = () => {
     if (
       initialGuesses.teamWinGuess === undefined ||
@@ -276,7 +283,14 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const handleSubmit = async () => {
     // Validate input
     setValidationError(null);
-    if (!formValidation() || hasGuesses) {
+    const isSeriesBetSubmit = selectedTab === 0;
+    if (hasGuesses) {
+      return;
+    }
+    if (isSeriesBetSubmit && !formValidation()) {
+      return;
+    }
+    if (!isSeriesBetSubmit && !spontaneousValidation()) {
       return;
     }
 
@@ -382,24 +396,21 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             userGuesses?.["spontaneousGuess"]
         );
         if (userGuesses["teamWinGuess"]) {
-          // setHasGuesses(true);
           setSelectedTeam(userGuesses["teamWinGuess"]["guess"]);
+        } else {
+          setSelectedTeam(-1);
         }
         if (seriesMatchupGuesses.length > 0) {
           seriesMatchupGuesses.forEach((element) => {
             handlePlayerSelectionForSeries(element.betId, element.guess);
           });
-          // setHasGuesses(true);
+        } else {
+          setSelectedPlayerForBet({});
         }
         if (userGuesses["bestOf7Guess"]) {
           setSelectedNumberOfGames(userGuesses["bestOf7Guess"]["guess"]);
-          // setHasGuesses(true);
         } else {
-          setSelectedTeam(-1); // Reset selected team
-          setSelectedPlayerForBet({}); // Reset selected players for bets
-          setSelectedPlayerForBetSpontaneous({});
-          setSelectedNumberOfGames(0); // Reset number of games
-          setHasGuesses(false);
+          setSelectedNumberOfGames(0);
         }
 
         if (spontaneousGuessesList.length > 0) {
