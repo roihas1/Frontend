@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { User } from "../types";
 import axiosInstance from "../api/axiosInstance";
+import { buildRemoveUsersRequest } from "../api/privateLeagueRequests";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { League } from "./LeagueSelectionPage";
@@ -93,9 +94,13 @@ const ManageLeague: React.FC = () => {
 
   const handleRemoveUsers = async () => {
     try {
-      await axiosInstance.patch(`/private-league/${league?.id}/removeUsers`, {
-        users: selectedUsers,
-      });
+      await axiosInstance.patch(
+        `/private-league/${league?.id}/removeUsers`,
+        buildRemoveUsersRequest(
+          selectedUsers.map((user) => user.id),
+          selectedTournamentId,
+        ),
+      );
 
       setSelectedUsers([]);
       showSuccessMessage(

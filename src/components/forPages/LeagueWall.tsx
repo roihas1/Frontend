@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-query";
 import type { LeagueMessage } from "../../types";
 import axiosInstance from "../../api/axiosInstance";
+import { buildCreateLeagueMessageRequest } from "../../api/privateLeagueRequests";
+import { useTournament } from "../providers&context/TournamentContext";
 
 interface LeagueWallProps {
   leagueName: string;
@@ -135,6 +137,7 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
   const desktopMessagesRef = useRef<HTMLDivElement | null>(null);
   const mobileMessagesRef = useRef<HTMLDivElement | null>(null);
   const queryClient = useQueryClient();
+  const { selectedTournamentId } = useTournament();
 
   const messagesQueryKey = useMemo(
     () => ["league-messages-paged", leagueId],
@@ -246,7 +249,7 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
     mutationFn: async (content: string) => {
       const response = await axiosInstance.post(
         `/private-league/${leagueId}/messages`,
-        { content }
+        buildCreateLeagueMessageRequest(content, selectedTournamentId),
       );
       const payload = response.data?.data ?? response.data;
       if (payload) {

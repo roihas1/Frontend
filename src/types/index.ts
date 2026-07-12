@@ -189,3 +189,27 @@ export interface LeagueMessage {
   content: string;
   createdAt: string;
 }
+
+export interface JoinLeagueRequest {
+  code: string;
+  tournamentId?: string;
+}
+
+export interface CreatePrivateLeagueRequest {
+  name: string;
+  tournamentId?: string;
+}
+
+export interface LeagueMemberRef {
+  id: string;
+}
+
+export interface RemoveUsersRequest {
+  users: LeagueMemberRef[];
+  tournamentId?: string;
+}
+
+export interface CreateLeagueMessageRequest {
+  content: string;
+  tournamentId?: string;
+}

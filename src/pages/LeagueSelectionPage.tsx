@@ -8,6 +8,10 @@ import {
 } from "@mui/material";
 import { Close, Settings } from "@mui/icons-material";
 import axiosInstance from "../api/axiosInstance";
+import {
+  buildCreatePrivateLeagueRequest,
+  buildJoinLeagueRequest,
+} from "../api/privateLeagueRequests";
 import { useError } from "../components/providers&context/ErrorProvider";
 import { User } from "../types";
 import { useNavigate } from "react-router-dom";
@@ -105,9 +109,10 @@ const LeaguesSelectionPage: React.FC = () => {
   const handleShowJoinLeague = () => setShowJoinLeague(true);
   const joinLeagueMutation = useMutation({
     mutationFn: async (code: string) => {
-      const response = await axiosInstance.post(`/private-league/joinLeague`, {
-        code,
-      });
+      const response = await axiosInstance.post(
+        `/private-league/joinLeague`,
+        buildJoinLeagueRequest(code, selectedTournamentId),
+      );
       return response.data;
     },
     onSuccess: (data: any) => {
@@ -181,7 +186,10 @@ const LeaguesSelectionPage: React.FC = () => {
   const handleSubmitNewLeague = async () => {
     if (!leagueName) return showError(`Must enter a league name`);
     try {
-      await axiosInstance.post(`/private-league`, { name: leagueName });
+      await axiosInstance.post(
+        `/private-league`,
+        buildCreatePrivateLeagueRequest(leagueName, selectedTournamentId),
+      );
       showSuccessMessage(`${leagueName} created.`);
       setShowCreateNewLeague(false);
 
