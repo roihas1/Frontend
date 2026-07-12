@@ -33,7 +33,7 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
     <ErrorContext.Provider value={{ showError }}>
       {children}
       {open && error && (
-        <div className="fixed top-4 right-4 z-50 max-w-xs w-full p-4 mb-4 text-sm text-colors-nba-red border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800">
+        <div role="alert" className="fixed top-4 right-4 z-50 max-w-xs w-full p-4 mb-4 text-sm text-colors-nba-red border border-red-300 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400 dark:border-red-800">
           <div className="flex items-start justify-between">
             {/* Error Message */}
             <div className="flex-1 space-y-1">

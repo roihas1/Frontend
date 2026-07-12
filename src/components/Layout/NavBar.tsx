@@ -200,6 +200,9 @@ const Navbar: React.FC = () => {
         <div className="xl:hidden flex items-center gap-2">
           {renderTournamentPicker("mobile")}
           <button
+            type="button"
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
             className="p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
@@ -252,6 +255,8 @@ const Navbar: React.FC = () => {
       >
         <div className="flex flex-col h-full p-6 space-y-6">
           <button
+            type="button"
+            aria-label="Close menu"
             onClick={() => setIsMenuOpen(false)}
             className="self-end text-gray-600 text-2xl hover:text-black"
           >

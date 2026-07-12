@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
 import { Zoom } from "@mui/material";
 import TeamDialog from "../form/TeamDialog";
-import { Series } from "../../pages/HomePage";
+import { Series, getSeriesStartAt } from "../../pages/HomePage";
 
 interface MobileSeriesCardProps {
   series: Series;
   userPoints: number;
-  isGuessComplete?: boolean;
+  isGuessComplete: boolean;
   fetchData: () => void;
 }
 
@@ -56,13 +56,13 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
 
   const seriesScore = series.bestOf7BetId?.seriesScore ?? [0, 0];
   const [score1, score2] = seriesScore;
-  const hasStarted = new Date(series.dateOfStart) <= new Date();
+  const hasStarted = getSeriesStartAt(series) <= new Date();
   const isSeriesOver = (score1 ?? 0) >= 4 || (score2 ?? 0) >= 4;
   const winnerName = (score1 ?? 0) > (score2 ?? 0) ? series.team1 : series.team2;
   const isTied = (score1 ?? 0) === (score2 ?? 0);
   const leaderName =
     (score1 ?? 0) > (score2 ?? 0) ? series.team1 : series.team2;
-  const startDateLabel = new Date(series.dateOfStart).toLocaleString("he-IL", {
+  const startDateLabel = getSeriesStartAt(series).toLocaleString("he-IL", {
     timeZone: "Asia/Jerusalem",
   });
 
@@ -83,7 +83,7 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
   return (
     <>
       <div
-        className="relative mb-2 rounded-xl overflow-hidden border border-gray-200 shadow-sm cursor-pointer transition active:bg-gray-50"
+        className="relative mb-2 rounded-xl overflow-hidden border border-gray-200 shadow-sm cursor-pointer transition active:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-colors-nba-blue"
         onClick={openDialog}
         role="button"
         tabIndex={0}
@@ -132,12 +132,12 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
           {/* Center: status, points / CTA, guess icon */}
           <div className="flex flex-col items-center justify-center gap-1 text-center shrink-0 px-1">
             <span
-              className={`font-extrabold leading-tight whitespace-nowrap ${
+              className={`font-extrabold leading-tight ${
                 hasStarted
                   ? isSeriesOver
                     ? "text-sm uppercase text-colors-nba-blue"
                     : "text-sm text-gray-900"
-                  : "text-[11px] font-semibold text-gray-600"
+                  : "text-xs font-semibold text-gray-600"
               }`}
             >
               {statusText}
@@ -148,34 +148,32 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
                 +{userPoints} pts
               </span>
             ) : (
-              <span className="text-[10px] text-gray-400">Tap to set picks</span>
+              <span className="text-xs text-gray-400">Tap to set picks</span>
             )}
 
-            {typeof isGuessComplete !== "undefined" && (
-              <Tooltip
-                title={isGuessComplete ? "Guessed all" : "Missing guesses"}
-                arrow
-                placement="bottom"
-                enterTouchDelay={0}
-                leaveTouchDelay={2000}
-                slots={{ transition: Zoom }}
+            <Tooltip
+              title={isGuessComplete ? "Guessed all" : "Missing guesses"}
+              arrow
+              placement="bottom"
+              enterTouchDelay={0}
+              leaveTouchDelay={2000}
+              slots={{ transition: Zoom }}
+            >
+              <div
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold cursor-default ${
+                  isGuessComplete
+                    ? "bg-green-50 text-green-700"
+                    : "bg-yellow-50 text-yellow-800"
+                }`}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold cursor-default ${
-                    isGuessComplete
-                      ? "bg-green-50 text-green-700"
-                      : "bg-yellow-50 text-yellow-800"
-                  }`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <GuessStatusIcon
-                    isGuessComplete={isGuessComplete}
-                    className="w-3.5 h-3.5"
-                  />
-                  {isGuessComplete ? "Complete" : "Missing picks"}
-                </div>
-              </Tooltip>
-            )}
+                <GuessStatusIcon
+                  isGuessComplete={isGuessComplete}
+                  className="w-3.5 h-3.5"
+                />
+                {isGuessComplete ? "Complete" : "Missing picks"}
+              </div>
+            </Tooltip>
           </div>
 
           {/* Team 2 */}

@@ -598,10 +598,10 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           <button
             type="button"
             onClick={closeDialog}
-            className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white absolute top-4 right-4"
+            className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-10 h-10 sm:w-8 sm:h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white absolute top-4 right-4"
           >
             <svg
-              className="w-3 h-3"
+              className="w-4 h-4 sm:w-3 sm:h-3"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -630,7 +630,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             {/* Team 1 Logo */}
             <img
               src={series.logo1}
-              alt={`${series.logo1} logo`}
+              alt={series.team1 ?? "Team 1"}
               className="h-16 w-1/5 sm:h-20 sm:w-1/5 object-contain"
             />
 
@@ -675,7 +675,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             {/* Team 2 Logo */}
             <img
               src={series.logo2}
-              alt={`${series.logo2} logo`}
+              alt={series.team2 ?? "Team 2"}
               className="h-16 w-1/5 sm:h-20 sm:w-1/5 object-contain"
             />
           </div>
@@ -687,7 +687,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
             </h4>
             <div className="flex justify-center mb-4">
               <select
-                className="p-2 border w-1/5 text-colors-nba-blue border-colors-nba-blue rounded-lg"
+                className="p-3 sm:p-2 border w-full max-w-[120px] sm:w-1/5 text-colors-nba-blue border-colors-nba-blue rounded-lg text-base sm:text-sm"
                 value={selectedNumberOfGames}
                 onChange={handleNumberOfGamesSelection}
                 disabled={isStartDatePassed}

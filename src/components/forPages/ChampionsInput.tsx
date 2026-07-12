@@ -715,7 +715,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
             </div>
           )}
         {validationError && (
-          <div className="text-red-600 font-medium text-center my-2">
+          <div role="alert" className="text-red-600 font-medium text-center my-2">
             {validationError}
           </div>
         )}

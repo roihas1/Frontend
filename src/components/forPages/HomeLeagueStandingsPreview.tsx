@@ -118,31 +118,37 @@ function PreviewBody({
               Private
             </h3>
             <ul className="flex flex-col gap-2">
-              {privateLeagues.map((league) => (
-                <li key={league.id}>
-                  <Link
-                    to="/league"
-                    state={{ league: { id: league.id, name: league.name } }}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 active:bg-gray-100"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm truncate">
-                        {league.name}
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        <span className="tabular-nums">
-                          {league.totalPoints}
-                        </span>{" "}
-                        pts
-                      </p>
-                    </div>
-                    <span className="text-base font-semibold text-colors-nba-blue tabular-nums shrink-0">
-                      #{league.position}
-                    </span>
-                    <ChevronRightIcon className="size-4 text-gray-400 shrink-0" />
-                  </Link>
+              {privateLeagues.length === 0 ? (
+                <li className="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-600">
+                  No private leagues yet
                 </li>
-              ))}
+              ) : (
+                privateLeagues.map((league) => (
+                  <li key={league.id}>
+                    <Link
+                      to="/league"
+                      state={{ league: { id: league.id, name: league.name } }}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 active:bg-gray-100"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-gray-900 text-sm truncate">
+                          {league.name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          <span className="tabular-nums">
+                            {league.totalPoints}
+                          </span>{" "}
+                          pts
+                        </p>
+                      </div>
+                      <span className="text-base font-semibold text-colors-nba-blue tabular-nums shrink-0">
+                        #{league.position}
+                      </span>
+                      <ChevronRightIcon className="size-4 text-gray-400 shrink-0" />
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
             <Link
               to="/leagues"
@@ -166,7 +172,7 @@ function PreviewBody({
       </h2>
 
       <div className="rounded-xl border border-indigo-200 bg-indigo-50/90 px-3 py-3 shadow-sm">
-        <span className="text-[10px] font-semibold uppercase text-indigo-900/80 block mb-1">
+        <span className="text-xs font-semibold uppercase text-indigo-900/80 block mb-1">
           {globalLabel}
         </span>
         <div className="flex items-baseline gap-2 flex-wrap">
@@ -180,34 +186,40 @@ function PreviewBody({
       </div>
 
       <div>
-        <h3 className="text-[10px] font-semibold text-gray-500 uppercase mb-2 px-0.5">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 px-0.5">
           Private
         </h3>
         <ul className="flex flex-col gap-2 max-h-[min(40vh,320px)] overflow-y-auto pr-0.5">
-          {privateLeagues.map((league) => (
-            <li key={league.id}>
-              <Link
-                to="/league"
-                state={{ league: { id: league.id, name: league.name } }}
-                className="block rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-sm hover:border-gray-300 hover:bg-gray-50/90 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <p className="font-medium text-gray-900 text-xs leading-snug line-clamp-2 flex-1 min-w-0">
-                    {league.name}
-                  </p>
-                  <ChevronRightIcon className="size-3.5 text-gray-400 shrink-0 mt-0.5" />
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-semibold text-colors-nba-blue tabular-nums leading-none">
-                    #{league.position}
-                  </span>
-                  <span className="text-[11px] text-gray-600 tabular-nums">
-                    {league.totalPoints} pts
-                  </span>
-                </div>
-              </Link>
+          {privateLeagues.length === 0 ? (
+            <li className="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-2.5 py-2 text-xs text-gray-600">
+              No private leagues yet
             </li>
-          ))}
+          ) : (
+            privateLeagues.map((league) => (
+              <li key={league.id}>
+                <Link
+                  to="/league"
+                  state={{ league: { id: league.id, name: league.name } }}
+                  className="block rounded-lg border border-gray-200 bg-white px-2.5 py-2 shadow-sm hover:border-gray-300 hover:bg-gray-50/90 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-1">
+                    <p className="font-medium text-gray-900 text-xs leading-snug line-clamp-2 flex-1 min-w-0">
+                      {league.name}
+                    </p>
+                    <ChevronRightIcon className="size-3.5 text-gray-400 shrink-0 mt-0.5" />
+                  </div>
+                  <div className="mt-1 flex items-baseline justify-between gap-2">
+                    <span className="text-lg font-semibold text-colors-nba-blue tabular-nums leading-none">
+                      #{league.position}
+                    </span>
+                    <span className="text-xs text-gray-600 tabular-nums">
+                      {league.totalPoints} pts
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
       </div>
 

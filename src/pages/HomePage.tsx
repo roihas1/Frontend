@@ -210,6 +210,13 @@ function parseLeagueStandingsPreview(
   };
 }
 
+export function getSeriesStartAt(series: Series): Date {
+  const start = new Date(series.dateOfStart);
+  const [hours, minutes] = series.timeOfStart.split(":");
+  start.setHours(parseInt(hours, 10) || 0, parseInt(minutes, 10) || 0, 0, 0);
+  return start;
+}
+
 const HomePage: React.FC = () => {
   const { showError } = useError();
   const [series, setSeries] = useState<{
@@ -227,10 +234,11 @@ const HomePage: React.FC = () => {
   const [userPointsPerSeries, setUserPointsPerSeries] = useState<{
     [key: string]: number;
   } | null>(null);
-  const [isPartialGuess, setIspartialGuess] = useState<{
+  const [isGuessCompleteBySeries, setIsGuessCompleteBySeries] = useState<{
     [key: string]: boolean;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
   const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
@@ -260,27 +268,23 @@ const HomePage: React.FC = () => {
   const checkIfGuessSeriesBetting = async () => {
     try {
       const response = await axiosInstance.get(`series/isUserGuessed/All`);
-      setIspartialGuess(response.data);
+      setIsGuessCompleteBySeries(response.data);
     } catch (error) {
       showError(`Failed to check guesses ${error}`);
     }
   };
-  // checkTokenExpiration();
-  useEffect(() => {
-    if (stage && stage != "Finish" && selectedTournamentId) {
-      checkIfGuessed();
-    }
-  }, [stage, selectedTournamentId]);
 
-  useEffect(() => {
-    const fetchHomepageData = async () => {
-      if (!selectedTournamentId) {
-        setStandingsPreviewFromHomeLoad({ data: null, loading: false });
-        return;
-      }
-      setLoading(true);
-      setStandingsPreviewFromHomeLoad({ data: null, loading: true });
-      try {
+  const isSeriesGuessComplete = (id?: string) => Boolean(id && isGuessCompleteBySeries[id]);
+
+  const fetchHomepageData = async () => {
+    if (!selectedTournamentId) {
+      setStandingsPreviewFromHomeLoad({ data: null, loading: false });
+      return;
+    }
+    setLoading(true);
+    setLoadError(null);
+    setStandingsPreviewFromHomeLoad({ data: null, loading: true });
+    try {
         const response = await axiosInstance.get("/home-page/load");
         const {
           userGuessedAll,
@@ -356,7 +360,7 @@ const HomePage: React.FC = () => {
 
         setSeries(updatedSeries);
         setUserPointsPerSeries(userPoints);
-        setIspartialGuess(userGuessedAll);
+        setIsGuessCompleteBySeries(userGuessedAll);
 
         const stages: Stage[] = Array.isArray(playoffsStages)
           ? playoffsStages
@@ -391,14 +395,24 @@ const HomePage: React.FC = () => {
         }
 
         setLoading(false);
-      } catch (error) {
-        console.log(error);
-        showError("Failed to load homepage data.");
-        setStandingsPreviewFromHomeLoad({ data: null, loading: false });
-        setLoading(false);
-      }
-    };
+    } catch (error) {
+      console.log(error);
+      const message = "Failed to load homepage data.";
+      showError(message);
+      setLoadError(message);
+      setStandingsPreviewFromHomeLoad({ data: null, loading: false });
+      setLoading(false);
+    }
+  };
 
+  // checkTokenExpiration();
+  useEffect(() => {
+    if (stage && stage != "Finish" && selectedTournamentId) {
+      checkIfGuessed();
+    }
+  }, [stage, selectedTournamentId]);
+
+  useEffect(() => {
     fetchHomepageData();
     return () => {
       setStandingsPreviewFromHomeLoad({ data: null, loading: true });
@@ -506,9 +520,9 @@ const HomePage: React.FC = () => {
           {placeholderCount === 1 && !positionToPlace && placeholders}
           <div className="flex flex-col justify-around">
             {sortedMatchups.map((matchup, idx) => {
-              const time = matchup.timeOfStart.split(":");
-              matchup.dateOfStart.setHours(parseInt(time[0]));
-              matchup.dateOfStart.setMinutes(parseInt(time[0]));
+              const seriesStartAt = getSeriesStartAt(matchup);
+              const hasSeriesStarted = new Date() > seriesStartAt;
+              const guessComplete = isSeriesGuessComplete(matchup.id);
 
               return (
                 <div
@@ -524,7 +538,7 @@ const HomePage: React.FC = () => {
                  `}
                 >
                   {/* Info Icon Outside of the Border */}
-                  {new Date() > matchup.dateOfStart && userPointsPerSeries && (
+                  {hasSeriesStarted && userPointsPerSeries && (
                     <Tooltip
                       title="Points per Series"
                       slots={{
@@ -539,7 +553,7 @@ const HomePage: React.FC = () => {
                     </Tooltip>
                   )}
 
-                  {!isPartialGuess[matchup.id ?? ""] ? (
+                  {!guessComplete ? (
                     <div className="absolute top-[-24px]  transform mb-4 ">
                       <Tooltip
                         title="Missing guesses"
@@ -595,7 +609,7 @@ const HomePage: React.FC = () => {
                   {/* Matchup Container with Border */}
                   <div
                     className={`${
-                      new Date() > matchup.dateOfStart
+                      hasSeriesStarted
                         ? "border-4 border-colors-nba-red"
                         : "border-4 border-colors-select-bet"
                     } rounded-xl mb-2 `}
@@ -681,32 +695,52 @@ const HomePage: React.FC = () => {
   const mobileMatchups = [...series.west, ...series.east, ...series.finals];
   const now = new Date();
   const missingSeriesPicks = mobileMatchups.filter(
-    (matchup) => matchup.id && isPartialGuess[matchup.id] === false,
+    (matchup) => matchup.id && !isSeriesGuessComplete(matchup.id),
   ).length;
   const totalSeriesPoints = Object.values(userPointsPerSeries ?? {}).reduce(
     (sum, points) => sum + points,
     0,
   );
   const nextSeriesStart = mobileMatchups
-    .filter((matchup) => new Date(matchup.dateOfStart) > now)
-    .sort(
-      (a, b) =>
-        new Date(a.dateOfStart).getTime() - new Date(b.dateOfStart).getTime(),
-    )[0]?.dateOfStart;
+    .map((matchup) => getSeriesStartAt(matchup))
+    .filter((startAt) => startAt > now)
+    .sort((a, b) => a.getTime() - b.getTime())[0];
   const nextSeriesStartLabel = nextSeriesStart
-    ? new Date(nextSeriesStart).toLocaleString("he-IL", {
+    ? nextSeriesStart.toLocaleString("he-IL", {
         timeZone: "Asia/Jerusalem",
       })
     : null;
 
   return (
-    <div className="relative z-10 bg-gray-100 px-4 pb-4 pt-2 md:p-4">
+    <div className="relative z-10 bg-gray-100 px-0 pb-4 pt-2 md:p-4">
+      <h1 className="sr-only">Playoff bracket</h1>
+
       {/* Mobile View */}
 
       <div className="md:hidden">
+        {loadError && (
+          <div
+            className="mb-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            role="alert"
+          >
+            <p className="font-medium">{loadError}</p>
+            <button
+              type="button"
+              onClick={fetchHomepageData}
+              className="mt-2 rounded-lg bg-colors-nba-blue px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {mobileMatchups.length > 0 && (
           <div className="mb-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-            <div className="flex flex-wrap gap-2 justify-center">
+            <div
+              className="flex flex-wrap gap-2 justify-center"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <span
                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                   missingSeriesPicks > 0
@@ -730,11 +764,13 @@ const HomePage: React.FC = () => {
           <>
             <div className="flex justify-center">
               <button
+                type="button"
+                aria-expanded={showMobileChampInput}
                 className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-3 tracking-wide
       ${
         hasGuessedChampions
           ? "bg-white border border-colors-nba-blue/25 text-colors-nba-blue shadow-md shadow-blue-900/10 active:scale-[0.97] active:bg-blue-50"
-          : "bg-colors-nba-yellow text-black shadow-lg shadow-yellow-500/25 ring-1 ring-yellow-500/40 animate-scale-pulse active:scale-[0.97]"
+          : "bg-colors-nba-yellow text-black shadow-lg shadow-yellow-500/25 ring-1 ring-yellow-500/40 animate-scale-pulse motion-reduce:animate-none active:scale-[0.97]"
       }
     `}
                 onClick={() => setShowMobileChampInput(true)}
@@ -873,6 +909,13 @@ const HomePage: React.FC = () => {
           <div className="mb-3 px-2">{championsStagesEmptyState}</div>
         )}
 
+        {mobileMatchups.length === 0 && !loadError && (
+          <div className="mb-4 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-600">
+            <p className="font-semibold text-gray-800 mb-1">No series yet</p>
+            <p>Playoff matchups will appear here once they are created.</p>
+          </div>
+        )}
+
         {[
           "NBA Finals",
           "Conference Finals",
@@ -929,7 +972,7 @@ const HomePage: React.FC = () => {
                           userPoints={
                             userPointsPerSeries?.[matchup.id ?? ""] ?? 0
                           }
-                          isGuessComplete={isPartialGuess[matchup.id ?? ""]}
+                          isGuessComplete={isSeriesGuessComplete(matchup.id)}
                           fetchData={checkIfGuessSeriesBetting}
                         />
                       ))}
@@ -960,22 +1003,25 @@ const HomePage: React.FC = () => {
                 </div>
               )}
               {!showInput && (
-                <div
-                  className="flex-none md:w-10 relative cursor-pointer h-10"
-                  onClick={() => setShowInput(true)}
+                <Tooltip
+                  title="Champions betting"
+                  slots={{
+                    transition: Zoom,
+                  }}
+                  arrow
+                  sx={{
+                    "& .MuiTooltip-tooltip": {
+                      backgroundColor: "#1D428A",
+                      color: "rgba(0, 0, 0, 0.87)",
+                    },
+                  }}
                 >
-                  <Tooltip
-                    title="Champions betting"
-                    slots={{
-                      transition: Zoom,
-                    }}
-                    arrow
-                    sx={{
-                      "& .MuiTooltip-tooltip": {
-                        backgroundColor: "#1D428A", // Tooltip background color
-                        color: "rgba(0, 0, 0, 0.87)", // Tooltip text color
-                      },
-                    }}
+                  <button
+                    type="button"
+                    aria-label="Open champions betting"
+                    aria-expanded={showInput}
+                    onClick={() => setShowInput(true)}
+                    className="flex-none md:w-10 relative h-10 inline-flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-colors-nba-blue"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -984,6 +1030,7 @@ const HomePage: React.FC = () => {
                       strokeWidth="1.5"
                       stroke="currentColor"
                       className="size-6"
+                      aria-hidden
                     >
                       <path
                         strokeLinecap="round"
@@ -991,8 +1038,8 @@ const HomePage: React.FC = () => {
                         d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
                       />
                     </svg>
-                  </Tooltip>
-                </div>
+                  </button>
+                </Tooltip>
               )}
             </>
           ) : (
