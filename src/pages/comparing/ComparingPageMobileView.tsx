@@ -67,6 +67,8 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
     handleLeagueSelection,
     handleSeriesSelection,
     handleSelectionUsers,
+    overallAutocompleteOptions,
+    handleSearchInputChange,
     handleClearSelectedUsers,
     handleRemoveUser,
     getFantasyPoints,
@@ -304,8 +306,12 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
         <Autocomplete
           multiple
           limitTags={2}
-          options={Object.values(users)}
+          options={overallAutocompleteOptions}
           disableCloseOnSelect
+          blurOnSelect={false}
+          openOnFocus={overallAutocompleteOptions.length > 0}
+          filterOptions={(x) => x}
+          onInputChange={handleSearchInputChange}
           getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
           value={selectedUserIds
             .map((id) => Object.values(users).find((u) => u.id === id)!)

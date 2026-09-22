@@ -36,6 +36,15 @@ export type UserChampGuessesMap = {
   };
 };
 
+type ComparisonSeriesCatalogEntry = {
+  id: string;
+  team1: string;
+  team2: string;
+  round: string;
+  startDate: string;
+  timeOfStart: string;
+};
+
 export function useComparingPageModel() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -73,6 +82,7 @@ export function useComparingPageModel() {
   const selectedUsersRef = useRef(selectedUsers);
   /** Prevents repeated init + GET /private-league/.../users when callbacks churn after overrideUsers loads. */
   const comparisonSecondUserInitRef = useRef<string | undefined>(undefined);
+  const defaultLeagueInitRef = useRef(false);
   const inFlightChampRefetchesRef = useRef<Set<string>>(new Set());
 
   const queryClient = useQueryClient();
@@ -96,18 +106,37 @@ export function useComparingPageModel() {
     gcTime: 5 * 60 * 1000,
   });
 
-  const allSeriesBets = useMemo((): Record<string, SeriesBetsWithSchedule> => {
-    const raw = comparisonData?.allBets as
-      | Record<string, Record<string, unknown>>
-      | undefined;
-    if (!raw) return {};
-    return Object.fromEntries(
-      Object.entries(raw).map(([id, entry]) => [
-        id,
-        normalizeComparisonBetsEntry(entry),
-      ]),
-    ) as Record<string, SeriesBetsWithSchedule>;
+  const seriesCatalog = useMemo((): ComparisonSeriesCatalogEntry[] => {
+    const raw = comparisonData?.seriesCatalog;
+    return Array.isArray(raw) ? (raw as ComparisonSeriesCatalogEntry[]) : [];
   }, [comparisonData]);
+
+  const {
+    data: selectedSeriesBetsRaw,
+    isLoading: isLoadingSeriesBets,
+    isFetching: isFetchingSeriesBets,
+    isFetched: isSeriesBetsFetched,
+  } = useQuery({
+    queryKey: ["series-bets", selectedSeries, selectedTournamentId],
+    queryFn: async () => {
+      const response = await axiosInstance.get(`/series/${selectedSeries}/bets`);
+      return response.data;
+    },
+    enabled: Boolean(selectedSeries) && Boolean(selectedTournamentId),
+    staleTime: 3 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const allSeriesBets = useMemo((): Record<string, SeriesBetsWithSchedule> => {
+    if (!selectedSeries || !selectedSeriesBetsRaw) {
+      return {};
+    }
+    return {
+      [selectedSeries]: normalizeComparisonBetsEntry(
+        selectedSeriesBetsRaw as Record<string, unknown>,
+      ),
+    };
+  }, [selectedSeries, selectedSeriesBetsRaw]);
 
   useEffect(() => {
     if (isComparisonError) {
@@ -125,34 +154,37 @@ export function useComparingPageModel() {
   } | null>(null);
 
   const users = useMemo(() => {
-    if (overrideUsers) return overrideUsers;
-    if (!comparisonData?.allUsers) return {};
-    const userMap: { [key: string]: User } = {};
-    comparisonData.allUsers.forEach((user: User) => {
-      userMap[user.id] = user;
-    });
-    return userMap;
-  }, [comparisonData, overrideUsers]);
+    const base: { [key: string]: User } = {};
+    if (currentUser) {
+      base[currentUser.id] = currentUser;
+    }
+    if (overrideUsers) {
+      return { ...base, ...overrideUsers };
+    }
+    return base;
+  }, [currentUser, overrideUsers]);
 
   const series = useMemo(() => {
     const result: { [key: string]: string } = {};
-    for (const [key, value] of Object.entries(allSeriesBets)) {
-      const timeOfStart = value.timeOfStart;
-      if (!value.startDate || !timeOfStart) continue;
-
-      const [hours, minutes] = timeOfStart.split(":").map(Number);
-      const dateWithTime = new Date(value.startDate);
-      dateWithTime.setHours(hours);
-      dateWithTime.setMinutes(minutes);
-      dateWithTime.setSeconds(0);
-      dateWithTime.setMilliseconds(0);
-
-      if (dateWithTime < new Date()) {
-        result[key] = `${value.team1} vs ${value.team2} (${value.round})`;
-      }
+    for (const entry of seriesCatalog) {
+      result[entry.id] = `${entry.team1} vs ${entry.team2} (${entry.round})`;
     }
     return result;
-  }, [allSeriesBets]);
+  }, [seriesCatalog]);
+
+  const overallAutocompleteOptions = useMemo(() => {
+    const byId = new Map<string, User>();
+    for (const user of searchResults) {
+      byId.set(user.id, user);
+    }
+    for (const userId of Object.keys(selectedUsers)) {
+      const user = users[userId];
+      if (user && !byId.has(userId)) {
+        byId.set(userId, user);
+      }
+    }
+    return Array.from(byId.values());
+  }, [searchResults, selectedUsers, users]);
 
   const passedStages = useMemo(
     () => comparisonData?.passedStages || [],
@@ -183,7 +215,6 @@ export function useComparingPageModel() {
       debounce(async (query: string) => {
         try {
           if (query.trim().length < 2) {
-            setSearchResults([]);
             return;
           }
           const response = await axiosInstance.get(`/auth/search`, {
@@ -224,6 +255,20 @@ export function useComparingPageModel() {
     [debouncedSearch],
   );
 
+  const handleSearchInputChange = useCallback(
+    (
+      _event: React.SyntheticEvent,
+      value: string,
+      reason: "input" | "reset" | "clear",
+    ) => {
+      if (reason === "reset") {
+        return;
+      }
+      debouncedSearch(value);
+    },
+    [debouncedSearch],
+  );
+
   const loadLeagueUsers = useCallback(
     async (leagueArg: League) => {
       const shouldPreserveSelectedUsers = showChampSelection;
@@ -247,15 +292,9 @@ export function useComparingPageModel() {
           nextUsers = allUsers;
           setOverrideUsers(allUsers);
         } else {
-          const allComparisonUsers = (comparisonData?.allUsers as User[] | undefined) ?? [];
-          nextUsers = allComparisonUsers.reduce(
-            (acc, user) => {
-              acc[user.id] = user;
-              return acc;
-            },
-            {} as { [key: string]: User },
-          );
+          nextUsers = currentUser ? { [currentUser.id]: currentUser } : {};
           setOverrideUsers(nextUsers);
+          setSearchResults([]);
         }
 
         if (shouldPreserveSelectedUsers) {
@@ -281,7 +320,6 @@ export function useComparingPageModel() {
       showChampSelection,
       selectedUsers,
       currentUser,
-      comparisonData,
       showError,
     ],
   );
@@ -289,9 +327,25 @@ export function useComparingPageModel() {
   const handleUserSelection = useCallback(
     async (userId: string, seriesId?: string, forceRefetch = false) => {
       const selectedUsersSnapshot = selectedUsersRef.current;
-      if (!allSeriesBets || Object.keys(allSeriesBets).length === 0) {
-        showError(`No series bets available yet.`);
-        return;
+      const effectiveSeriesIdForBets = seriesId ?? selectedSeries;
+      if (
+        showSeriesSelection &&
+        effectiveSeriesIdForBets &&
+        !allSeriesBets[effectiveSeriesIdForBets]
+      ) {
+        // Explicit seriesId (series switch): guess fetch does not need bets in memory yet.
+        if (!seriesId) {
+          const waitingForSeriesBetsQuery =
+            effectiveSeriesIdForBets === selectedSeries &&
+            (isLoadingSeriesBets ||
+              isFetchingSeriesBets ||
+              !isSeriesBetsFetched);
+          if (waitingForSeriesBetsQuery) {
+            return;
+          }
+          showError(`No series bets available yet.`);
+          return;
+        }
       }
       const addingNew = !(userId in selectedUsersSnapshot);
       if (
@@ -433,65 +487,73 @@ export function useComparingPageModel() {
       selectedStage,
       selectedTournamentId,
       queryClient,
+      isLoadingSeriesBets,
+      isFetchingSeriesBets,
+      isSeriesBetsFetched,
     ],
   );
 
   useEffect(() => {
     if (
       !isCurrentUserSelected.current &&
-      allSeriesBets &&
-      Object.keys(allSeriesBets).length > 0 &&
+      selectedSeries &&
+      allSeriesBets[selectedSeries] &&
       currentUser?.id
     ) {
       void handleUserSelection(currentUser.id);
     }
-  }, [currentUser?.id, allSeriesBets, handleUserSelection]);
+  }, [currentUser?.id, selectedSeries, allSeriesBets, handleUserSelection]);
+
+  useEffect(() => {
+    if (isLoadingComparison || !comparisonData || defaultLeagueInitRef.current) {
+      return;
+    }
+    defaultLeagueInitRef.current = true;
+    const targetLeague =
+      league ??
+      (comparisonData.userLeagues?.[0] as League | undefined);
+    if (targetLeague) {
+      void loadLeagueUsers(targetLeague);
+    }
+  }, [isLoadingComparison, comparisonData, league, loadLeagueUsers]);
+
+  useEffect(() => {
+    if (!showSeriesSelection || !seriesCatalog.length || selectedSeries) {
+      return;
+    }
+    const first = seriesCatalog[0];
+    setSelectedSeries(first.id);
+    setSelectedSeriesName(`${first.team1} vs ${first.team2} (${first.round})`);
+  }, [showSeriesSelection, seriesCatalog, selectedSeries]);
 
   const setInitialsComprison = useCallback(async () => {
     setIsLoadingInitial(true);
-    let seriesKey = "";
-    if (!series || Object.keys(series).length === 0) {
+    const firstCatalog = seriesCatalog[0];
+    if (!firstCatalog) {
       showError(`No Series has Ended`);
       setIsLoadingInitial(false);
       return;
     }
-    for (const key of Object.keys(allSeriesBets)) {
-      const seriesEntry = allSeriesBets[key];
-      if (!seriesEntry.startDate || !seriesEntry.timeOfStart) continue;
+    const seriesKey = firstCatalog.id;
+    setSelectedSeries(seriesKey);
+    setSelectedSeriesName(
+      `${firstCatalog.team1} vs ${firstCatalog.team2} (${firstCatalog.round})`,
+    );
+    setShowSeriesSelection(true);
 
-      const [hours, minutes] = seriesEntry.timeOfStart.split(":").map(Number);
-      const dateWithTime = new Date(seriesEntry.startDate);
-      dateWithTime.setHours(hours);
-      dateWithTime.setMinutes(minutes);
-      dateWithTime.setSeconds(0);
-      dateWithTime.setMilliseconds(0);
-
-      if (dateWithTime < new Date()) {
-        seriesKey = key;
-        setSelectedSeries(key);
-        setSelectedSeriesName(
-          `${seriesEntry.team1} vs ${seriesEntry.team2} (${seriesEntry.round})`,
-        );
-        setShowSeriesSelection(true);
-        break;
-      }
-    }
     if (league) {
       await loadLeagueUsers(league);
     }
 
-    if (allSeriesBets) {
-      await Promise.all([
-        handleUserSelection(currentUser?.id ?? "", seriesKey),
-        secondUserId
-          ? handleUserSelection(secondUserId, seriesKey)
-          : Promise.resolve(),
-      ]);
-    }
+    await Promise.all([
+      handleUserSelection(currentUser?.id ?? "", seriesKey),
+      secondUserId
+        ? handleUserSelection(secondUserId, seriesKey)
+        : Promise.resolve(),
+    ]);
     setIsLoadingInitial(false);
   }, [
-    series,
-    allSeriesBets,
+    seriesCatalog,
     league,
     loadLeagueUsers,
     handleUserSelection,
@@ -502,20 +564,29 @@ export function useComparingPageModel() {
 
   useEffect(() => {
     comparisonSecondUserInitRef.current = undefined;
+    defaultLeagueInitRef.current = false;
   }, [secondUserId, selectedTournamentId]);
 
   useEffect(() => {
     if (
       !isLoadingComparison &&
-      allSeriesBets &&
-      Object.keys(allSeriesBets).length > 0 &&
+      seriesCatalog.length > 0 &&
+      selectedSeries &&
+      selectedSeriesBetsRaw &&
       secondUserId &&
       comparisonSecondUserInitRef.current !== secondUserId
     ) {
       comparisonSecondUserInitRef.current = secondUserId;
       void setInitialsComprison();
     }
-  }, [isLoadingComparison, allSeriesBets, secondUserId, setInitialsComprison]);
+  }, [
+    isLoadingComparison,
+    seriesCatalog,
+    selectedSeries,
+    selectedSeriesBetsRaw,
+    secondUserId,
+    setInitialsComprison,
+  ]);
 
   const removeUser = (obj: { [key: string]: string }, keyToRemove: string) => {
     const { [keyToRemove]: removedUser, ...newObj } = obj;
@@ -694,7 +765,8 @@ export function useComparingPageModel() {
     [series, selectedUsers, handleUserSelection],
   );
 
-  const pageLoading = loading || isLoadingComparison;
+  const pageLoading =
+    loading || isLoadingComparison || (Boolean(selectedSeries) && isLoadingSeriesBets);
 
   return {
     isMobile,
@@ -715,6 +787,7 @@ export function useComparingPageModel() {
     usersGuesses,
     userChampGuesses,
     searchResults,
+    overallAutocompleteOptions,
     comparisonType,
     betsType,
     showSeriesSelection,
@@ -731,6 +804,7 @@ export function useComparingPageModel() {
     handleSeriesSelection,
     handleSelectionUsers,
     handleSearchChange,
+    handleSearchInputChange,
     handleClearSelectedUsers,
     handleRemoveUser,
     getFantasyPoints,

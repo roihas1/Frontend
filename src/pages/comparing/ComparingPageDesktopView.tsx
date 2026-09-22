@@ -60,6 +60,8 @@ const ComparingPageDesktopView: React.FC<ComparingPageDesktopViewProps> = (
     handleLeagueSelection,
     handleSeriesSelection,
     handleSelectionUsers,
+    overallAutocompleteOptions,
+    handleSearchInputChange,
     handleClearSelectedUsers,
     handleRemoveUser,
     getFantasyPoints,
@@ -234,8 +236,12 @@ const ComparingPageDesktopView: React.FC<ComparingPageDesktopViewProps> = (
                 {selectedLeague?.name === "Overall" && (
                   <Autocomplete
                     multiple
-                    options={Object.values(users)}
+                    options={overallAutocompleteOptions}
                     disableCloseOnSelect
+                    blurOnSelect={false}
+                    openOnFocus={overallAutocompleteOptions.length > 0}
+                    filterOptions={(x) => x}
+                    onInputChange={handleSearchInputChange}
                     getOptionLabel={(option) =>
                       `${option.firstName} ${option.lastName}`
                     }
