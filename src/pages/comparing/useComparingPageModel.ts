@@ -19,6 +19,36 @@ import {
   SeriesBetsWithSchedule,
 } from "./comparisonNormalize";
 
+export type CompareNavigationUser = Pick<
+  User,
+  | "id"
+  | "username"
+  | "firstName"
+  | "lastName"
+  | "fantasyPoints"
+  | "championPoints"
+>;
+
+function compareNavUserToUser(partial: CompareNavigationUser): User {
+  return {
+    ...partial,
+    role: "",
+    email: "",
+    isActive: true,
+    bestOf7Guesses: [],
+    teamWinGuesses: [],
+    playerMatchupGuesses: [],
+  };
+}
+
+function formatUserDisplayName(user: User | undefined, userId: string): string {
+  if (!user) {
+    return userId;
+  }
+  const fullName = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim();
+  return fullName || user.username || userId;
+}
+
 export type UsersGuessesMap = {
   [key: string]: {
     bestOf7: Guess;
@@ -66,6 +96,9 @@ export function useComparingPageModel() {
   );
 
   const league = location.state?.league as League | undefined;
+  const compareTargetUser = location.state?.secondUser as
+    | CompareNavigationUser
+    | undefined;
   const [usersGuesses, setUsersGuesses] = useState<UsersGuessesMap>();
 
   const [open, setOpen] = useState<boolean>(false);
@@ -158,11 +191,14 @@ export function useComparingPageModel() {
     if (currentUser) {
       base[currentUser.id] = currentUser;
     }
+    if (compareTargetUser) {
+      base[compareTargetUser.id] = compareNavUserToUser(compareTargetUser);
+    }
     if (overrideUsers) {
       return { ...base, ...overrideUsers };
     }
     return base;
-  }, [currentUser, overrideUsers]);
+  }, [currentUser, overrideUsers, compareTargetUser]);
 
   const series = useMemo(() => {
     const result: { [key: string]: string } = {};
@@ -270,7 +306,10 @@ export function useComparingPageModel() {
   );
 
   const loadLeagueUsers = useCallback(
-    async (leagueArg: League) => {
+    async (
+      leagueArg: League,
+      extraUsers?: Record<string, User>,
+    ): Promise<Record<string, User>> => {
       const shouldPreserveSelectedUsers = showChampSelection;
       const previousSelectedUsers = selectedUsers;
       if (!shouldPreserveSelectedUsers) {
@@ -290,12 +329,16 @@ export function useComparingPageModel() {
             allUsers[user.id] = user;
           });
           nextUsers = allUsers;
-          setOverrideUsers(allUsers);
         } else {
           nextUsers = currentUser ? { [currentUser.id]: currentUser } : {};
-          setOverrideUsers(nextUsers);
           setSearchResults([]);
         }
+
+        if (extraUsers) {
+          nextUsers = { ...nextUsers, ...extraUsers };
+        }
+
+        setOverrideUsers(nextUsers);
 
         if (shouldPreserveSelectedUsers) {
           const nextSelectedUsers = Object.keys(previousSelectedUsers).reduce(
@@ -312,8 +355,11 @@ export function useComparingPageModel() {
             currentUser?.id && nextSelectedUsers[currentUser.id],
           );
         }
+
+        return nextUsers;
       } catch {
         showError("Server error.");
+        return {};
       }
     },
     [
@@ -325,7 +371,12 @@ export function useComparingPageModel() {
   );
 
   const handleUserSelection = useCallback(
-    async (userId: string, seriesId?: string, forceRefetch = false) => {
+    async (
+      userId: string,
+      seriesId?: string,
+      forceRefetch = false,
+      usersLookup?: Record<string, User>,
+    ) => {
       const selectedUsersSnapshot = selectedUsersRef.current;
       const effectiveSeriesIdForBets = seriesId ?? selectedSeries;
       if (
@@ -379,8 +430,9 @@ export function useComparingPageModel() {
 
       setIsLoadingUser(true);
       try {
-        const user = users[userId];
-        const name = `${user?.firstName} ${user?.lastName}`;
+        const lookup = usersLookup ?? users;
+        const user = lookup[userId];
+        const name = formatUserDisplayName(user, userId);
         const shouldForceRefetch = !!seriesId || forceRefetch;
 
         if (!(userId in selectedUsersSnapshot) || shouldForceRefetch) {
@@ -541,14 +593,28 @@ export function useComparingPageModel() {
     );
     setShowSeriesSelection(true);
 
+    const extraUsers =
+      compareTargetUser && secondUserId === compareTargetUser.id
+        ? { [compareTargetUser.id]: compareNavUserToUser(compareTargetUser) }
+        : undefined;
+
+    let usersLookup: Record<string, User> = {};
     if (league) {
-      await loadLeagueUsers(league);
+      usersLookup = await loadLeagueUsers(league, extraUsers);
+    } else if (extraUsers) {
+      usersLookup = extraUsers;
+      setOverrideUsers(extraUsers);
     }
 
     await Promise.all([
-      handleUserSelection(currentUser?.id ?? "", seriesKey),
+      handleUserSelection(
+        currentUser?.id ?? "",
+        seriesKey,
+        false,
+        usersLookup,
+      ),
       secondUserId
-        ? handleUserSelection(secondUserId, seriesKey)
+        ? handleUserSelection(secondUserId, seriesKey, false, usersLookup)
         : Promise.resolve(),
     ]);
     setIsLoadingInitial(false);
@@ -559,6 +625,7 @@ export function useComparingPageModel() {
     handleUserSelection,
     currentUser?.id,
     secondUserId,
+    compareTargetUser,
     showError,
   ]);
 

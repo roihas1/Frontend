@@ -39,11 +39,13 @@ export interface LeagueStandingsMyPlaceProps {
   /** Private league id, or `null` for overall (tournament-wide) standings. */
   leagueId: string | null;
   tournamentId?: string | null;
+  variant?: "mobile" | "desktop";
 }
 
 const LeagueStandingsMyPlace: React.FC<LeagueStandingsMyPlaceProps> = ({
   leagueId,
   tournamentId,
+  variant = "desktop",
 }) => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["auth-standings-me", leagueId ?? "overall", tournamentId ?? "ctx"],
@@ -76,11 +78,15 @@ const LeagueStandingsMyPlace: React.FC<LeagueStandingsMyPlaceProps> = ({
   if (isLoading) {
     return (
       <div
-        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 mb-4 min-h-[3.25rem] flex items-center"
+        className={`w-full rounded-xl border border-gray-200 bg-gray-50 px-4 flex items-center ${
+          variant === "mobile"
+            ? "py-4 mb-0 min-h-[4.5rem] shadow-sm"
+            : "py-3 mb-4 min-h-[3.25rem]"
+        }`}
         aria-busy="true"
         aria-label="Loading your league rank"
       >
-        <Skeleton variant="text" width="75%" height={28} />
+        <Skeleton variant="text" width="75%" height={variant === "mobile" ? 32 : 28} />
       </div>
     );
   }
@@ -113,13 +119,44 @@ const LeagueStandingsMyPlace: React.FC<LeagueStandingsMyPlaceProps> = ({
     );
   }
 
-  const { position, totalPoints } = data.data;
+  const { position, totalPoints, fantasyPoints, championPoints } = data.data;
+
+  if (variant === "mobile") {
+    return (
+      <div className="w-full rounded-xl border-2 border-colors-nba-blue bg-gradient-to-br from-indigo-50 to-white px-4 py-4 shadow-md">
+        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-900/70 mb-1">
+          Your place
+        </p>
+        <div className="flex items-end justify-between gap-3">
+          <span className="text-3xl font-bold text-colors-nba-blue tabular-nums leading-none">
+            #{position}
+          </span>
+          <div className="text-right">
+            <p className="text-lg font-semibold tabular-nums text-gray-900">
+              {totalPoints}{" "}
+              <span className="text-sm font-medium text-gray-600">pts</span>
+            </p>
+            <p className="text-xs text-gray-600 tabular-nums">
+              {fantasyPoints} playoff · {championPoints} champ
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full rounded-lg border border-indigo-200 bg-indigo-50/90 px-4 py-3 mb-4 shadow-sm">
+    <div className="w-full rounded-xl border border-indigo-200 bg-indigo-50/90 px-4 py-3 mb-4 shadow-sm">
       <p className="text-lg font-semibold flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className="text-colors-nba-blue">Your place: #{position}</span>
-        <span className="text-gray-800 font-medium">Total: {totalPoints}</span>
+        <span className="text-colors-nba-blue tabular-nums">
+          Your place: #{position}
+        </span>
+        <span className="text-gray-800 font-medium tabular-nums">
+          Total: {totalPoints}
+        </span>
+        <span className="text-sm text-gray-600 font-normal tabular-nums">
+          ({fantasyPoints} playoff · {championPoints} champ)
+        </span>
       </p>
     </div>
   );

@@ -395,9 +395,15 @@ const ComparingPageMobileView: React.FC<ComparingPageMobileViewProps> = (
                         You ·{" "}
                       </Typography>
                     )}
-                    {users[id]
-                      ? `${users[id].firstName} ${users[id].lastName}`
-                      : id}
+                    {(() => {
+                      const u = users[id];
+                      if (u) {
+                        const fullName =
+                          `${u.firstName} ${u.lastName}`.trim();
+                        return fullName || u.username;
+                      }
+                      return selectedUsers[id] ?? id;
+                    })()}
                     <Typography
                       component="span"
                       variant="caption"
