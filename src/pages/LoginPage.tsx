@@ -1,66 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import axiosInstance, {
-  resetSessionExpiryHandling,
-} from "../api/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 import { useError } from "../components/providers&context/ErrorProvider";
 import AuthCard from "../components/Layout/AuthCard";
 import FormInput from "../components/form/FormInput";
 import SubmitButton from "../components/common/SubmitButton";
 import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { useUser } from "../components/providers&context/userContext";
-import Cookies from "js-cookie";
 import Logo from "../assets/siteLogo/gray_trans.png"; // ✅ Logo added back
 import { Divider } from "@mui/material";
 import googleLogo from "../assets/logos/search.png";
 import { useAuth } from "../components/providers&context/AuthContext";
-import {
-  AUTH_EXPIRES_AT_KEY,
-  getOrCreateAuthTabId,
-  publishAuthSyncEvent,
-} from "../auth/sessionSync";
-
-const decodeJwtExpMs = (token: string): number | null => {
-  try {
-    // Read JWT expiry directly when available, so timer matches server token.
-    const payloadPart = token.split(".")[1];
-    if (!payloadPart) {
-      return null;
-    }
-    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-    const decoded = atob(padded);
-    const payload = JSON.parse(decoded) as { exp?: unknown };
-    if (typeof payload.exp === "number" && Number.isFinite(payload.exp)) {
-      return payload.exp * 1000;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-const parseExpiresInMs = (expiresIn: string): number => {
-  // Fallback for APIs that return relative expiry strings (e.g. "7d", "12h").
-  const trimmed = expiresIn.trim().toLowerCase();
-  if (trimmed.endsWith("d")) {
-    const days = Number(trimmed.slice(0, -1));
-    if (Number.isFinite(days)) {
-      return days * 24 * 60 * 60 * 1000;
-    }
-  }
-  if (trimmed.endsWith("h")) {
-    const hours = Number(trimmed.slice(0, -1));
-    if (Number.isFinite(hours)) {
-      return hours * 60 * 60 * 1000;
-    }
-  }
-  const numeric = Number(trimmed);
-  if (Number.isFinite(numeric)) {
-    return numeric * 1000;
-  }
-  return 0;
-};
+import { completeLoginSession } from "../auth/completeLoginSession";
 
 const LoginPage: React.FC = () => {
   // Typed state variables
@@ -100,30 +51,14 @@ const LoginPage: React.FC = () => {
         password,
       });
       const { accessToken, expiresIn, userRole } = response.data;
-      // Prefer JWT exp; fallback to expiresIn so auto-logout always has a deadline.
-      const expiresInMs = parseExpiresInMs(expiresIn);
-      const expiresAt = decodeJwtExpMs(accessToken) ?? Date.now() + expiresInMs;
-      const expiresInSeconds = Math.max(
-        1,
-        Math.ceil((expiresAt - Date.now()) / 1000),
-      );
-
-      Cookies.set("auth_token", accessToken, {
-        expires: expiresInSeconds / (24 * 60 * 60),
+      completeLoginSession({
+        accessToken,
+        expiresIn,
+        username,
+        userRole,
       });
-      // Persist absolute expiry for timer-based logout in AuthContext.
-      localStorage.setItem(AUTH_EXPIRES_AT_KEY, String(expiresAt));
-      localStorage.setItem("username", username);
-      localStorage.setItem("role", userRole);
-      await Promise.all([
-        axiosInstance.patch(`/user-missing-bets/user/updateBets`),
-        axiosInstance.patch(`/user-series-points/user/updatePoints`),
-      ]);
       setRole(userRole);
       setIsLoggedIn(true);
-      resetSessionExpiryHandling();
-      // Tell other tabs to refresh auth state and reschedule their timers.
-      publishAuthSyncEvent("login", getOrCreateAuthTabId());
       checkAuthStatus();
       showSuccessMessage("Logged in successfully!");
       navigate("/home");

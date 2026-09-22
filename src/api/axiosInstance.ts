@@ -70,7 +70,7 @@ const isTournamentScopedGetPath = (path: string) => {
     return true;
   }
 
-  if (path === "/home-page/load" || path === "/series/isUserGuessed/All") {
+  if (path === "/home-page/load") {
     return true;
   }
 

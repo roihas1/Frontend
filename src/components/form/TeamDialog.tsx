@@ -118,7 +118,6 @@ interface TeamDialogProps {
   userPoints: number;
   intialSelectedTab?: number;
   intialGamesTab?: number;
-  // Deprecated for post-submit refresh: this component now relies on query invalidation.
   fetchData?: () => void;
 }
 
@@ -159,15 +158,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
   const [selectedTab, setSelectedTab] = useState<number>(0);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [numOfSpontaneousBets, setNumOfSpontaneousBets] = useState<number>(0);
-  const [initialGuesses, setInitialGuesses] = useState<{
-    teamWinGuess?: number;
-    bestOf7Guess?: number;
-    playerMatchupGuess: { [key: string]: number };
-    spontaneousGuesses: { [key: string]: number };
-  }>({
-    playerMatchupGuess: {},
-    spontaneousGuesses: {},
-  });
 
   const createDateExpiration = () => {
     const dateExpiration: { [key: string]: boolean } = {};
@@ -258,28 +248,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     }
     return true;
   };
-  const hasNewGuesses = () => {
-    if (
-      initialGuesses.teamWinGuess === undefined ||
-      initialGuesses.bestOf7Guess === undefined
-    )
-      return true; // user didn’t guess yet
-
-    for (const betId in selectedPlayerForBet) {
-      // Only return true if this is a new bet (wasn't in the initial guesses at all)
-      if (!(betId in initialGuesses.playerMatchupGuess)) return true;
-    }
-    for (const betId in selectedPlayerForBetSpontaneous) {
-      if (!(betId in initialGuesses.spontaneousGuesses)) return true;
-    }
-    for (const betId in initialGuesses.spontaneousGuesses) {
-      if (!(betId in selectedPlayerForBetSpontaneous)) return true;
-    }
-    return false; // no new guesses
-  };
-  const delay = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  };
   const handleSubmit = async () => {
     // Validate input
     setValidationError(null);
@@ -307,10 +275,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
           spontaneousGuesses: selectedPlayerForBetSpontaneous,
           seriesId: series.id,
         });
-      }
-      await delay(100);
-      if (hasNewGuesses()) {
-        await axiosInstance.patch(`user-missing-bets/user/updateBets`);
       }
 
       await queryClient.invalidateQueries({
@@ -427,16 +391,6 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
         }
 
         setNumOfSpontaneousBets(checkNumOfgames());
-        setInitialGuesses({
-          teamWinGuess: userGuesses["teamWinGuess"]?.guess,
-          bestOf7Guess: userGuesses["bestOf7Guess"]?.guess,
-          playerMatchupGuess: Object.fromEntries(
-            seriesMatchupGuesses.map((g) => [g.betId, g.guess])
-          ),
-          spontaneousGuesses: Object.fromEntries(
-            spontaneousGuessesList.map((g) => [g.betId, g.guess])
-          ),
-        });
       } catch (error) {
         console.log(error);
         showError("Failed to fetch guesses and stats.");

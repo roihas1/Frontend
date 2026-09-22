@@ -167,12 +167,6 @@ const MissingBets = () => {
   }, [fetchMissingBets, refreshTrigger, isLoggedIn, selectedTournamentId]);
 
   useEffect(() => {
-    if (isLoggedIn && selectedTournamentId) {
-      fetchMissingBets();
-    }
-  }, [fetchMissingBets, isLoggedIn, selectedTournamentId]);
-
-  useEffect(() => {
     if (selectedSeries) {
       setIsDialogOpen(true);
     }

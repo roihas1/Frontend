@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import NBASeedCard from "../components/forPages/NBASeedCard";
 import MobileSeriesCard from "../components/forPages/MobileSeriesCard";
 // import { Team } from "../components/form/TeamDialog";
@@ -51,6 +51,7 @@ import defaultLogo from "../assets/logos/defaultLogoTBD.png";
 import { Box, Modal, Skeleton, Slide, Zoom } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
 import { useLeagueStandingsPreview } from "../components/providers&context/LeagueStandingsPreviewContext";
+import { useMissingBets } from "../components/providers&context/MissingBetsContext";
 
 export interface Series {
   id?: string;
@@ -245,6 +246,8 @@ const HomePage: React.FC = () => {
   const [hasPlayoffStages, setHasPlayoffStages] = useState(false);
   const { selectedTournamentId } = useTournament();
   const { setStandingsPreviewFromHomeLoad } = useLeagueStandingsPreview();
+  const { refreshTrigger } = useMissingBets();
+  const hasCompletedInitialHomeLoad = useRef(false);
 
   const checkIfGuessed = async () => {
     try {
@@ -265,25 +268,18 @@ const HomePage: React.FC = () => {
     setShowInput(false);
   };
 
-  const checkIfGuessSeriesBetting = async () => {
-    try {
-      const response = await axiosInstance.get(`series/isUserGuessed/All`);
-      setIsGuessCompleteBySeries(response.data);
-    } catch (error) {
-      showError(`Failed to check guesses ${error}`);
-    }
-  };
-
   const isSeriesGuessComplete = (id?: string) => Boolean(id && isGuessCompleteBySeries[id]);
 
-  const fetchHomepageData = async () => {
+  const fetchHomepageData = async (options?: { silent?: boolean }) => {
     if (!selectedTournamentId) {
       setStandingsPreviewFromHomeLoad({ data: null, loading: false });
       return;
     }
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+      setStandingsPreviewFromHomeLoad({ data: null, loading: true });
+    }
     setLoadError(null);
-    setStandingsPreviewFromHomeLoad({ data: null, loading: true });
     try {
         const response = await axiosInstance.get("/home-page/load");
         const {
@@ -399,8 +395,10 @@ const HomePage: React.FC = () => {
       console.log(error);
       const message = "Failed to load homepage data.";
       showError(message);
-      setLoadError(message);
-      setStandingsPreviewFromHomeLoad({ data: null, loading: false });
+      if (!options?.silent) {
+        setLoadError(message);
+        setStandingsPreviewFromHomeLoad({ data: null, loading: false });
+      }
       setLoading(false);
     }
   };
@@ -418,6 +416,14 @@ const HomePage: React.FC = () => {
       setStandingsPreviewFromHomeLoad({ data: null, loading: true });
     };
   }, [selectedTournamentId, setStandingsPreviewFromHomeLoad]);
+
+  useEffect(() => {
+    if (!hasCompletedInitialHomeLoad.current) {
+      hasCompletedInitialHomeLoad.current = true;
+      return;
+    }
+    fetchHomepageData({ silent: true });
+  }, [refreshTrigger]);
 
   const sortMatchups = (matchups: Series[]) => {
     return matchups.sort((a, b) => {
@@ -618,7 +624,7 @@ const HomePage: React.FC = () => {
                     <NBASeedCard
                       series={matchup}
                       userPoints={userPointsPerSeries?.[matchup.id ?? ""] ?? 0}
-                      fetchData={checkIfGuessSeriesBetting}
+                      fetchData={() => fetchHomepageData({ silent: true })}
                     />
                   </div>
                 </div>
@@ -726,7 +732,7 @@ const HomePage: React.FC = () => {
             <p className="font-medium">{loadError}</p>
             <button
               type="button"
-              onClick={fetchHomepageData}
+              onClick={() => fetchHomepageData()}
               className="mt-2 rounded-lg bg-colors-nba-blue px-3 py-1.5 text-xs font-semibold text-white"
             >
               Retry
@@ -973,7 +979,7 @@ const HomePage: React.FC = () => {
                             userPointsPerSeries?.[matchup.id ?? ""] ?? 0
                           }
                           isGuessComplete={isSeriesGuessComplete(matchup.id)}
-                          fetchData={checkIfGuessSeriesBetting}
+                          fetchData={() => fetchHomepageData({ silent: true })}
                         />
                       ))}
                     </div>

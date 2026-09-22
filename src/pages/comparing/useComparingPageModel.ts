@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useMediaQuery, useTheme } from "@mui/material";
+import { AutocompleteInputChangeReason, useMediaQuery, useTheme } from "@mui/material";
 import { useError } from "../../components/providers&context/ErrorProvider";
 import axiosInstance from "../../api/axiosInstance";
 import { Guess, User } from "../../types";
@@ -259,7 +259,7 @@ export function useComparingPageModel() {
     (
       _event: React.SyntheticEvent,
       value: string,
-      reason: "input" | "reset" | "clear",
+      reason: AutocompleteInputChangeReason,
     ) => {
       if (reason === "reset") {
         return;
