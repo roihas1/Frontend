@@ -1,6 +1,6 @@
 import React from "react";
 import { Paper, Tooltip, Typography } from "@mui/material";
-import { nbaTeamsNicknamesReversed } from "./ChampionsInput";
+import { nbaTeamsNicknamesReversed } from "./championsInput/championsInputTeams";
 
 interface TeamGuess {
   conference: string;

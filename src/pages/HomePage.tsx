@@ -243,7 +243,9 @@ const HomePage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
-  const [hasGuessedChampions, setHasGuessedChampions] = useState<boolean>(true);
+  const [hasGuessedChampions, setHasGuessedChampions] = useState<
+    boolean | null
+  >(null);
   const [hasPlayoffStages, setHasPlayoffStages] = useState(false);
   const { selectedTournamentId } = useTournament();
   const { setStandingsPreviewFromHomeLoad } = useLeagueStandingsPreview();
@@ -266,6 +268,7 @@ const HomePage: React.FC = () => {
         "Couldn't check your champion picks. Try again.",
       );
       if (message) showError(message);
+      setHasGuessedChampions((current) => current ?? true);
     }
   };
   const hideInputAfterSubmit = () => {
@@ -416,6 +419,7 @@ const HomePage: React.FC = () => {
   // checkTokenExpiration();
   useEffect(() => {
     if (stage && stage != "Finish" && selectedTournamentId) {
+      setHasGuessedChampions(null);
       checkIfGuessed();
     }
   }, [stage, selectedTournamentId]);
@@ -778,24 +782,34 @@ const HomePage: React.FC = () => {
 
         {hasPlayoffStages ? (
           <>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                aria-expanded={showMobileChampInput}
-                className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-3 tracking-wide
+            {stage !== "Finish" && hasGuessedChampions === null ? (
+              <div className="mb-3 flex justify-center">
+                <Skeleton
+                  variant="rounded"
+                  height={50}
+                  sx={{ width: "100%", maxWidth: 320, borderRadius: "16px" }}
+                />
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  aria-expanded={showMobileChampInput}
+                  className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-3 tracking-wide
       ${
-        hasGuessedChampions
+        hasGuessedChampions !== false
           ? "bg-white border border-colors-nba-blue/25 text-colors-nba-blue shadow-md shadow-blue-900/10 active:scale-[0.97] active:bg-blue-50"
           : "bg-colors-nba-yellow text-black shadow-lg shadow-yellow-500/25 ring-1 ring-yellow-500/40 animate-scale-pulse motion-reduce:animate-none active:scale-[0.97]"
       }
     `}
-                onClick={() => setShowMobileChampInput(true)}
-              >
-                {hasGuessedChampions
-                  ? "My champion picks"
-                  : "Guess the Champions"}
-              </button>
-            </div>
+                  onClick={() => setShowMobileChampInput(true)}
+                >
+                  {hasGuessedChampions !== false
+                    ? "My champion picks"
+                    : "Guess the Champions"}
+                </button>
+              </div>
+            )}
 
             <Modal
               open={showMobileChampInput}
@@ -902,11 +916,9 @@ const HomePage: React.FC = () => {
                     sx={{
                       flex: "1 1 auto",
                       minHeight: 0,
-                      overflowY: "auto",
-                      px: 2,
-                      py: 2,
-                      pb: 3,
-                      WebkitOverflowScrolling: "touch",
+                      display: "flex",
+                      flexDirection: "column",
+                      overflow: "hidden",
                     }}
                   >
                     <ChampionsInput

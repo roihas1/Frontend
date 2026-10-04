@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Paper, Typography } from "@mui/material";
-import { nbaTeamsNicknamesReversed } from "../../components/forPages/ChampionsInput";
+import { nbaTeamsNicknamesReversed } from "../../components/forPages/championsInput/championsInputTeams";
 import { UserChampGuessesMap } from "./useComparingPageModel";
 
 type TeamGuess = {

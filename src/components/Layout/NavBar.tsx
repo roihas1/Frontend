@@ -7,6 +7,7 @@ import Logo from "../../assets/siteLogo/logo_color_trans.png";
 import Title from "../../assets/siteLogo/title_straight_shadow.png";
 import NavLink from "./NavLink";
 import MobileNavItem from "./MobileNavItem";
+import AccountMenu from "./AccountMenu";
 import MissingBets from "./MissinigBets";
 import { useAuth } from "../providers&context/AuthContext";
 import { useTournament } from "../providers&context/TournamentContext";
@@ -254,14 +255,6 @@ const Navbar: React.FC = () => {
             isActive={isActive("/guess-stats")}
             isLoggedIn={isLoggedIn}
           />
-          {isLoggedIn && (
-            <NavLink
-              to="/account"
-              title="Account"
-              isActive={isActive("/account")}
-              isLoggedIn={isLoggedIn}
-            />
-          )}
           <NavLink
             to="/HowToPlay"
             title="How to Play?"
@@ -285,19 +278,12 @@ const Navbar: React.FC = () => {
           />
           {renderTournamentPicker("desktop")}
           <MissingBets />
-          <div className="flex items-center">
-            <button
-              onClick={handleLogout}
-              className="text-red-500 hover:text-red-700 font-medium transition-colors duration-300"
-              disabled={!isLoggedIn}
-              style={{
-                pointerEvents: isLoggedIn ? "auto" : "none",
-                opacity: isLoggedIn ? 1 : 0.5,
-              }}
-            >
-              Logout
-            </button>
-          </div>
+          <AccountMenu
+            username={username}
+            isActive={isActive("/account")}
+            isLoggedIn={isLoggedIn}
+            onLogout={() => void handleLogout()}
+          />
         </div>
 
         {/* Mobile Menu Button */}

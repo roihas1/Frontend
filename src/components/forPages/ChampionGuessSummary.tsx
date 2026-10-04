@@ -30,6 +30,7 @@ interface PriorGuessesByStage {
 interface ChampionGuessProps {
   stage: string;
   className?: string;
+  startCollapsed?: boolean;
 }
 
 const stagesToShow = ["Before Playoffs", "Round 1", "Round 2"];
@@ -518,10 +519,11 @@ function StageAccordion({
 const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({
   stage,
   className = "",
+  startCollapsed = false,
 }) => {
   const { selectedTournamentId } = useTournament();
   const [expandedStage, setExpandedStage] = useState<string | false>(() =>
-    getDefaultExpandedStage(stage)
+    startCollapsed ? false : getDefaultExpandedStage(stage)
   );
 
   const { data, isLoading } = useQuery({
