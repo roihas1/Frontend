@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CircularProgress } from "@mui/material";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import { useSuccessMessage } from "../components/providers&context/NotificationProvider";
 import { useUser } from "../components/providers&context/userContext";
 import { useAuth } from "../components/providers&context/AuthContext";
 import { completeLoginSession } from "../auth/completeLoginSession";
@@ -30,7 +30,7 @@ const OAuthRedirectPage: React.FC = () => {
         setRole(userRole);
         setIsLoggedIn(true);
         checkAuthStatus();
-        showSuccessMessage("Logged in successfully!");
+        showSuccessMessage("Welcome back!");
         navigate("/home");
       }
     };

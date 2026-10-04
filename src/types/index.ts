@@ -113,6 +113,29 @@ export interface BestOf7Bet {
     playerMatchupGuesses: PlayerMatchupGuess[];
   }
 
+  export interface UserProfile {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    hasPassword: boolean;
+    hasGoogle: boolean;
+  }
+
+  export interface UpdateProfilePayload {
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+  }
+
+  export interface UpdateMyProfileResponse {
+    profile: UserProfile;
+    accessToken?: string;
+    expiresIn?: number;
+  }
+
   export enum PlayerMatchupType {
     UNDEROVER = "UNDER/OVER",
     PLAYERMATCHUP = "PLAYERMATCHUP",

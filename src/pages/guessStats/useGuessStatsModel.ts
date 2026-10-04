@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTournament } from "../../components/providers&context/TournamentContext";
-import { useError } from "../../components/providers&context/ErrorProvider";
 import {
   GuessStatsBetFamily,
   GuessStatsChampionSnapshot,
@@ -27,7 +26,6 @@ const defaultFilters: GuessStatsFilters = {
 
 export function useGuessStatsModel() {
   const { selectedTournamentId } = useTournament();
-  const { showError } = useError();
   const [filters, setFilters] = useState<GuessStatsFilters>(defaultFilters);
 
   const query = useQuery({
@@ -41,13 +39,8 @@ export function useGuessStatsModel() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
+    meta: { errorMessage: "Couldn't load guess stats. Try again." },
   });
-
-  useEffect(() => {
-    if (query.isError) {
-      showError("Failed to load guess statistics.");
-    }
-  }, [query.isError, showError]);
 
   const snapshot = query.data;
 

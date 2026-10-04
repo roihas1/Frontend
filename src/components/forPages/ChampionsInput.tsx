@@ -8,8 +8,9 @@ import {
   TextField,
 } from "@mui/material";
 import axiosInstance from "../../api/axiosInstance";
-import { useSuccessMessage } from "../providers&context/successMassageProvider";
-import { useError } from "../providers&context/ErrorProvider";
+import { useError, useSuccessMessage } from "../providers&context/NotificationProvider";
+import { getErrorMessage } from "../../api/getErrorMessage";
+import { notify } from "../common/notify";
 import SubmitButton from "../common/SubmitButton";
 import CustomSelectInput from "../form/CustomSelectInput";
 import ChampionGuessSummary from "../forPages/ChampionGuessSummary";
@@ -303,7 +304,7 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       return;
     }
     if (!selectedTournamentId) {
-      showError("Please select a tournament first.");
+      notify.warning("Select a tournament first.");
       return;
     }
     try {
@@ -350,12 +351,15 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
       await queryClient.invalidateQueries({
         queryKey: ["userGuesses", stage, selectedTournamentId],
       });
+      showSuccessMessage("Picks locked in.", "Good luck!");
     } catch (error) {
-      console.log(error);
-      showError(`Failed to update champion guess ${error}`);
+      const message = getErrorMessage(
+        error,
+        "Couldn't save your picks. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setShowInput("Submit");
-      showSuccessMessage("Your guesses updated!");
     }
   };
 
@@ -363,7 +367,6 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     data: guesses,
     isSuccess,
     isLoading,
-    isError,
   } = useQuery<UserGuessesResponse>({
     queryKey: ["userGuesses", stage, selectedTournamentId],
     queryFn: async () => {
@@ -377,12 +380,8 @@ const ChampionsInput: React.FC<ChampionsInputProps> = ({
     retry: 1,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    meta: { errorMessage: "Couldn't load your champion picks. Try again." },
   });
-  useEffect(() => {
-      if (isError) {
-        showError("Failed to fetch user champions guesses");
-      }
-    }, [isError]);
 
   useEffect(() => {
     if (!isSuccess || !guesses) return;

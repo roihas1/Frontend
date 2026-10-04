@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
 import { serializeQueryParamsWithNull } from "../../api/serializeQueryParams";
-import { useError } from "../../components/providers&context/ErrorProvider";
 import { useTournament } from "../../components/providers&context/TournamentContext";
 import { League } from "../LeagueSelectionPage";
 import type {
@@ -33,7 +32,6 @@ export function useLeaguesPageModel() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
-  const { showError } = useError();
   const { selectedTournamentId } = useTournament();
 
   const league = location.state?.league as League | undefined;
@@ -102,6 +100,7 @@ export function useLeaguesPageModel() {
       });
       return response.data as StandingsPageResponse;
     },
+    meta: { errorMessage: "Couldn't load standings. Try again." },
   });
 
   const { data: currentUser } = useQuery({
@@ -193,12 +192,6 @@ export function useLeaguesPageModel() {
   const handleLimitSelection = useCallback((e: SelectChangeEvent<number>) => {
     setLimit(Number(e.target.value));
   }, []);
-
-  useEffect(() => {
-    if (isStandingsError) {
-      showError("Server error.");
-    }
-  }, [isStandingsError, showError]);
 
   const standingsLoading =
     leagueReady && (isStandingsLoading || (isStandingsFetching && !users.length));

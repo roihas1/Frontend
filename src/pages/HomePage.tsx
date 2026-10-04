@@ -45,7 +45,8 @@ import {
 } from "../types/index";
 import ChampionsInput from "../components/forPages/ChampionsInput";
 import HomeLeagueStandingsPreview from "../components/forPages/HomeLeagueStandingsPreview";
-import { useError } from "../components/providers&context/ErrorProvider";
+import { useError } from "../components/providers&context/NotificationProvider";
+import { getErrorMessage } from "../api/getErrorMessage";
 import Tooltip from "@mui/material/Tooltip";
 import defaultLogo from "../assets/logos/defaultLogoTBD.png";
 import { Box, Modal, Skeleton, Slide, Zoom } from "@mui/material";
@@ -260,8 +261,11 @@ const HomePage: React.FC = () => {
       setShowInput(response.data);
       setHasGuessedChampions(!response.data);
     } catch (error) {
-      console.log(error);
-      showError("Server Error.");
+      const message = getErrorMessage(
+        error,
+        "Couldn't check your champion picks. Try again.",
+      );
+      if (message) showError(message);
     }
   };
   const hideInputAfterSubmit = () => {
@@ -392,11 +396,17 @@ const HomePage: React.FC = () => {
 
         setLoading(false);
     } catch (error) {
-      console.log(error);
-      const message = "Failed to load homepage data.";
-      showError(message);
+      const message = getErrorMessage(
+        error,
+        "Couldn't load the home page. Try again.",
+      );
+      if (message) {
+        showError(message);
+      }
       if (!options?.silent) {
-        setLoadError(message);
+        if (message) {
+          setLoadError(message);
+        }
         setStandingsPreviewFromHomeLoad({ data: null, loading: false });
       }
       setLoading(false);

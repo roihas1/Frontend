@@ -3,8 +3,8 @@ import { Dialog } from "@headlessui/react";
 import SubmitButton from "../common/SubmitButton";
 import { Series } from "../../pages/HomePage";
 import axiosInstance from "../../api/axiosInstance";
-import { useError } from "../providers&context/ErrorProvider";
-import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import { useError, useSuccessMessage } from "../providers&context/NotificationProvider";
+import { getErrorMessage } from "../../api/getErrorMessage";
 import { Box, CircularProgress, Tab, Tabs, Tooltip } from "@mui/material";
 import BetsDisplay from "../forPages/BetsDisplay";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
@@ -281,7 +281,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
         queryKey: ["seriesFullData", series?.id, selectedTournamentId],
       });
 
-      showSuccessMessage("Guesses were updated.");
+      showSuccessMessage("Picks locked in.", "Good luck!");
       setSelectedTeam(-1); // Reset selected team
       setSelectedPlayerForBet({}); // Reset selected players for bets
       setSelectedPlayerForBetSpontaneous({});
@@ -289,8 +289,12 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
       setHasGuesses(false);
       closeDialog(); // Close the dialog if submission is successful
       triggerRefresh();
-    } catch {
-      showError("An unexpected error occurred.");
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't save your picks. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
     }
@@ -305,7 +309,7 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     });
     return max;
   };
-  const { data: fullData, error: queryError } = useQuery({
+  const { data: fullData } = useQuery({
     queryKey: ["seriesFullData", series?.id, selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get(
@@ -317,12 +321,8 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
     refetchOnWindowFocus: false,
     staleTime: 1000 * 60 * 3,
     gcTime: 1000 * 60 * 4,
+    meta: { errorMessage: "Couldn't load picks for this series. Try again." },
   });
-  useEffect(() => {
-    if (queryError) {
-      showError("Failed to load guesses and percentages.");
-    }
-  }, [queryError]);
   useEffect(() => {
     const fetchAllGuessesAndStats = async () => {
       if (!isOpen || !series || !fullData) return;
@@ -392,15 +392,18 @@ const TeamDialog: React.FC<TeamDialogProps> = ({
 
         setNumOfSpontaneousBets(checkNumOfgames());
       } catch (error) {
-        console.log(error);
-        showError("Failed to fetch guesses and stats.");
+        const message = getErrorMessage(
+          error,
+          "Couldn't load picks for this series. Try again.",
+        );
+        if (message) showError(message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchAllGuessesAndStats();
-  }, [isOpen, series, fullData]);
+  }, [isOpen, series, fullData, showError]);
 
   // const getUserGuesses = async () => {
   //   setLoading(true);

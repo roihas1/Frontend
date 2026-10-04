@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useError } from "../providers&context/ErrorProvider";
+import React, { useMemo, useState } from "react";
 import axiosInstance from "../../api/axiosInstance";
 import {
   Accordion,
@@ -520,13 +519,12 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({
   stage,
   className = "",
 }) => {
-  const { showError } = useError();
   const { selectedTournamentId } = useTournament();
   const [expandedStage, setExpandedStage] = useState<string | false>(() =>
     getDefaultExpandedStage(stage)
   );
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["priorGuesses", stage, selectedTournamentId],
     queryFn: async () => {
       if (stage === "Before playoffs") return null;
@@ -542,13 +540,8 @@ const ChampionGuessSummary: React.FC<ChampionGuessProps> = ({
     staleTime: 3600000, // 1 hour
     gcTime: 3600000, // 1 hour
     retry: 1,
+    meta: { errorMessage: "Couldn't load past picks. Try again." },
   });
-
-  useEffect(() => {
-    if (isError && error) {
-      showError(`Failed to fetch guesses: ${error}`);
-    }
-  }, [isError, error, showError]);
 
   const priorGuesses = stage === "Round 1" ? (data as PriorGuesses) : undefined;
   const priorGuessesRound2 =

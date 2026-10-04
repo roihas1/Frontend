@@ -1,2 +1,59 @@
+/* Toast cards sit on the NBA navy surface. Variables are scoped to .Toastify
+   so they win over the library's :root defaults regardless of import order. */
+.Toastify {
+  --toastify-color-light: #0f2a5c;
+  --toastify-color-dark: #0f2a5c;
+  --toastify-text-color-light: #fff;
+  --toastify-text-color-dark: #fff;
+  --toastify-toast-bd-radius: 14px;
+  --toastify-toast-width: 360px;
+  --toastify-toast-min-height: 0;
+  --toastify-toast-padding: 0;
+  --toastify-toast-shadow: 0 16px 40px rgba(8, 18, 48, 0.45);
+  --toastify-font-family: inherit;
+  --toastify-toast-top: max(4.75rem, env(safe-area-inset-top));
+  --toastify-color-progress-success: #10b981;
+  --toastify-color-progress-error: #c8102e;
+  --toastify-color-progress-warning: #fdb927;
+  --toastify-color-progress-info: #7eb6ff;
+  --toastify-color-progress-dark: #7eb6ff;
+  --toastify-z-index: 60;
+}
 
+.Toastify .Toastify__toast {
+  background: rgba(15, 42, 92, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  color: #fff;
+}
 
+.Toastify .Toastify__toast-body {
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+}
+
+.Toastify .Toastify__close-button {
+  color: #fff;
+  opacity: 0.8;
+}
+
+@media only screen and (max-width: 480px) {
+  .Toastify .Toastify__toast-container--top-left,
+  .Toastify .Toastify__toast-container--top-center,
+  .Toastify .Toastify__toast-container--top-right {
+    top: max(4.75rem, env(safe-area-inset-top));
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    transform: none;
+    align-items: stretch;
+  }
+
+  .Toastify .Toastify__toast {
+    border-radius: 14px;
+    margin-bottom: 0.75rem;
+    width: 100%;
+  }
+}

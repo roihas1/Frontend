@@ -1,6 +1,5 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-import "react-toastify/dist/ReactToastify.css";
 import { getTournamentId } from "./tournamentScope";
 
 const baseUrl = window?.RUNTIME_CONFIG?.VITE_BASE_URL ? window.RUNTIME_CONFIG.VITE_BASE_URL : import.meta.env.VITE_BASE_URL

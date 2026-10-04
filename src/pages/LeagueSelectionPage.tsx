@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,12 +12,12 @@ import {
   buildCreatePrivateLeagueRequest,
   buildJoinLeagueRequest,
 } from "../api/privateLeagueRequests";
-import { useError } from "../components/providers&context/ErrorProvider";
+import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
 import { User } from "../types";
 import { useNavigate } from "react-router-dom";
 import ActionButtons from "../components/forPages/ActionButtons";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
-import axios from "axios";
+import { getErrorMessage } from "../api/getErrorMessage";
+import { notify } from "../components/common/notify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../components/providers&context/TournamentContext";
 
@@ -63,7 +63,7 @@ const LeaguesSelectionPage: React.FC = () => {
     setSelectedLeague(null);
   };
 
-  const { data: privateLeagues, isError } = useQuery({
+  const { data: privateLeagues } = useQuery({
     queryKey: ["private-leagues", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get(`/private-league`);
@@ -72,15 +72,10 @@ const LeaguesSelectionPage: React.FC = () => {
     enabled: !!selectedTournamentId,
     staleTime: 3 * 60 * 1000,
     gcTime: 3 * 60 * 1000,
+    meta: { errorMessage: "Couldn't load leagues. Try again." },
   });
 
-  useEffect(() => {
-    if (isError) {
-      showError("Failed to fetch leagues");
-    }
-  }, [isError]);
-
-  const { data: overallUsers, isError: isOverallError } = useQuery({
+  const { data: overallUsers } = useQuery({
     queryKey: ["overall-league", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get("/auth/standings");
@@ -89,17 +84,12 @@ const LeaguesSelectionPage: React.FC = () => {
     enabled: !!selectedTournamentId,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    meta: { errorMessage: "Couldn't load the overall league. Try again." },
   });
 
   const overallLeague: League | null = overallUsers
     ? { name: "Overall", users: overallUsers }
     : null;
-
-  useEffect(() => {
-    if (isOverallError) {
-      showError("Failed to fetch overall league");
-    }
-  }, [isOverallError]);
 
   // useEffect(() => {
   //   // fetchOverallLeague();
@@ -115,26 +105,26 @@ const LeaguesSelectionPage: React.FC = () => {
       );
       return response.data;
     },
-    onSuccess: (data: any) => {
-      showSuccessMessage(data.message);
+    onSuccess: () => {
+      showSuccessMessage("Joined the league!");
       queryClient.invalidateQueries({
         queryKey: ["private-leagues", selectedTournamentId],
       });
       setShowJoinLeague(false);
       setLeagueCode("");
     },
-    onError: (error: any) => {
-      if (axios.isAxiosError(error) && error.response) {
-        showError(`Failed to join a league. ${error.response.data.message}`);
-      } else {
-        showError(`Failed to join a league. Unexpected error occurred.`);
-      }
+    onError: (error: unknown) => {
+      const message = getErrorMessage(
+        error,
+        "Couldn't join that league. Check the code and try again.",
+      );
+      if (message) showError(message);
     },
   });
   const handleJoinLeague = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leagueCode) {
-      showError(`Must enter a league code`);
+      notify.warning("Enter a league code.");
       return;
     }
     joinLeagueMutation.mutate(leagueCode);
@@ -157,7 +147,7 @@ const LeaguesSelectionPage: React.FC = () => {
   //     }
   //   }
   // };
-  const { data: currentUser, isError: isUserError } = useQuery<User>({
+  const { data: currentUser } = useQuery<User>({
     queryKey: ["current-user", selectedTournamentId],
     queryFn: async () => {
       const response = await axiosInstance.get("/auth/user");
@@ -166,13 +156,8 @@ const LeaguesSelectionPage: React.FC = () => {
     enabled: !!selectedTournamentId,
     staleTime: 30 * 60 * 1000, // 30 minutes (stays fresh)
     gcTime: 60 * 60 * 1000, // 1 hour (kept in cache)
+    meta: { errorMessage: "Couldn't load your info. Try again." },
   });
-
-  useEffect(() => {
-    if (isUserError) {
-      showError("Failed to fetch user info");
-    }
-  }, [isUserError]);
 
   // const fetchUser = async () => {
   //   try {
@@ -184,13 +169,16 @@ const LeaguesSelectionPage: React.FC = () => {
   // };
 
   const handleSubmitNewLeague = async () => {
-    if (!leagueName) return showError(`Must enter a league name`);
+    if (!leagueName) return notify.warning("Enter a league name.");
     try {
       await axiosInstance.post(
         `/private-league`,
         buildCreatePrivateLeagueRequest(leagueName, selectedTournamentId),
       );
-      showSuccessMessage(`${leagueName} created.`);
+      showSuccessMessage(
+        `${leagueName} created.`,
+        "Share the code with friends.",
+      );
       setShowCreateNewLeague(false);
 
       await queryClient.invalidateQueries({
@@ -199,15 +187,19 @@ const LeaguesSelectionPage: React.FC = () => {
       await queryClient.refetchQueries({
         queryKey: ["private-leagues", selectedTournamentId],
       });
-    } catch {
-      showError(`Failed to create new league.`);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't create the league. Try again.",
+      );
+      if (message) showError(message);
     }
   };
 
   const handleLeaveLeague = async (league: League) => {
     try {
       await axiosInstance.patch(`/private-league/${league?.id}/leaveLeague`);
-      showSuccessMessage(`Leaved the league.`);
+      showSuccessMessage("You left the league.");
       handleCloseModal();
       await queryClient.invalidateQueries({
         queryKey: ["private-leagues", selectedTournamentId],
@@ -216,7 +208,11 @@ const LeaguesSelectionPage: React.FC = () => {
         queryKey: ["private-leagues", selectedTournamentId],
       });
     } catch (error) {
-      showError(`Failed to leave league.`);
+      const message = getErrorMessage(
+        error,
+        "Couldn't leave the league. Try again.",
+      );
+      if (message) showError(message);
     }
   };
   return (

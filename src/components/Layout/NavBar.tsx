@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useUser } from "../providers&context/userContext";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
-import { useError } from "../providers&context/ErrorProvider";
-import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import { useError, useSuccessMessage } from "../providers&context/NotificationProvider";
 import Logo from "../../assets/siteLogo/logo_color_trans.png";
 import Title from "../../assets/siteLogo/title_straight_shadow.png";
 import NavLink from "./NavLink";
@@ -26,6 +25,7 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const Navbar: React.FC = () => {
@@ -69,6 +69,15 @@ const Navbar: React.FC = () => {
       },
     ];
 
+    if (isLoggedIn) {
+      baseSections.push({
+        label: "Account",
+        items: [
+          { to: "/account", title: "Account", icon: UserCircleIcon },
+        ],
+      });
+    }
+
     if (role === "ADMIN") {
       baseSections.push({
         label: "Admin",
@@ -87,7 +96,7 @@ const Navbar: React.FC = () => {
         return itemWithStagger;
       }),
     }));
-  }, [role]);
+  }, [role, isLoggedIn]);
 
   const isActive = (path: string) => {
     const leaguesPaths = ["/leagues", "/league", "/manageLeague"];
@@ -129,12 +138,12 @@ const Navbar: React.FC = () => {
     } catch (error) {
       const status = (error as AxiosError)?.response?.status;
       if (status !== 401) {
-        showError("Failed to log out. Please try again later.");
+        showError("Couldn't log you out.", "Try again in a moment.");
         return;
       }
       // 401 means token is already invalid; continue local logout for clean UX.
     }
-    showSuccessMessage("You logged out, see you again!");
+    showSuccessMessage("Logged out.", "See you at tip-off!");
     logout({ reason: "manual" });
     setRole("");
     setIsMenuOpen(false);
@@ -245,6 +254,14 @@ const Navbar: React.FC = () => {
             isActive={isActive("/guess-stats")}
             isLoggedIn={isLoggedIn}
           />
+          {isLoggedIn && (
+            <NavLink
+              to="/account"
+              title="Account"
+              isActive={isActive("/account")}
+              isLoggedIn={isLoggedIn}
+            />
+          )}
           <NavLink
             to="/HowToPlay"
             title="How to Play?"

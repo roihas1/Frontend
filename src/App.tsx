@@ -8,10 +8,9 @@ import {
 } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
-import { ErrorProvider } from "./components/providers&context/ErrorProvider";
+import { NotificationProvider } from "./components/providers&context/NotificationProvider";
 import Navbar from "./components/Layout/NavBar";
 import HomePage from "./pages/HomePage";
-import { SuccessMessageProvider } from "./components/providers&context/successMassageProvider";
 import { UserProvider } from "./components/providers&context/userContext";
 import UpdateBetsPage from "./pages/UpdateBetsPage";
 import LeaguesPage from "./pages/LeaguesPage";
@@ -28,6 +27,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
 import GuessStatsPage from "./pages/GuessStatsPage";
+import AccountPage from "./pages/AccountPage";
 import { TournamentProvider } from "./components/providers&context/TournamentContext";
 import { LeagueStandingsPreviewProvider } from "./components/providers&context/LeagueStandingsPreviewContext";
 import InstallAppButton from "./components/pwa/InstallAppButton";
@@ -75,6 +75,7 @@ function AppShell() {
             <Route path="/privacyPolicy" element={<PrivacyPolicyPage />} />
             <Route path="/TermsOfuse" element={<TermsOfUsePage />} />
             <Route path="/AboutUs" element={<AboutUsPage />} />
+            <Route path="/account" element={<AccountPage />} />
           </Routes>
         </main>
         <Footer />
@@ -94,19 +95,17 @@ function App() {
 
   return (
     <Router>
-      <ErrorProvider>
-        <SuccessMessageProvider>
-          <UserProvider>
-            <AuthProvider>
-              <TournamentProvider>
-                <LeagueStandingsPreviewProvider>
-                  <AppShell />
-                </LeagueStandingsPreviewProvider>
-              </TournamentProvider>
-            </AuthProvider>
-          </UserProvider>
-        </SuccessMessageProvider>
-      </ErrorProvider>
+      <NotificationProvider>
+        <UserProvider>
+          <AuthProvider>
+            <TournamentProvider>
+              <LeagueStandingsPreviewProvider>
+                <AppShell />
+              </LeagueStandingsPreviewProvider>
+            </TournamentProvider>
+          </AuthProvider>
+        </UserProvider>
+      </NotificationProvider>
     </Router>
   );
 }

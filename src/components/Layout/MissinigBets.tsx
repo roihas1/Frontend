@@ -11,8 +11,8 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { PlayerMatchupBet, SpontaneousBet } from "../../types";
-import { useError } from "../providers&context/ErrorProvider";
-// import { useSuccessMessage } from "../providers&context/successMassageProvider";
+import { useError } from "../providers&context/NotificationProvider";
+import { getErrorMessage } from "../../api/getErrorMessage";
 import axiosInstance from "../../api/axiosInstance";
 import { logos, Series } from "../../pages/HomePage";
 import defaultLogo from "../../assets/logos/defaultLogoTBD.png";
@@ -133,8 +133,12 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;
       setSelectedSeries(series);
-    } catch {
-      showError(`Server Error,try again.`);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't load that series. Try again.",
+      );
+      if (message) showError(message);
     }
   };
 
@@ -164,7 +168,11 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
       setBadgeContent(totalMissingBets);
       setMissingBetsCount(totalMissingBets);
     } catch (error) {
-      showError(`${error}`);
+      const message = getErrorMessage(
+        error,
+        "Couldn't load your missing bets. Try again.",
+      );
+      if (message) showError(message);
     }
   }, [showError, setMissingBetsCount]);
   useEffect(() => {

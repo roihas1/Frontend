@@ -15,8 +15,11 @@ module.exports = {
       colors:{
         colors: {
           'nba-blue': '#1D428A', // Custom color example (NBA Blue)
+          'nba-navy': '#0F2A5C',
           'nba-red': '#C8102E',  // Custom color example (NBA Red)
           'nba-yellow': '#FDB927', // Custom color example (NBA Yellow)
+          'nba-green': '#10B981',
+          'nba-sky': '#7EB6FF',
           'select-bet':'#ccffcc',
           'test': 'rgb(22,106,234,0.57)',
         },

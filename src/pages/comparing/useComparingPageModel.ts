@@ -6,7 +6,9 @@ import {
   useState,
 } from "react";
 import { AutocompleteInputChangeReason, useMediaQuery, useTheme } from "@mui/material";
-import { useError } from "../../components/providers&context/ErrorProvider";
+import { useError } from "../../components/providers&context/NotificationProvider";
+import { getErrorMessage } from "../../api/getErrorMessage";
+import { notify } from "../../components/common/notify";
 import axiosInstance from "../../api/axiosInstance";
 import { Guess, User } from "../../types";
 import { useLocation } from "react-router-dom";
@@ -127,7 +129,6 @@ export function useComparingPageModel() {
   const {
     data: comparisonData,
     isLoading: isLoadingComparison,
-    isError: isComparisonError,
   } = useQuery({
     queryKey: ["comparison-page", selectedTournamentId],
     queryFn: async () => {
@@ -137,6 +138,7 @@ export function useComparingPageModel() {
     enabled: Boolean(selectedTournamentId),
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    meta: { errorMessage: "Couldn't load the comparison. Try again." },
   });
 
   const seriesCatalog = useMemo((): ComparisonSeriesCatalogEntry[] => {
@@ -170,12 +172,6 @@ export function useComparingPageModel() {
       ),
     };
   }, [selectedSeries, selectedSeriesBetsRaw]);
-
-  useEffect(() => {
-    if (isComparisonError) {
-      showError("Failed to load comparison page data.");
-    }
-  }, [isComparisonError, showError]);
 
   const currentUser = useMemo(
     () => comparisonData?.currentUser as User | undefined,
@@ -270,8 +266,12 @@ export function useComparingPageModel() {
             ...(prev ?? {}),
             ...newUsers,
           }));
-        } catch {
-          showError(`Failed to search users.`);
+        } catch (error) {
+          const message = getErrorMessage(
+            error,
+            "Couldn't search players. Try again.",
+          );
+          if (message) showError(message);
           setLoading(false);
         }
       }, 800),
@@ -357,8 +357,12 @@ export function useComparingPageModel() {
         }
 
         return nextUsers;
-      } catch {
-        showError("Server error.");
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Couldn't load league players. Try again.",
+        );
+        if (message) showError(message);
         return {};
       }
     },
@@ -394,7 +398,7 @@ export function useComparingPageModel() {
           if (waitingForSeriesBetsQuery) {
             return;
           }
-          showError(`No series bets available yet.`);
+          notify.warning("No series bets yet.");
           return;
         }
       }
@@ -403,10 +407,9 @@ export function useComparingPageModel() {
         addingNew &&
         Object.keys(selectedUsersSnapshot).length >= maxSelectedUsers
       ) {
-        showError(
-          isMobile
-            ? `You can compare up to ${maxSelectedUsers} users on mobile. Remove someone to add another.`
-            : `Max participents in comparison is ${maxSelectedUsers}! Remove at least one user.`,
+        notify.warning(
+          `You can compare up to ${maxSelectedUsers} players.`,
+          "Remove someone to add another.",
         );
         return;
       }
@@ -517,8 +520,11 @@ export function useComparingPageModel() {
           });
         }
       } catch (error) {
-        console.log(error);
-        showError(`Failed to select user`);
+        const message = getErrorMessage(
+          error,
+          "Couldn't add that player. Try again.",
+        );
+        if (message) showError(message);
       } finally {
         if (champRefetchKey) {
           inFlightChampRefetchesRef.current.delete(champRefetchKey);
@@ -529,7 +535,6 @@ export function useComparingPageModel() {
     [
       allSeriesBets,
       maxSelectedUsers,
-      isMobile,
       showError,
       users,
       currentUser?.id,
@@ -582,7 +587,7 @@ export function useComparingPageModel() {
     setIsLoadingInitial(true);
     const firstCatalog = seriesCatalog[0];
     if (!firstCatalog) {
-      showError(`No Series has Ended`);
+      notify.warning("No series has ended yet.");
       setIsLoadingInitial(false);
       return;
     }
@@ -626,7 +631,6 @@ export function useComparingPageModel() {
     currentUser?.id,
     secondUserId,
     compareTargetUser,
-    showError,
   ]);
 
   useEffect(() => {
@@ -749,10 +753,9 @@ export function useComparingPageModel() {
       const ids = usersList.map((user) => user.id);
 
       if (ids.length > maxSelectedUsers) {
-        showError(
-          isMobile
-            ? `You can compare up to ${maxSelectedUsers} users on mobile.`
-            : `Max participents in comparison is ${maxSelectedUsers}!`,
+        notify.warning(
+          `You can compare up to ${maxSelectedUsers} players.`,
+          "Remove someone to add another.",
         );
         return;
       }
@@ -763,7 +766,7 @@ export function useComparingPageModel() {
             if (selectedSeries || selectedStage) {
               void handleUserSelection(id);
             } else {
-              showError(`Choose Series or Stage First!`);
+              notify.warning("Choose a series or stage first.");
             }
           }
         }
@@ -778,11 +781,9 @@ export function useComparingPageModel() {
     [
       selectedUsers,
       maxSelectedUsers,
-      isMobile,
       handleUserSelection,
       selectedSeries,
       selectedStage,
-      showError,
       handleRemoveUser,
     ],
   );

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import TeamDialog from "../form/TeamDialog"; // Import the TeamDialog component
 import { Series } from "../../pages/HomePage";
 
-// import { useError } from "../providers&context/ErrorProvider";
+// import { useError } from "../providers&context/NotificationProvider";
 import { CircularProgress } from "@mui/material";
 import Logo from "../../assets/siteLogo/logo_color_trans.png";
 

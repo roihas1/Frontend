@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useError } from "../components/providers&context/ErrorProvider";
+import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
 import axiosInstance from "../api/axiosInstance";
 import SubmitButton from "../components/common/SubmitButton";
 import InputField from "../components/form/FormInput";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import { getErrorMessage } from "../api/getErrorMessage";
+import { notify } from "../components/common/notify";
 import Logo from "../assets/siteLogo/gray_trans.png";
-import { AxiosError } from "axios";
 import AuthCard from "../components/Layout/AuthCard";
 import { Divider } from "@mui/material";
 import googleLogo from "../assets/logos/search.png";
@@ -29,7 +29,7 @@ const SignUpPage: React.FC = () => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      showError("Passwords do not match.");
+      notify.warning("Passwords don't match.");
       return;
     }
     setLoading(true);
@@ -49,20 +49,13 @@ const SignUpPage: React.FC = () => {
       setEmail("");
       setConfirmPassword("");
       navigate("/login"); // Redirect to login page after successful sign-up
-      showSuccessMessage("You are signed up! Let's log in.");
+      showSuccessMessage("You're on the roster!", "Log in to start.");
     } catch (err) {
-      const error = err as AxiosError<{ message?: string }>;
-      if (error.response) {
-        showError(
-          "Failed to sign up: " +
-            (error.response.data.message ||
-              JSON.stringify(error.response.data)),
-        );
-      } else if (error.request) {
-        showError("Failed to sign up: No response from server.");
-      } else {
-        showError("Failed to sign up: " + error.message);
-      }
+      const message = getErrorMessage(
+        err,
+        "Couldn't create your account. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
     }
@@ -75,7 +68,7 @@ const SignUpPage: React.FC = () => {
         : import.meta.env.VITE_BASE_URL;
       window.location.href = `${baseUrl}auth/google/login`;
     } catch {
-      showError(`Failed to login with Google. Try again later.`);
+      showError("Google sign-in didn't work.", "Try again in a moment.");
       setLoading(false);
     } finally {
       setLoading(false);

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../api/axiosInstance";
-import { useError } from "../components/providers&context/ErrorProvider";
+import { getErrorMessage } from "../api/getErrorMessage";
+import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
 import AuthCard from "../components/Layout/AuthCard";
 import FormInput from "../components/form/FormInput";
 import SubmitButton from "../components/common/SubmitButton";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
 import { useUser } from "../components/providers&context/userContext";
 import Logo from "../assets/siteLogo/gray_trans.png"; // ✅ Logo added back
 import { Divider } from "@mui/material";
@@ -36,7 +36,7 @@ const LoginPage: React.FC = () => {
       (location.state as { sessionExpired?: boolean }).sessionExpired
     ) {
       // Show expiry message once, then clear navigation state to avoid repeats.
-      showError("Session expired, please log in again.");
+      showError("Your session expired.", "Log in again to continue.");
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.pathname, location.state, navigate, showError]);
@@ -60,14 +60,11 @@ const LoginPage: React.FC = () => {
       setRole(userRole);
       setIsLoggedIn(true);
       checkAuthStatus();
-      showSuccessMessage("Logged in successfully!");
+      showSuccessMessage("Welcome back!");
       navigate("/home");
     } catch (err) {
-      if (err instanceof Error) {
-        showError("Failed to login: " + err.message);
-      } else {
-        showError("An unknown error occurred.");
-      }
+      const message = getErrorMessage(err, "Couldn't log you in. Try again.");
+      if (message) showError(message);
     } finally {
       setLoading(false);
     }
@@ -81,7 +78,7 @@ const LoginPage: React.FC = () => {
         : import.meta.env.VITE_BASE_URL;
       window.location.href = `${baseUrl}auth/google/login`;
     } catch {
-      showError(`Failed to login with Google. Try again later.`);
+      showError("Google sign-in didn't work.", "Try again in a moment.");
       setLoading(false);
     } finally {
       setLoading(false);

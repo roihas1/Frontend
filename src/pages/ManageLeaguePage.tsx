@@ -10,8 +10,8 @@ import { useEffect, useState } from "react";
 import { User } from "../types";
 import axiosInstance from "../api/axiosInstance";
 import { buildRemoveUsersRequest } from "../api/privateLeagueRequests";
-import { useError } from "../components/providers&context/ErrorProvider";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
+import { getErrorMessage } from "../api/getErrorMessage";
 import { League } from "./LeagueSelectionPage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../components/providers&context/TournamentContext";
@@ -38,8 +38,12 @@ const ManageLeague: React.FC = () => {
           `/private-league/${league?.id}/users`
         );
         setUsers(response.data);
-      } catch {
-        showError(`Failed to get users.`);
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Couldn't load league members. Try again.",
+        );
+        if (message) showError(message);
       }
     };
 
@@ -47,7 +51,7 @@ const ManageLeague: React.FC = () => {
     if (league) {
       fetchLeagueUsers();
     }
-  }, [league, selectedTournamentId]);
+  }, [league, selectedTournamentId, showError]);
 
   const handleUpdateLeagueName = async () => {
     try {
@@ -56,9 +60,13 @@ const ManageLeague: React.FC = () => {
       );
       if (league) league.name = leagueName;
       setLeagueName("");
-      showSuccessMessage(`League name changed to ${leagueName}`);
-    } catch {
-      showError(`Failed to update league name.`);
+      showSuccessMessage("League renamed.", `It's now ${leagueName}.`);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't rename the league. Try again.",
+      );
+      if (message) showError(message);
     }
   };
 
@@ -66,8 +74,12 @@ const ManageLeague: React.FC = () => {
     try {
       if (!league?.id) return;
       deleteLeagueMutation.mutate(league.id);
-    } catch {
-      showError(`Failed to delete league ${league?.name}`);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't delete the league. Try again.",
+      );
+      if (message) showError(message);
     }
   };
   const queryClient = useQueryClient();
@@ -77,18 +89,18 @@ const ManageLeague: React.FC = () => {
       return axiosInstance.delete(`/private-league/${leagueId}`);
     },
     onSuccess: () => {
-      showSuccessMessage("League was deleted.");
+      showSuccessMessage("League deleted.");
       queryClient.invalidateQueries({
         queryKey: ["private-leagues", selectedTournamentId],
       });
       navigate("/leagues");
     },
-    onError: (error: any) => {
-      showError(
-        `Failed to delete league ${league?.name ?? ""}. ${
-          error?.response?.data?.message || ""
-        }`
+    onError: (error: unknown) => {
+      const message = getErrorMessage(
+        error,
+        "Couldn't delete the league. Try again.",
       );
+      if (message) showError(message);
     },
   });
 
@@ -104,10 +116,15 @@ const ManageLeague: React.FC = () => {
 
       setSelectedUsers([]);
       showSuccessMessage(
-        `Selected users were removed from league ${league?.name}`
+        "Players removed.",
+        league?.name ? `They're out of ${league.name}.` : undefined,
       );
-    } catch {
-      showError(`Failed to remove users.`);
+    } catch (error) {
+      const message = getErrorMessage(
+        error,
+        "Couldn't remove those players. Try again.",
+      );
+      if (message) showError(message);
     }
   };
 

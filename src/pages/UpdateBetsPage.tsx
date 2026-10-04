@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import axios from "axios";
 import axiosInstance from "../api/axiosInstance";
-import { useError } from "../components/providers&context/ErrorProvider";
-import { useSuccessMessage } from "../components/providers&context/successMassageProvider";
+import { getErrorMessage } from "../api/getErrorMessage";
+import { notify } from "../components/common/notify";
+import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
 import SubmitButton from "../components/common/SubmitButton";
 import { Series } from "./HomePage";
 import CustomSelectInput from "../components/form/CustomSelectInput";
@@ -262,8 +262,12 @@ const UpdateBetsPage: React.FC = () => {
         setSeriesList(response.data);
         setFilteredSeriesList(response.data);
         setSelectedSeries(null);
-      } catch {
-        showError("Failed to fetch series.");
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Couldn't load series. Try again.",
+        );
+        if (message) showError(message);
       }
     };
     fetchSeries();
@@ -415,7 +419,7 @@ const UpdateBetsPage: React.FC = () => {
         startDate.setHours(parseInt(time[0]));
         startDate.setMinutes(parseInt(time[1]));
         if (!("gameNumber" in selectedBet)) {
-          showError("Select game number bigger then 0!");
+          notify.warning("Game number must be at least 1.");
           return;
         }
         const response = await axiosInstance.post(`/spontaneous-bet`, {
@@ -438,7 +442,7 @@ const UpdateBetsPage: React.FC = () => {
         } else {
           setSpontaneousBets((prevBets) => [...prevBets, response.data]);
         }
-        showSuccessMessage("Bet created successfully!");
+        showSuccessMessage("Bet created.");
       } else if (selectedBet.id) {
         await axiosInstance.patch(
           `/player-matchup-bet/${selectedBet.id}/update`,
@@ -456,7 +460,7 @@ const UpdateBetsPage: React.FC = () => {
             bet.id === selectedBet.id ? { ...bet, ...selectedBet } : bet,
           ),
         );
-        showSuccessMessage("Bet updated successfully!");
+        showSuccessMessage("Bet updated.");
       } else {
         const response = await axiosInstance.post("/player-matchup-bet", {
           categories: selectedBet.categories,
@@ -468,13 +472,13 @@ const UpdateBetsPage: React.FC = () => {
           seriesId: selectedSeries?.id,
         });
         setBets((prevBets) => [...prevBets, response.data]);
-        showSuccessMessage("Bet created successfully!");
+        showSuccessMessage("Bet created.");
       }
 
       handleResetSelectedBet(); // Clear selected bet after submission
-    } catch {
-      // console.error(error.response ? error.response.data : error.message);
-      showError("Failed to submit the bet.");
+    } catch (error) {
+      const message = getErrorMessage(error, "Couldn't save the bet. Try again.");
+      if (message) showError(message);
     } finally {
       setLoading(false);
       setIsInEdit(false);
@@ -491,11 +495,14 @@ const UpdateBetsPage: React.FC = () => {
       try {
         await axiosInstance.patch(`/series/${selectedSeries?.id}/closeBets`);
         // await axiosInstance.patch(`/user-series-points/user/updatePoints/all`);
-        showSuccessMessage("Bets closed successfully!");
+        showSuccessMessage("Series bets closed.");
         setSelectedSeries(null);
-      } catch {
-        // console.error(error.response ? error.response.data : error.message);
-        showError("Failed to close all bets.");
+      } catch (error) {
+        const message = getErrorMessage(
+          error,
+          "Couldn't close series bets. Try again.",
+        );
+        if (message) showError(message);
       } finally {
         setLoading(false);
       }
@@ -513,10 +520,14 @@ const UpdateBetsPage: React.FC = () => {
   const handleUpdateMissingBets = async () => {
     try {
       await axiosInstance.patch(`/user-missing-bets/user/updateAllUsers`);
-      showSuccessMessage(`Update all missing bets to all users!`);
+      showSuccessMessage("Missing bets updated for every user.");
       triggerRefresh();
     } catch (error) {
-      showError(`Failed to update Missing Bets ${error}`);
+      const message = getErrorMessage(
+        error,
+        "Couldn't update missing bets. Try again.",
+      );
+      if (message) showError(message);
     }
   };
   const handleCreateNewSpontaneousBet = () => {
@@ -537,9 +548,13 @@ const UpdateBetsPage: React.FC = () => {
           await axiosInstance.delete(`/player-matchup-bet/${bet.id}/delete`);
           setBets(bets.filter((b) => b.id !== bet.id));
         }
-        showSuccessMessage("Bet deleted successfully!");
+        showSuccessMessage("Bet deleted.");
       } catch (error) {
-        showError("Failed to delete the bet.");
+        const message = getErrorMessage(
+          error,
+          "Couldn't delete the bet. Try again.",
+        );
+        if (message) showError(message);
       }
     }
   };
@@ -578,12 +593,15 @@ const UpdateBetsPage: React.FC = () => {
       });
       setCreateSeriesTournamentId("");
 
-      showSuccessMessage("New series created successfully!");
+      showSuccessMessage("Series created.");
       setShowCreateSeriesForm(false); // Close the form
       setIsInEdit(false);
     } catch (error) {
-      showError("Failed to create the new series." + error);
-      console.log(error);
+      const message = getErrorMessage(
+        error,
+        "Couldn't create the series. Try again.",
+      );
+      if (message) showError(message);
     }
   };
   const CheckIcon: React.FC = () => (
@@ -659,10 +677,13 @@ const UpdateBetsPage: React.FC = () => {
             prevState.filter((series) => series.id !== selectedSeries.id),
           );
           setSelectedSeries(null); // Clear the selected series
-          showSuccessMessage("Series deleted successfully!");
+          showSuccessMessage("Series deleted.");
         } catch (error) {
-          showError("Failed to delete the series.");
-          console.error(error);
+          const message = getErrorMessage(
+            error,
+            "Couldn't delete the series. Try again.",
+          );
+          if (message) showError(message);
         }
       }
     }
@@ -719,10 +740,14 @@ const UpdateBetsPage: React.FC = () => {
       setPlayer1Stat(0);
       setPlayer2Stat(0);
       handleResetSelectedBet();
-      showSuccessMessage("Matchup Result updated successfully!");
+      showSuccessMessage("Matchup result updated.");
       setSelectedSeries((prev) => prev);
     } catch (error) {
-      showError("Failed to update match result.");
+      const message = getErrorMessage(
+        error,
+        "Couldn't update the matchup result. Try again.",
+      );
+      if (message) showError(message);
     }
     setLoading(false);
   };
@@ -743,7 +768,7 @@ const UpdateBetsPage: React.FC = () => {
     e.preventDefault();
 
     if (!wonTeam) {
-      showError("Please provide valid series result.");
+      notify.warning("Choose which team won the series.");
       return;
     }
 
@@ -752,11 +777,14 @@ const UpdateBetsPage: React.FC = () => {
       await axiosInstance.patch(`/series/${selectedSeries?.id}/updateGame`, {
         teamWon: parseInt(wonTeam),
       });
-      showSuccessMessage("Series result updated successfully!");
+      showSuccessMessage("Series result updated.");
       setshowSeriesResultForm(false); // Close the form
     } catch (error) {
-      showError("Failed to update series result.");
-      console.error(error);
+      const message = getErrorMessage(
+        error,
+        "Couldn't update the series result. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
     }
@@ -764,17 +792,17 @@ const UpdateBetsPage: React.FC = () => {
   const handleCloseChampionsBets = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTournamentId) {
-      showError("Please select a tournament first.");
+      notify.warning("Select a tournament first.");
       return;
     }
 
     if (!mvpPlayer.trim()) {
-      showError("Please enter the Finals MVP.");
+      notify.warning("Enter the Finals MVP.");
       return;
     }
 
     if (!championTeam) {
-      showError("Please select the champion team.");
+      notify.warning("Select the champion team.");
       return;
     }
 
@@ -783,8 +811,9 @@ const UpdateBetsPage: React.FC = () => {
       "East",
     );
     if (!easternFinalsTeamIds?.length) {
-      showError(
-        "East Conference Finals teams are missing team IDs. Check the series setup.",
+      notify.warning(
+        "East Conference Finals are missing team IDs.",
+        "Check the series setup.",
       );
       return;
     }
@@ -794,16 +823,18 @@ const UpdateBetsPage: React.FC = () => {
       "West",
     );
     if (!westernFinalsTeamIds?.length) {
-      showError(
-        "West Conference Finals teams are missing team IDs. Check the series setup.",
+      notify.warning(
+        "West Conference Finals are missing team IDs.",
+        "Check the series setup.",
       );
       return;
     }
 
     const finalsTeamIds = finalsTeams.map((team) => team.id);
     if (finalsTeamIds.length < 2) {
-      showError(
-        "NBA Finals teams are missing team IDs. Check the Finals series setup.",
+      notify.warning(
+        "NBA Finals are missing team IDs.",
+        "Check the Finals series setup.",
       );
       return;
     }
@@ -825,7 +856,11 @@ const UpdateBetsPage: React.FC = () => {
         setIsInEdit(false);
         showSuccessMessage("Champions bets closed.");
       } catch (error) {
-        showError("Failed to close champions bets");
+        const message = getErrorMessage(
+          error,
+          "Couldn't close champions bets. Try again.",
+        );
+        if (message) showError(message);
       } finally {
         setLoading(false);
       }
@@ -871,10 +906,14 @@ const UpdateBetsPage: React.FC = () => {
         dateOfStart: toApiDateString(selectedSeries?.dateOfStart),
         timeOfStart: selectedSeries?.timeOfStart,
       });
-      showSuccessMessage(`Date and Time updated!`);
+      showSuccessMessage("Date and time updated.");
       setShowUpdateSeriesTime(false);
     } catch (error) {
-      showError(`Failed to Update Series Time.`);
+      const message = getErrorMessage(
+        error,
+        "Couldn't update the series time. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
     }
@@ -882,7 +921,7 @@ const UpdateBetsPage: React.FC = () => {
   const handleCreateNewStage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTournamentId) {
-      showError("Please select a tournament first.");
+      notify.warning("Select a tournament first.");
       return;
     }
     setLoading(true);
@@ -901,7 +940,11 @@ const UpdateBetsPage: React.FC = () => {
       setStartDate("");
       setShowPlayoffsStageCreation(false);
     } catch (error) {
-      showError("Failed to create new stage.");
+      const message = getErrorMessage(
+        error,
+        "Couldn't create the stage. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
       setIsInEdit(false);
@@ -918,11 +961,11 @@ const UpdateBetsPage: React.FC = () => {
     const name = newTournamentName.trim();
     const year = parseInt(newTournamentYear, 10);
     if (!name) {
-      showError("Please enter a tournament name.");
+      notify.warning("Enter a tournament name.");
       return;
     }
     if (!Number.isFinite(year) || year < 1900 || year > 2100) {
-      showError("Please enter a valid year between 1900 and 2100.");
+      notify.warning("Enter a year between 1900 and 2100.");
       return;
     }
     setLoading(true);
@@ -944,19 +987,11 @@ const UpdateBetsPage: React.FC = () => {
       setNewTournamentSportType("NBA");
       setShowCreateTournamentForm(false);
     } catch (error: unknown) {
-      if (axios.isAxiosError(error) && error.response?.data) {
-        const data = error.response.data as { message?: string | string[] };
-        const detail = Array.isArray(data.message)
-          ? data.message.join(", ")
-          : data.message;
-        showError(
-          detail
-            ? `Failed to create tournament. ${detail}`
-            : "Failed to create tournament.",
-        );
-      } else {
-        showError("Failed to create tournament.");
-      }
+      const message = getErrorMessage(
+        error,
+        "Couldn't create the tournament. Try again.",
+      );
+      if (message) showError(message);
     } finally {
       setLoading(false);
       setIsInEdit(false);
