@@ -32,6 +32,7 @@ import BetForm from "../components/forPages/BetForm";
 import ActionButtons from "../components/forPages/ActionButtons";
 import BetsTabs from "../components/forPages/betsTabs";
 import { useTournament } from "../components/providers&context/TournamentContext";
+import { useMissingBets } from "../components/providers&context/MissingBetsContext";
 
 function seriesTeam1Name(s: Series): string {
   return (s.team1?.trim() || s.team1Relation?.name?.trim() || "") as string;
@@ -238,6 +239,7 @@ const UpdateBetsPage: React.FC = () => {
 
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
+  const { triggerRefresh } = useMissingBets();
   const {
     selectedTournamentId,
     tournaments,
@@ -512,6 +514,7 @@ const UpdateBetsPage: React.FC = () => {
     try {
       await axiosInstance.patch(`/user-missing-bets/user/updateAllUsers`);
       showSuccessMessage(`Update all missing bets to all users!`);
+      triggerRefresh();
     } catch (error) {
       showError(`Failed to update Missing Bets ${error}`);
     }

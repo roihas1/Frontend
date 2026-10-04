@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import React, { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { PlayerMatchupBet, SpontaneousBet } from "../../types";
 import { useError } from "../providers&context/ErrorProvider";
 // import { useSuccessMessage } from "../providers&context/successMassageProvider";
@@ -107,6 +108,7 @@ const MissingBets = () => {
   const [spontaneousGameTab, setSpontaneousGameTab] = useState<number>(0);
   const [intialTab, setIntialTab] = useState<number>(0);
   const { refreshTrigger } = useMissingBets();
+  const { pathname } = useLocation();
 
   const { isLoggedIn } = useAuth();
   const { selectedTournamentId } = useTournament();
@@ -164,7 +166,7 @@ const MissingBets = () => {
     if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
     }
-  }, [fetchMissingBets, refreshTrigger, isLoggedIn, selectedTournamentId]);
+  }, [fetchMissingBets, refreshTrigger, isLoggedIn, selectedTournamentId, pathname]);
 
   useEffect(() => {
     if (selectedSeries) {
