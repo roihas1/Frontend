@@ -96,7 +96,11 @@ const resolveDisplayTeamName = (
   return fullName.split(" ").slice(-1)[0] || fullName;
 };
 
-const MissingBets = () => {
+interface MissingBetsProps {
+  showLabel?: boolean;
+}
+
+const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
   const [badgeContent, setBadgeContent] = useState<number>(0);
   const [missingBetsData, setMissiningBetsData] = useState<MissingBetsData>();
   const { showError } = useError();
@@ -107,7 +111,7 @@ const MissingBets = () => {
   const [seriesPoints, setSeriesPoints] = useState<number>(0);
   const [spontaneousGameTab, setSpontaneousGameTab] = useState<number>(0);
   const [intialTab, setIntialTab] = useState<number>(0);
-  const { refreshTrigger } = useMissingBets();
+  const { refreshTrigger, setMissingBetsCount } = useMissingBets();
   const { pathname } = useLocation();
 
   const { isLoggedIn } = useAuth();
@@ -158,15 +162,26 @@ const MissingBets = () => {
         0
       );
       setBadgeContent(totalMissingBets);
+      setMissingBetsCount(totalMissingBets);
     } catch (error) {
       showError(`${error}`);
     }
-  }, [showError]);
+  }, [showError, setMissingBetsCount]);
   useEffect(() => {
     if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
+    } else {
+      setBadgeContent(0);
+      setMissingBetsCount(0);
     }
-  }, [fetchMissingBets, refreshTrigger, isLoggedIn, selectedTournamentId, pathname]);
+  }, [
+    fetchMissingBets,
+    refreshTrigger,
+    isLoggedIn,
+    selectedTournamentId,
+    pathname,
+    setMissingBetsCount,
+  ]);
 
   useEffect(() => {
     if (selectedSeries) {
@@ -186,7 +201,11 @@ const MissingBets = () => {
     <div className="block ">
       <div className="flex items-center gap-2">
        
-        <IconButton onClick={handleClick} disabled={!isLoggedIn}>
+        <IconButton
+          onClick={handleClick}
+          disabled={!isLoggedIn}
+          aria-label="Missing bets"
+        >
           <Badge
             badgeContent={!isLoggedIn ? 0 : badgeContent}
             sx={{
@@ -215,13 +234,16 @@ const MissingBets = () => {
             </svg>
           </Badge>
         </IconButton>
-        <button
-          className="text-md text-gray-900 sm:hidden focus:outline-none"
-          onClick={handleClick}
-          disabled={!isLoggedIn}
-        >
-          Missing Bets
-        </button>
+        {showLabel && (
+          <button
+            type="button"
+            className="text-md text-gray-900 sm:hidden focus:outline-none"
+            onClick={handleClick}
+            disabled={!isLoggedIn}
+          >
+            Missing Bets
+          </button>
+        )}
       </div>
 
       <Menu

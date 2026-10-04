@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useUser } from "../providers&context/userContext";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import axiosInstance from "../../api/axiosInstance";
@@ -7,12 +7,26 @@ import { useSuccessMessage } from "../providers&context/successMassageProvider";
 import Logo from "../../assets/siteLogo/logo_color_trans.png";
 import Title from "../../assets/siteLogo/title_straight_shadow.png";
 import NavLink from "./NavLink";
+import MobileNavItem from "./MobileNavItem";
 import MissingBets from "./MissinigBets";
 import { useAuth } from "../providers&context/AuthContext";
 import { useTournament } from "../providers&context/TournamentContext";
 import { FormControl, MenuItem, Select } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
+import { motion } from "framer-motion";
+import {
+  HomeIcon,
+  TrophyIcon,
+  ArrowsRightLeftIcon,
+  ChartBarIcon,
+  BookOpenIcon,
+  UsersIcon,
+  Cog6ToothIcon,
+  XMarkIcon,
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/outline";
 
 const Navbar: React.FC = () => {
   const { role, setRole } = useUser();
@@ -26,6 +40,55 @@ const Navbar: React.FC = () => {
   const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const username = localStorage.getItem("username") ?? "";
+
+  const mobileNavSections = useMemo(() => {
+    const baseSections: {
+      label: string;
+      items: {
+        to: string;
+        title: string;
+        icon: React.ElementType;
+      }[];
+    }[] = [
+      {
+        label: "Play",
+        items: [
+          { to: "/home", title: "Home", icon: HomeIcon },
+          { to: "/leagues", title: "Leagues", icon: TrophyIcon },
+          { to: "/comparing", title: "Comparison", icon: ArrowsRightLeftIcon },
+          { to: "/guess-stats", title: "Guess Stats", icon: ChartBarIcon },
+        ],
+      },
+      {
+        label: "Info",
+        items: [
+          { to: "/HowToPlay", title: "How to Play?", icon: BookOpenIcon },
+          { to: "/AboutUs", title: "About Us", icon: UsersIcon },
+        ],
+      },
+    ];
+
+    if (role === "ADMIN") {
+      baseSections.push({
+        label: "Admin",
+        items: [
+          { to: "/updateBets", title: "Update Bets", icon: Cog6ToothIcon },
+        ],
+      });
+    }
+
+    let staggerIndex = 0;
+    return baseSections.map((section) => ({
+      label: section.label,
+      items: section.items.map((item) => {
+        const itemWithStagger = { ...item, staggerIndex };
+        staggerIndex += 1;
+        return itemWithStagger;
+      }),
+    }));
+  }, [role]);
+
   const isActive = (path: string) => {
     const leaguesPaths = ["/leagues", "/league", "/manageLeague"];
     return (
@@ -36,6 +99,27 @@ const Navbar: React.FC = () => {
           location.pathname.startsWith("/manage")))
     );
   };
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMenuOpen(false);
+      }
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -53,6 +137,7 @@ const Navbar: React.FC = () => {
     showSuccessMessage("You logged out, see you again!");
     logout({ reason: "manual" });
     setRole("");
+    setIsMenuOpen(false);
     navigate("/");
   };
 
@@ -60,6 +145,8 @@ const Navbar: React.FC = () => {
     setSelectedTournamentId(nextTournamentId);
     await queryClient.invalidateQueries();
   };
+
+  const closeMobileMenu = () => setIsMenuOpen(false);
 
   const renderTournamentPicker = (variant: "desktop" | "mobile" = "desktop") => {
     if (!isLoggedIn || tournaments.length === 0) {
@@ -197,8 +284,9 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="xl:hidden flex items-center gap-2">
+        <div className="xl:hidden flex items-center gap-1">
           {renderTournamentPicker("mobile")}
+          <MissingBets showLabel={false} />
           <button
             type="button"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
@@ -207,141 +295,102 @@ const Navbar: React.FC = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="w-7 h-7"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18 18 6M6 6l12 12"
-                />
-              </svg>
+              <XMarkIcon className="h-7 w-7" aria-hidden />
             ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="w-7 h-7"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <Bars3Icon className="h-7 w-7" aria-hidden />
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Navigation - Slide-in Menu */}
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
+      {/* Mobile drawer backdrop */}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-40 transform ${
+        role="presentation"
+        onClick={closeMobileMenu}
+        className={`fixed inset-0 z-30 bg-black/40 backdrop-blur-sm transition-opacity duration-300 xl:hidden ${
+          isMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      {/* Mobile drawer panel */}
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        className={`fixed right-0 top-0 z-40 flex h-full w-[85%] max-w-sm flex-col rounded-l-3xl bg-white shadow-2xl transition-transform duration-300 ease-out xl:hidden ${
           isMenuOpen ? "translate-x-0" : "translate-x-full"
-        } transition-transform duration-300 ease-in-out xl:hidden`}
+        }`}
       >
-        <div className="flex flex-col h-full p-6 space-y-6">
+        <div className="flex items-center justify-between rounded-tl-3xl bg-gradient-to-br from-colors-nba-blue to-[#0f2a5c] px-5 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] text-white">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={Logo} className="h-10 w-auto shrink-0" alt="" />
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider text-white/70">
+                Playoffs
+              </p>
+              <p className="truncate font-semibold">
+                {username || "Guest"}
+              </p>
+            </div>
+          </div>
           <button
             type="button"
             aria-label="Close menu"
-            onClick={() => setIsMenuOpen(false)}
-            className="self-end text-gray-600 text-2xl hover:text-black"
+            onClick={closeMobileMenu}
+            className="shrink-0 rounded-full bg-white/15 p-2 hover:bg-white/25 transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-              className="size-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18 18 6M6 6l12 12"
-              />
-            </svg>
+            <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>
+        </div>
 
-          <NavLink
-            to="/home"
-            title="🏠 Home"
-            isActive={isActive("/home")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
-          <NavLink
-            to="/leagues"
-            title="🏆 Leagues"
-            isActive={isActive("/leagues")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
-          <NavLink
-            to="/comparing"
-            title="🔍 Comparison"
-            isActive={isActive("/comparing")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
-          <NavLink
-            to="/guess-stats"
-            title="📊 Guess Stats"
-            isActive={isActive("/guess-stats")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
-          <NavLink
-            to="/HowToPlay"
-            title="📖 How to Play?"
-            isActive={isActive("/HowToPlay")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {mobileNavSections.map((section) => (
+            <div key={section.label} className="mb-4 last:mb-0">
+              <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                {section.label}
+              </p>
+              <div className="space-y-1">
+                {section.items.map((item) => (
+                    <motion.div
+                      key={item.to}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={
+                        isMenuOpen
+                          ? { opacity: 1, x: 0 }
+                          : { opacity: 0, x: 16 }
+                      }
+                      transition={{
+                        delay: isMenuOpen ? item.staggerIndex * 0.04 : 0,
+                        duration: 0.2,
+                      }}
+                    >
+                      <MobileNavItem
+                        to={item.to}
+                        title={item.title}
+                        icon={item.icon}
+                        isActive={isActive(item.to)}
+                        isLoggedIn={isLoggedIn}
+                        handleClick={closeMobileMenu}
+                      />
+                    </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
 
-          {role === "ADMIN" && (
-            <NavLink
-              to="/updateBets"
-              title="⚙️ Update Bets"
-              isActive={isActive("/updateBets")}
-              isLoggedIn={isLoggedIn}
-              handleUserClick={() => setIsMenuOpen(false)}
-            />
-          )}
-          <NavLink
-            to="/AboutUs"
-            title="👥 About Us"
-            isActive={isActive("/AboutUs")}
-            isLoggedIn={isLoggedIn}
-            handleUserClick={() => setIsMenuOpen(false)}
-          />
-          <MissingBets />
+        <div className="border-t border-gray-100 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button
-            onClick={handleLogout}
-            className="text-red-500 text-lg font-bold hover:text-red-700"
+            type="button"
+            onClick={() => void handleLogout()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 font-medium text-red-600 transition-colors hover:bg-red-50 active:bg-red-100 disabled:pointer-events-none disabled:opacity-50"
             disabled={!isLoggedIn}
-            style={{
-              pointerEvents: isLoggedIn ? "auto" : "none",
-              opacity: isLoggedIn ? 1 : 0.5,
-            }}
           >
+            <ArrowRightOnRectangleIcon className="h-5 w-5" aria-hidden />
             Logout
           </button>
         </div>
-      </div>
+      </aside>
     </nav>
   );
 };
