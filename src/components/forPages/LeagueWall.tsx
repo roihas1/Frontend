@@ -9,6 +9,10 @@ import {
 import type { LeagueMessage } from "../../types";
 import axiosInstance from "../../api/axiosInstance";
 import { buildCreateLeagueMessageRequest } from "../../api/privateLeagueRequests";
+import {
+  glassSheetHandleClassName,
+  glassSheetPanelClassName,
+} from "../common/glassSheet";
 import { useTournament } from "../providers&context/TournamentContext";
 
 interface LeagueWallProps {
@@ -502,7 +506,7 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
       <button
         type="button"
         onClick={() => setIsMobileSheetOpen(true)}
-        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-3 z-30 flex items-center gap-2 rounded-full bg-colors-nba-blue px-4 py-3 text-sm font-bold text-white shadow-xl ring-2 ring-colors-nba-yellow/60 lg:hidden"
+        className="fixed bottom-nav-offset right-3 z-30 flex items-center gap-2 rounded-full bg-colors-nba-blue px-4 py-3 text-sm font-bold text-white shadow-xl ring-2 ring-colors-nba-yellow/60 lg:hidden"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -531,11 +535,13 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
           <button
             type="button"
             aria-label="Close league talk"
-            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            className="fixed inset-0 z-[45] bg-black/40 lg:hidden"
             onClick={() => setIsMobileSheetOpen(false)}
           />
-          <section className="fixed inset-x-0 bottom-0 z-50 h-[74vh] rounded-t-3xl bg-white p-4 shadow-2xl lg:hidden">
-            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-gray-300" />
+          <section
+            className={`fixed inset-x-0 bottom-0 z-50 flex h-[74vh] flex-col p-4 lg:hidden ${glassSheetPanelClassName}`}
+          >
+            <div aria-hidden className={glassSheetHandleClassName} />
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-colors-nba-blue">
                 League Trash Talk
@@ -543,12 +549,12 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
               <button
                 type="button"
                 onClick={() => setIsMobileSheetOpen(false)}
-                className="rounded-full border border-gray-300 px-3 py-1 text-sm"
+                className="rounded-full border border-gray-200/80 bg-white/60 px-3 py-1 text-sm text-colors-nba-blue active:bg-black/5"
               >
                 Close
               </button>
             </div>
-            <div className="flex h-[calc(100%-3.5rem)] flex-col">
+            <div className="flex min-h-0 flex-1 flex-col pb-[max(0.25rem,env(safe-area-inset-bottom))]">
               <div ref={mobileMessagesRef} className="flex-1 overflow-y-auto pr-1">
                 {renderMessages()}
               </div>

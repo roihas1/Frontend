@@ -29,7 +29,7 @@ const ToastCloseButton: React.FC<CloseButtonProps> = ({
     type="button"
     aria-label={ariaLabel ?? "Close"}
     onClick={closeToast}
-    className="absolute right-1.5 top-1.5 rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white"
+    className="absolute right-2 top-2 rounded-full p-1.5 text-gray-400 hover:bg-black/5 hover:text-gray-700"
   >
     <CloseRounded sx={{ fontSize: 16 }} />
   </button>
@@ -55,7 +55,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
         closeOnClick
         pauseOnHover
         draggable
-        theme="dark"
+        theme="light"
         icon={false}
         transition={Slide}
         closeButton={ToastCloseButton}

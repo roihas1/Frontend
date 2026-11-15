@@ -12,6 +12,16 @@ module.exports = {
       animation: {
         'scale-pulse': 'scale-pulse 1.6s ease-in-out infinite',
       },
+      zIndex: {
+        'bottom-nav': '40',
+      },
+      spacing: {
+        'nav-offset': 'calc(5rem + max(0.75rem, env(safe-area-inset-bottom)))',
+      },
+      boxShadow: {
+        glass: '0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.7)',
+        'glass-bubble': '0 2px 8px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9)',
+      },
       colors:{
         colors: {
           'nba-blue': '#1D428A', // Custom color example (NBA Blue)

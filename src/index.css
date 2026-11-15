@@ -1,31 +1,48 @@
-/* Toast cards sit on the NBA navy surface. Variables are scoped to .Toastify
-   so they win over the library's :root defaults regardless of import order. */
+/* Toast cards use the same light glass language as the app chrome. */
 .Toastify {
-  --toastify-color-light: #0f2a5c;
-  --toastify-color-dark: #0f2a5c;
-  --toastify-text-color-light: #fff;
-  --toastify-text-color-dark: #fff;
-  --toastify-toast-bd-radius: 14px;
+  --toastify-color-light: #ffffff;
+  --toastify-color-dark: #ffffff;
+  --toastify-text-color-light: #111827;
+  --toastify-text-color-dark: #111827;
+  --toastify-toast-bd-radius: 24px;
   --toastify-toast-width: 360px;
   --toastify-toast-min-height: 0;
   --toastify-toast-padding: 0;
-  --toastify-toast-shadow: 0 16px 40px rgba(8, 18, 48, 0.45);
+  --toastify-toast-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
   --toastify-font-family: inherit;
   --toastify-toast-top: max(4.75rem, env(safe-area-inset-top));
   --toastify-color-progress-success: #10b981;
   --toastify-color-progress-error: #c8102e;
   --toastify-color-progress-warning: #fdb927;
   --toastify-color-progress-info: #7eb6ff;
-  --toastify-color-progress-dark: #7eb6ff;
+  --toastify-color-progress-dark: #1d428a;
   --toastify-z-index: 60;
 }
 
 .Toastify .Toastify__toast {
-  background: rgba(15, 42, 92, 0.96);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* Fallback when backdrop-filter is unavailable */
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   overflow: hidden;
-  color: #fff;
+  color: #111827;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .Toastify .Toastify__toast {
+    background: rgba(255, 255, 255, 0.66);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .Toastify .Toastify__toast {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .Toastify .Toastify__toast-body {
@@ -34,9 +51,18 @@
   align-items: stretch;
 }
 
+.Toastify .Toastify__progress-bar {
+  height: 3px;
+  border-radius: 999px;
+}
+
 .Toastify .Toastify__close-button {
-  color: #fff;
-  opacity: 0.8;
+  color: #6b7280;
+  opacity: 1;
+}
+
+.Toastify .Toastify__close-button:hover {
+  color: #111827;
 }
 
 @media only screen and (max-width: 480px) {
@@ -52,7 +78,7 @@
   }
 
   .Toastify .Toastify__toast {
-    border-radius: 14px;
+    border-radius: 24px;
     margin-bottom: 0.75rem;
     width: 100%;
   }

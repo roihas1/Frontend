@@ -44,7 +44,7 @@ const TeamDialogDesktopView: React.FC<TeamDialogModel> = ({
   }
 
   return (
-    <Dialog open={isOpen} onClose={closeDialog} className="relative z-30">
+    <Dialog open={isOpen} onClose={closeDialog} className="relative z-50">
       <div
         className="fixed inset-0 bg-black bg-opacity-50"
         aria-hidden="true"

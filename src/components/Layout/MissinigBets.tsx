@@ -4,12 +4,14 @@ import {
   AccordionSummary,
   Badge,
   IconButton,
-  ListSubheader,
   Menu,
-  Typography,
 } from "@mui/material";
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import {
+  ChevronDownIcon,
+  TrophyIcon,
+} from "@heroicons/react/24/outline";
 import { PlayerMatchupBet, SpontaneousBet } from "../../types";
 import { useError } from "../providers&context/NotificationProvider";
 import { getErrorMessage } from "../../api/getErrorMessage";
@@ -19,7 +21,6 @@ import defaultLogo from "../../assets/logos/defaultLogoTBD.png";
 import TeamDialog from "../form/TeamDialog";
 import { useAuth } from "../providers&context/AuthContext";
 import { useMissingBets } from "../providers&context/MissingBetsContext";
-import StyledMenuItem from "../forPages/StyledMenuItem";
 import { useTournament } from "../providers&context/TournamentContext";
 
 interface MissingBetsData {
@@ -86,25 +87,57 @@ const resolveTeamLogo = (teamName?: string) => {
 
 const resolveDisplayTeamName = (
   teamName?: string,
-  relationName?: string
+  relationName?: string,
 ) => {
   const candidate = teamName?.trim() || relationName?.trim() || "";
   if (!candidate) return "";
   const normalized = normalizeName(candidate);
   const fullName = teamAliasesToFullName[normalized] ?? candidate;
-  // Keep display consistent with bracket cards (short nicknames)
   return fullName.split(" ").slice(-1)[0] || fullName;
 };
 
-interface MissingBetsProps {
-  showLabel?: boolean;
+interface MissingBetRowProps {
+  label: string;
+  meta: string;
+  onClick: () => void;
 }
 
-const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
+const MissingBetRow: React.FC<MissingBetRowProps> = ({
+  label,
+  meta,
+  onClick,
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-colors-nba-blue/5 active:bg-colors-nba-blue/10"
+  >
+    <span className="min-w-0 flex-1">
+      <span className="block truncate text-sm font-medium text-gray-900">
+        {label}
+      </span>
+      <span className="mt-0.5 block text-[11px] font-medium uppercase tracking-wide text-gray-400">
+        {meta}
+      </span>
+    </span>
+    <span className="shrink-0 rounded-full bg-colors-nba-blue/10 px-2 py-0.5 text-[11px] font-semibold text-colors-nba-blue">
+      Predict
+    </span>
+  </button>
+);
+
+interface MissingBetsProps {
+  showLabel?: boolean;
+  compact?: boolean;
+}
+
+const MissingBets: React.FC<MissingBetsProps> = ({
+  showLabel = true,
+  compact = false,
+}) => {
   const [badgeContent, setBadgeContent] = useState<number>(0);
   const [missingBetsData, setMissiningBetsData] = useState<MissingBetsData>();
   const { showError } = useError();
-  // const { showSuccessMessage } = useSuccessMessage();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedSeries, setSelectedSeries] = useState<Series>();
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -127,8 +160,14 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
       const team2Name = series.team2Relation?.name ?? series.team2 ?? "";
       const team1Logo = resolveTeamLogo(team1Name);
       const team2Logo = resolveTeamLogo(team2Name);
-      series.team1 = resolveDisplayTeamName(series.team1, series.team1Relation?.name);
-      series.team2 = resolveDisplayTeamName(series.team2, series.team2Relation?.name);
+      series.team1 = resolveDisplayTeamName(
+        series.team1,
+        series.team1Relation?.name,
+      );
+      series.team2 = resolveDisplayTeamName(
+        series.team2,
+        series.team2Relation?.name,
+      );
       series.dateOfStart = new Date(response.data.dateOfStart);
       series.logo1 = team1Logo;
       series.logo2 = team2Logo;
@@ -142,7 +181,6 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
     }
   };
 
-  // Open/close state for a possible modal or dropdown
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -156,14 +194,14 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
       const response = await axiosInstance.get(`/user-missing-bets/user`);
       setMissiningBetsData(response.data);
       const totalMissingBets: number = Object.values(
-        response.data as MissingBetsData
+        response.data as MissingBetsData,
       ).reduce(
         (acc: number, series) =>
           acc +
-          (series.gamesAndWinner ? 1 : 0) + // Add 1 if gamesAndWinner is true
-          series.playerMatchup.length + // Count playerMatchup bets
-          series.spontaneousBets.length, // Count spontaneous bets
-        0
+          (series.gamesAndWinner ? 1 : 0) +
+          series.playerMatchup.length +
+          series.spontaneousBets.length,
+        0,
       );
       setBadgeContent(totalMissingBets);
       setMissingBetsCount(totalMissingBets);
@@ -175,6 +213,7 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
       if (message) showError(message);
     }
   }, [showError, setMissingBetsCount]);
+
   useEffect(() => {
     if (isLoggedIn && selectedTournamentId) {
       fetchMissingBets();
@@ -205,22 +244,96 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
     return gamesAndWinnerCount + playerMatchupCount + spontaneousBetsCount;
   };
 
+  const seriesIds = missingBetsData ? Object.keys(missingBetsData) : [];
+  const hasMissingBets = seriesIds.length > 0;
+
+  const renderSeriesRows = (id: string) => {
+    const series = missingBetsData![id];
+    return (
+      <div className="space-y-0.5">
+        {series.gamesAndWinner && (
+          <MissingBetRow
+            label="Games and Winner"
+            meta="Series"
+            onClick={() => {
+              handleClose();
+              setSpontaneousGameTab(0);
+              setIntialTab(0);
+              void fetchSeriesData(id);
+            }}
+          />
+        )}
+        {series.playerMatchup.map((matchup) => (
+          <MissingBetRow
+            key={matchup.id}
+            label={`${matchup.player1} vs ${matchup.player2}`}
+            meta="Matchup"
+            onClick={() => {
+              handleClose();
+              setSpontaneousGameTab(0);
+              setIntialTab(0);
+              void fetchSeriesData(id);
+            }}
+          />
+        ))}
+        {series.spontaneousBets.map((matchup) => (
+          <MissingBetRow
+            key={matchup.id}
+            label={`${matchup.player1} vs ${matchup.player2}`}
+            meta={
+              matchup.gameNumber != null
+                ? `Game ${matchup.gameNumber}`
+                : "Live bet"
+            }
+            onClick={() => {
+              handleClose();
+              setSpontaneousGameTab(matchup.gameNumber ?? 0);
+              setIntialTab(1);
+              void fetchSeriesData(id);
+            }}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="block ">
-      <div className="flex items-center gap-2">
-       
+    <div className="block">
+      <div className={`flex items-center ${compact ? "gap-0" : "gap-2"}`}>
         <IconButton
           onClick={handleClick}
           disabled={!isLoggedIn}
-          aria-label="Missing bets"
+          aria-label={
+            badgeContent > 0
+              ? `Missing bets, ${badgeContent} open`
+              : "Missing bets"
+          }
+          size={compact ? "small" : "medium"}
+          sx={
+            compact
+              ? {
+                  width: 40,
+                  height: 40,
+                  color: isLoggedIn ? "#111827" : undefined,
+                }
+              : undefined
+          }
         >
           <Badge
             badgeContent={!isLoggedIn ? 0 : badgeContent}
+            overlap="circular"
             sx={{
               "& .MuiBadge-badge": {
                 backgroundColor: "#1D428A",
                 color: "white",
                 cursor: "pointer",
+                ...(compact && {
+                  minWidth: 16,
+                  height: 16,
+                  fontSize: "0.65rem",
+                  top: 2,
+                  right: 2,
+                }),
               },
             }}
           >
@@ -230,8 +343,8 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
               viewBox="0 0 24 24"
               strokeWidth="1.5"
               stroke="currentColor"
-              className={`size-6 ${
-                !isLoggedIn ? "text-gray-500" : "text-black"
+              className={`${compact ? "size-5" : "size-6"} ${
+                !isLoggedIn ? "text-gray-500" : "text-gray-900"
               }`}
             >
               <path
@@ -242,7 +355,7 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
             </svg>
           </Badge>
         </IconButton>
-        {showLabel && (
+        {showLabel && !compact && (
           <button
             type="button"
             className="text-md text-gray-900 sm:hidden focus:outline-none"
@@ -258,200 +371,132 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
         MenuListProps={{
-          "aria-labelledby": "basic-button",
+          "aria-label": "Missing bets",
+          sx: { py: 0 },
         }}
         slotProps={{
           paper: {
             sx: {
-              maxHeight: "70vh",
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch", // smooth scrolling on iOS
-              borderRadius: 2,
-              boxShadow: "0 8px 16px rgba(0, 0, 0, 0.2)",
-              backgroundColor: "#f5f5f5",
+              mt: 1,
+              width: { xs: "min(22rem, calc(100vw - 1.5rem))", sm: 360 },
+              maxHeight: "min(70vh, 32rem)",
+              overflow: "hidden",
+              borderRadius: "16px",
+              border: "1px solid rgba(15, 23, 42, 0.08)",
+              boxShadow: "0 16px 40px rgba(15, 23, 42, 0.16)",
+              backgroundColor: "#ffffff",
             },
           },
         }}
       >
-        <div className="p-2.5 flex justify-center">
-          {missingBetsData && Object.keys(missingBetsData).length > 0 ? (
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: "semi-bold",
-                textDecoration: "underline",
-                color: "black",
-              }}
-            >
-              Still Got Bets to Predict — Let’s Go!
-            </Typography>
-          ) : (
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 300,
-                fontStyle: "italic",
-                color: "black",
-              }}
-            >
-              No Open Bets — You’re Ready for Tip-Off!
-            </Typography>
-          )}
-        </div>
-        {missingBetsData &&
-          Object.keys(missingBetsData).map((id) => {
-            const totalBets = calculateTotalBets(missingBetsData[id]);
-            return totalBets > 3 || Object.keys(missingBetsData).length > 3 ? (
-              <Accordion key={id}>
-                <AccordionSummary
-                  expandIcon={
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                      className="size-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m19.5 8.25-7.5 7.5-7.5-7.5"
-                      />
-                    </svg>
-                  }
-                  sx={{
-                    backgroundColor: "#f5f5f5",
-                    "&.Mui-expanded": {
-                      minHeight: "32px", // Adjust the height when expanded
-                      margin: 0, // Remove additional margin
-                    },
-                    "& .MuiAccordionSummary-content": {
-                      margin: "1px", // Remove margin inside the content
-                    },
-                    padding: "4px 8px", // Adjust the padding for a tighter look
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontWeight: "600",
-                      textDecoration: "underline",
-                    }}
-                  >
-                    {missingBetsData[id].seriesName}
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {/* Display inside Accordion */}
-                  {missingBetsData[id].gamesAndWinner && (
-                    <StyledMenuItem
-                      key={`${id}-gamesWinner`}
-                      onClick={() => {
-                        handleClose();
-                        setSpontaneousGameTab(0);
-                        setIntialTab(0);
-                        fetchSeriesData(id);
-                      }}
-                    >
-                      Games and Winner Selection
-                    </StyledMenuItem>
-                  )}
-                  {missingBetsData[id].playerMatchup.map((matchup) => (
-                    <StyledMenuItem
-                      key={matchup.id}
-                      onClick={() => {
-                        handleClose();
-                        setSpontaneousGameTab(0);
-                        setIntialTab(0);
-                        fetchSeriesData(id);
-                      }}
-                    >
-                      {matchup.player1} vs {matchup.player2}
-                    </StyledMenuItem>
-                  ))}
-                  {missingBetsData[id].spontaneousBets.map((matchup) => (
-                    <StyledMenuItem
-                      key={matchup.id}
-                      onClick={() => {
-                        handleClose();
-                        setSpontaneousGameTab(matchup.gameNumber ?? 0);
-                        setIntialTab(1);
-                        
-                        fetchSeriesData(id);
-                      }}
-                    >
-                      {matchup.player1} vs {matchup.player2}
-                    </StyledMenuItem>
-                  ))}
-                </AccordionDetails>
-              </Accordion>
-            ) : (
+        <div className="flex max-h-[min(70vh,32rem)] flex-col">
+          <div className="shrink-0 border-b border-gray-100 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
               <div>
-                <ListSubheader
-                  sx={{
-                    padding: "4px 8px", // Match AccordionSummary padding
-                    backgroundColor: "#f5f5f5", // Same background color
-                    borderRadius: "4px", // Consistent rounded corners
-                    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.1)", // Subtle shadow for elevation
-                    cursor: "pointer", // Make it feel clickable like Accordion
-                    "&:hover": {
-                      backgroundColor: "#e0e0e0", // Slight hover effect
-                    },
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontWeight: "600",
-                      textDecoration: "underline",
-                      color: "black",
-                    }}
-                  >
-                    {missingBetsData[id].seriesName}
-                  </Typography>
-                </ListSubheader>
-                {missingBetsData[id].gamesAndWinner && (
-                  <StyledMenuItem
-                    key={`${id}-gamesWinner`}
-                    onClick={() => {
-                      handleClose();
-                      setSpontaneousGameTab(0);
-                      setIntialTab(0);
-                      fetchSeriesData(id);
-                    }}
-                  >
-                    Games and Winner Selection
-                  </StyledMenuItem>
-                )}
-                {missingBetsData[id].playerMatchup.map((matchup) => (
-                  <StyledMenuItem
-                    key={matchup.id}
-                    onClick={() => {
-                      handleClose();
-                      setSpontaneousGameTab(0);
-                      setIntialTab(0);
-                      fetchSeriesData(id);
-                    }}
-                  >
-                    {matchup.player1} vs {matchup.player2}
-                  </StyledMenuItem>
-                ))}
-                {missingBetsData[id].spontaneousBets.map((matchup) => (
-                  <StyledMenuItem
-                    key={matchup.id}
-                    onClick={() => {
-                      handleClose();
-                      setSpontaneousGameTab(matchup.gameNumber ?? 0);
-                      setIntialTab(1);
-                      fetchSeriesData(id);
-                    }}
-                  >
-                    {matchup.player1} vs {matchup.player2}
-                  </StyledMenuItem>
-                ))}
+                <p className="text-sm font-semibold text-colors-nba-blue">
+                  Missing bets
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  {hasMissingBets
+                    ? "Tap a bet to finish your prediction."
+                    : "You’re caught up for tip-off."}
+                </p>
               </div>
-            );
-          })}
+              {hasMissingBets && (
+                <span className="shrink-0 rounded-full bg-colors-nba-blue px-2.5 py-1 text-xs font-semibold text-white">
+                  {badgeContent}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-2">
+            {!hasMissingBets ? (
+              <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-colors-nba-blue/10 text-colors-nba-blue">
+                  <TrophyIcon className="h-5 w-5" aria-hidden />
+                </span>
+                <p className="text-sm font-medium text-gray-900">
+                  No open bets
+                </p>
+                <p className="text-xs text-gray-500">
+                  You’re ready for tip-off.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {seriesIds.map((id) => {
+                  const totalBets = calculateTotalBets(missingBetsData![id]);
+                  const useAccordion =
+                    totalBets > 3 || seriesIds.length > 3;
+
+                  if (useAccordion) {
+                    return (
+                      <Accordion
+                        key={id}
+                        disableGutters
+                        elevation={0}
+                        sx={{
+                          borderRadius: "12px !important",
+                          border: "1px solid rgba(15, 23, 42, 0.08)",
+                          backgroundColor: "#f8fafc",
+                          "&:before": { display: "none" },
+                          overflow: "hidden",
+                        }}
+                      >
+                        <AccordionSummary
+                          expandIcon={
+                            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                          }
+                          sx={{
+                            minHeight: 44,
+                            px: 1.5,
+                            "& .MuiAccordionSummary-content": {
+                              my: 1,
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 1,
+                            },
+                          }}
+                        >
+                          <span className="truncate text-sm font-semibold text-gray-900">
+                            {missingBetsData![id].seriesName}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-colors-nba-blue ring-1 ring-colors-nba-blue/15">
+                            {totalBets}
+                          </span>
+                        </AccordionSummary>
+                        <AccordionDetails sx={{ px: 0.5, pb: 1, pt: 0 }}>
+                          {renderSeriesRows(id)}
+                        </AccordionDetails>
+                      </Accordion>
+                    );
+                  }
+
+                  return (
+                    <section
+                      key={id}
+                      className="overflow-hidden rounded-xl border border-gray-200/80 bg-slate-50"
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-gray-200/70 px-3 py-2">
+                        <h3 className="truncate text-sm font-semibold text-gray-900">
+                          {missingBetsData![id].seriesName}
+                        </h3>
+                        <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-colors-nba-blue ring-1 ring-colors-nba-blue/15">
+                          {totalBets}
+                        </span>
+                      </div>
+                      <div className="px-0.5 py-1">{renderSeriesRows(id)}</div>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </Menu>
       {selectedSeries && (
         <TeamDialog
@@ -460,7 +505,7 @@ const MissingBets: React.FC<MissingBetsProps> = ({ showLabel = true }) => {
           closeDialog={() => setIsDialogOpen(false)}
           userPoints={seriesPoints}
           intialSelectedTab={intialTab}
-          intialGamesTab={spontaneousGameTab+1}
+          intialGamesTab={spontaneousGameTab + 1}
         />
       )}
     </div>

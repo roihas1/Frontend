@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { Dialog } from "@headlessui/react";
 import { Skeleton, Tab, Tabs } from "@mui/material";
 import SubmitButton from "../../common/SubmitButton";
+import {
+  glassSheetHandleClassName,
+  glassSheetPanelClassName,
+} from "../../common/glassSheet";
 import { PlayerMatchupBet, SpontaneousBet } from "../../../types";
 import MobileBetCard from "./MobileBetCard";
 import MobileGuessSplit from "./MobileGuessSplit";
@@ -367,7 +371,7 @@ const TeamDialogMobileView: React.FC<TeamDialogModel> = ({
   const gameStart = spontaneousBetsForGame.find((bet) => bet.startTime)?.startTime;
 
   return (
-    <Dialog open={isOpen} onClose={closeDialog} className="relative z-30">
+    <Dialog open={isOpen} onClose={closeDialog} className="relative z-50">
       <div
         className="fixed inset-0 bg-black/50"
         style={
@@ -382,7 +386,7 @@ const TeamDialogMobileView: React.FC<TeamDialogModel> = ({
         <Dialog.Panel
           ref={panelRef}
           aria-busy={showSkeleton || isSubmitting}
-          className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-xl"
+          className={`flex max-h-[92dvh] w-full flex-col overflow-hidden ${glassSheetPanelClassName}`}
           style={{
             transform: offset > 0 ? `translateY(${offset}px)` : undefined,
             transition: isDragging ? "none" : "transform 200ms ease-out",
@@ -390,21 +394,24 @@ const TeamDialogMobileView: React.FC<TeamDialogModel> = ({
         >
           <div
             ref={headerRef}
-            className="shrink-0 touch-none border-b border-gray-200 px-4 pb-3 pt-2"
+            className="shrink-0 touch-none border-b border-white/40 px-4 pb-3 pt-2"
           >
             <div
-              className="mx-auto mb-2 h-1 w-10 rounded-full bg-gray-300"
+              className={glassSheetHandleClassName}
               aria-hidden="true"
             />
             <div className="flex items-center justify-between">
-              <Dialog.Title as="h3" className="text-lg font-bold text-gray-900">
+              <Dialog.Title
+                as="h3"
+                className="text-lg font-semibold text-colors-nba-blue"
+              >
                 Series bets
               </Dialog.Title>
               <button
                 type="button"
                 onClick={closeDialog}
                 aria-label="Close"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 active:bg-gray-100"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full text-gray-500 active:bg-black/5"
               >
                 <CloseIcon />
               </button>
@@ -708,7 +715,7 @@ const TeamDialogMobileView: React.FC<TeamDialogModel> = ({
           )}
 
           {showFooter && (
-            <div className="shrink-0 border-t border-gray-200 bg-white px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <div className="shrink-0 border-t border-white/40 bg-white/80 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] supports-[backdrop-filter]:bg-white/55">
               {pickSummary && (
                 <p className="mb-2 truncate text-center text-xs text-gray-600">
                   {pickSummary}

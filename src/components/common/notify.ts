@@ -3,10 +3,10 @@ import { toast, type TypeOptions } from "react-toastify";
 import ToastContent, { type ToastType } from "./ToastContent";
 
 const autoCloseMs: Record<ToastType, number> = {
-  success: 3500,
-  info: 4000,
-  warning: 5000,
-  error: 6000,
+  success: 2000,
+  info: 2000,
+  warning: 3000,
+  error: 4000,
 };
 
 const show = (type: ToastType, title: string, message?: string) => {

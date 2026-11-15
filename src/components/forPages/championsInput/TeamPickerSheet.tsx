@@ -1,6 +1,10 @@
 import React from "react";
 import { Drawer } from "@mui/material";
 import defaultLogo from "../../../assets/logos/defaultLogoTBD.png";
+import {
+  glassSheetHandleClassName,
+  glassSheetPaperSx,
+} from "../../common/glassSheet";
 
 interface TeamPickerSheetProps {
   open: boolean;
@@ -30,19 +34,12 @@ const TeamPickerSheet: React.FC<TeamPickerSheetProps> = ({
       onClose={onClose}
       sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
       PaperProps={{
-        sx: {
-          borderTopLeftRadius: 16,
-          borderTopRightRadius: 16,
-          maxHeight: "80dvh",
-        },
+        sx: glassSheetPaperSx,
       }}
     >
       <div className="flex max-h-[80dvh] flex-col">
         <div className="shrink-0 px-4 pb-3 pt-2">
-          <div
-            aria-hidden
-            className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300"
-          />
+          <div aria-hidden className={glassSheetHandleClassName} />
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-base font-semibold text-colors-nba-blue">
               {title}
@@ -50,13 +47,13 @@ const TeamPickerSheet: React.FC<TeamPickerSheetProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[44px] min-w-[44px] rounded-lg text-sm font-medium text-colors-nba-blue active:bg-gray-100"
+              className="min-h-[44px] min-w-[44px] rounded-lg text-sm font-medium text-colors-nba-blue active:bg-black/5"
             >
               Close
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {teams.length === 0 ? (
             <p className="py-6 text-center text-sm text-gray-500">
               No teams available.
@@ -75,10 +72,10 @@ const TeamPickerSheet: React.FC<TeamPickerSheetProps> = ({
                     onClick={() => onSelect(team)}
                     className={`flex min-h-14 flex-col items-center gap-1 rounded-xl border px-2 py-3 ${
                       isDisabled
-                        ? "cursor-not-allowed border-gray-200 bg-gray-50 opacity-40"
+                        ? "cursor-not-allowed border-gray-200 bg-gray-50/80 opacity-40"
                         : isSelected
-                          ? "border-colors-nba-blue bg-blue-50 ring-2 ring-colors-nba-blue"
-                          : "border-gray-200 bg-white active:bg-gray-50"
+                          ? "border-colors-nba-blue bg-colors-nba-blue/10 ring-2 ring-colors-nba-blue"
+                          : "border-gray-200/80 bg-white/70 active:bg-black/5"
                     }`}
                   >
                     <img

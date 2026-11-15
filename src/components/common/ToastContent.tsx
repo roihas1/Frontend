@@ -18,22 +18,22 @@ const tones: Record<
 > = {
   success: {
     stripe: "bg-colors-nba-green",
-    badge: "bg-colors-nba-green/20 text-colors-nba-green",
+    badge: "bg-colors-nba-green/10 text-colors-nba-green",
     Icon: CheckCircleRounded,
   },
   error: {
     stripe: "bg-colors-nba-red",
-    badge: "bg-colors-nba-red/25 text-red-300",
+    badge: "bg-colors-nba-red/10 text-colors-nba-red",
     Icon: ErrorRounded,
   },
   warning: {
     stripe: "bg-colors-nba-yellow",
-    badge: "bg-colors-nba-yellow/20 text-colors-nba-yellow",
+    badge: "bg-colors-nba-yellow/15 text-amber-700",
     Icon: WarningAmberRounded,
   },
   info: {
-    stripe: "bg-colors-nba-sky",
-    badge: "bg-colors-nba-sky/20 text-colors-nba-sky",
+    stripe: "bg-colors-nba-blue",
+    badge: "bg-colors-nba-blue/10 text-colors-nba-blue",
     Icon: InfoRounded,
   },
 };
@@ -43,20 +43,20 @@ const ToastContent: React.FC<ToastContentProps> = ({ type, title, message }) => 
   const Icon = tone.Icon;
 
   return (
-    <div className="relative flex w-full items-start gap-3 py-3 pl-4 pr-8">
+    <div className="relative flex w-full items-start gap-3 py-3.5 pl-4 pr-9">
       <span
-        className={`absolute inset-y-0 left-0 w-1.5 ${tone.stripe}`}
+        className={`absolute inset-y-2.5 left-2 w-1 rounded-full ${tone.stripe}`}
         aria-hidden
       />
       <span
-        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${tone.badge}`}
+        className={`mt-0.5 ml-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone.badge}`}
       >
         <Icon fontSize="small" />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold leading-5 text-white">{title}</p>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="text-sm font-semibold leading-5 text-gray-900">{title}</p>
         {message ? (
-          <p className="mt-0.5 text-sm leading-5 text-white/75">{message}</p>
+          <p className="mt-0.5 text-sm leading-5 text-gray-600">{message}</p>
         ) : null}
       </div>
     </div>

@@ -33,6 +33,8 @@ import { LeagueStandingsPreviewProvider } from "./components/providers&context/L
 import InstallAppButton from "./components/pwa/InstallAppButton";
 import HomeLeagueStandingsPreview from "./components/forPages/HomeLeagueStandingsPreview";
 import MaintenancePage from "./pages/MaintenancePage";
+import BottomNav from "./components/Layout/BottomNav";
+import { useShowBottomNav } from "./hooks/useShowBottomNav";
 
 const MAINTENANCE_BYPASS_KEY = "btb_bypass_maintenance";
 
@@ -47,11 +49,16 @@ function shouldBypassMaintenance(): boolean {
 
 function AppShell() {
   const { pathname } = useLocation();
+  const showBottomNav = useShowBottomNav();
 
   return (
     <MissingBetsProvider>
       {/* <PageBackground imageSrc={Logo}/> */}
-      <div className="flex flex-col min-h-screen   bg-gray-100">
+      <div
+        className={`flex flex-col min-h-screen bg-gray-100 ${
+          showBottomNav ? "pb-nav-offset xl:pb-0" : ""
+        }`}
+      >
         <Navbar />
         {pathname === "/home" && (
           <div className="md:hidden mt-1">
@@ -80,6 +87,7 @@ function AppShell() {
         </main>
         <Footer />
         <InstallAppButton />
+        <BottomNav />
       </div>
     </MissingBetsProvider>
   );
