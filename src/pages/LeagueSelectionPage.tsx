@@ -1,25 +1,35 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
+import { SwipeableDrawer, TextField } from "@mui/material";
 import {
-  Dialog,
-  DialogContent,
-  FormControl,
-  IconButton,
-  Input,
-} from "@mui/material";
-import { Close, Settings } from "@mui/icons-material";
+  ChevronRightIcon,
+  Cog6ToothIcon,
+  TrophyIcon,
+  UserGroupIcon,
+  ArrowRightOnRectangleIcon,
+  PlusCircleIcon,
+  KeyIcon,
+} from "@heroicons/react/24/outline";
 import axiosInstance from "../api/axiosInstance";
 import {
   buildCreatePrivateLeagueRequest,
   buildJoinLeagueRequest,
 } from "../api/privateLeagueRequests";
-import { useError, useSuccessMessage } from "../components/providers&context/NotificationProvider";
+import {
+  useError,
+  useSuccessMessage,
+} from "../components/providers&context/NotificationProvider";
 import { User } from "../types";
 import { useNavigate } from "react-router-dom";
-import ActionButtons from "../components/forPages/ActionButtons";
 import { getErrorMessage } from "../api/getErrorMessage";
 import { notify } from "../components/common/notify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTournament } from "../components/providers&context/TournamentContext";
+import {
+  glassSheetHandleClassName,
+  glassSheetPaperSx,
+} from "../components/common/glassSheet";
+import PullToRefreshIndicator from "../components/common/PullToRefreshIndicator";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
 export interface League {
   id?: string;
@@ -33,21 +43,19 @@ const LeaguesSelectionPage: React.FC = () => {
   const { showError } = useError();
   const { showSuccessMessage } = useSuccessMessage();
   const [selectedLeague, setSelectedLeague] = useState<League | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [showCreateNewLeague, setShowCreateNewLeague] =
     useState<boolean>(false);
-  // const [currentUser, setCurrentUser] = useState<User>();
   const [showJoinLeague, setShowJoinLeague] = useState<boolean>(false);
   const [leagueCode, setLeagueCode] = useState<string>("");
   const [leagueName, setLeagueName] = useState<string>("");
-  // const [overallLeague, setOverallLeague] = useState<League | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { selectedTournamentId } = useTournament();
 
-  const handleOpenModal = (league: League) => {
+  const handleOpenOptions = (league: League) => {
     setSelectedLeague(league);
-    setModalOpen(true);
+    setOptionsOpen(true);
   };
 
   const handleLeagueClick = (league: League) => {
@@ -58,8 +66,8 @@ const LeaguesSelectionPage: React.FC = () => {
     navigate(`/manageLeague`, { state: { league: league } });
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+  const handleCloseOptions = () => {
+    setOptionsOpen(false);
     setSelectedLeague(null);
   };
 
@@ -91,12 +99,9 @@ const LeaguesSelectionPage: React.FC = () => {
     ? { name: "Overall", users: overallUsers }
     : null;
 
-  // useEffect(() => {
-  //   // fetchOverallLeague();
-  //   fetchUser();
-  // }, []);
   const handleCreateNewLeague = () => setShowCreateNewLeague(true);
   const handleShowJoinLeague = () => setShowJoinLeague(true);
+
   const joinLeagueMutation = useMutation({
     mutationFn: async (code: string) => {
       const response = await axiosInstance.post(
@@ -121,6 +126,7 @@ const LeaguesSelectionPage: React.FC = () => {
       if (message) showError(message);
     },
   });
+
   const handleJoinLeague = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leagueCode) {
@@ -130,23 +136,6 @@ const LeaguesSelectionPage: React.FC = () => {
     joinLeagueMutation.mutate(leagueCode);
   };
 
-  // const handleJoinLeague = async () => {
-  //   if (!leagueCode) return showError(`Must enter a league code`);
-  //   try {
-  //     const response = await axiosInstance.post(`/private-league/joinLeague`, {
-  //       code: leagueCode,
-  //     });
-  //     showSuccessMessage(response.data.message);
-  //     setShowJoinLeague(false);
-  //     refetch();
-  //   } catch (error) {
-  //     if (axios.isAxiosError(error) && error.response) {
-  //       showError(`Failed to join a league. ${error.response.data.message}`);
-  //     } else {
-  //       showError(`Failed to join a league. Unexpected error occurred.`);
-  //     }
-  //   }
-  // };
   const { data: currentUser } = useQuery<User>({
     queryKey: ["current-user", selectedTournamentId],
     queryFn: async () => {
@@ -154,19 +143,10 @@ const LeaguesSelectionPage: React.FC = () => {
       return response.data;
     },
     enabled: !!selectedTournamentId,
-    staleTime: 30 * 60 * 1000, // 30 minutes (stays fresh)
-    gcTime: 60 * 60 * 1000, // 1 hour (kept in cache)
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     meta: { errorMessage: "Couldn't load your info. Try again." },
   });
-
-  // const fetchUser = async () => {
-  //   try {
-  //     const response = await axiosInstance.get("/auth/user");
-  //     setCurrentUser(response.data);
-  //   } catch (error) {
-  //     showError(`Server error.`);
-  //   }
-  // };
 
   const handleSubmitNewLeague = async () => {
     if (!leagueName) return notify.warning("Enter a league name.");
@@ -200,7 +180,7 @@ const LeaguesSelectionPage: React.FC = () => {
     try {
       await axiosInstance.patch(`/private-league/${league?.id}/leaveLeague`);
       showSuccessMessage("You left the league.");
-      handleCloseModal();
+      handleCloseOptions();
       await queryClient.invalidateQueries({
         queryKey: ["private-leagues", selectedTournamentId],
       });
@@ -215,161 +195,281 @@ const LeaguesSelectionPage: React.FC = () => {
       if (message) showError(message);
     }
   };
+
+  const handleRefreshLeagues = useCallback(async () => {
+    await Promise.all([
+      queryClient.refetchQueries({
+        queryKey: ["private-leagues", selectedTournamentId],
+      }),
+      queryClient.refetchQueries({
+        queryKey: ["overall-league", selectedTournamentId],
+      }),
+    ]);
+  }, [queryClient, selectedTournamentId]);
+
+  const { pullDistance, progress, isRefreshing } = usePullToRefresh({
+    onRefresh: handleRefreshLeagues,
+    enabled: !!selectedTournamentId && !optionsOpen,
+  });
+
+  const isAdminOfSelected =
+    !!selectedLeague?.admin?.id &&
+    selectedLeague.admin.id === currentUser?.id;
+  const canLeaveSelected =
+    !!selectedLeague &&
+    selectedLeague.name !== "Overall" &&
+    selectedLeague.admin?.id !== currentUser?.id;
+
   return (
-    <div className="flex flex-col items-center p-4 bg-gray-100 ">
-      {/* Buttons */}
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-1 py-2 sm:px-4">
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        progress={progress}
+        isRefreshing={isRefreshing}
+      />
+
       {!showCreateNewLeague && !showJoinLeague && (
-        <div className="flex gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-3">
           <button
-            className=" text-lg bg-colors-nba-yellow hover:opacity-80 p-2 rounded-lg text-white shadow-md"
+            type="button"
             onClick={handleCreateNewLeague}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200/80 bg-white/80 px-3 py-4 text-center shadow-sm transition-colors active:bg-black/5 supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl"
           >
-            Create New Leagues
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-colors-nba-blue/10 text-colors-nba-blue">
+              <PlusCircleIcon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="text-sm font-semibold text-gray-900">
+              Create league
+            </span>
+            <span className="text-xs leading-snug text-gray-500">
+              Start a private league
+            </span>
           </button>
           <button
-            className="text-lg bg-colors-nba-yellow hover:opacity-80 p-2 rounded-lg text-white shadow-md"
+            type="button"
             onClick={handleShowJoinLeague}
+            className="flex flex-col items-center gap-2 rounded-2xl border border-gray-200/80 bg-white/80 px-3 py-4 text-center shadow-sm transition-colors active:bg-black/5 supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl"
           >
-            Join new League
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-600">
+              <KeyIcon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="text-sm font-semibold text-gray-900">
+              Join league
+            </span>
+            <span className="text-xs leading-snug text-gray-500">
+              Enter an invite code
+            </span>
           </button>
         </div>
       )}
+
       {showJoinLeague && (
-        <div className="w-1/2 sm:w-1/5">
-          <h3 className="text-center text-xl sm:text-2xl font-semibold mb-4">
-            Join League
-          </h3>
-          <FormControl fullWidth required>
-            <Input
-              type="text"
+        <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+          <div className="border-b border-gray-100 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                <KeyIcon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-colors-nba-blue">
+                  Join league
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Paste the invite code from a friend
+                </p>
+              </div>
+            </div>
+          </div>
+          <form
+            className="space-y-3 px-4 py-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleJoinLeague(e);
+            }}
+          >
+            <TextField
+              label="League code"
               name="leagueCode"
-              placeholder="League code"
               value={leagueCode}
               onChange={(e) => setLeagueCode(e.target.value)}
-              className="w-full p-3 mb-6 border border-gray-300 rounded-2xl mt-2 bg-white"
-            ></Input>
-          </FormControl>
-
-          <ActionButtons
-            text1="Close"
-            text2="Join League"
-            onClick1={() => {
-              setLeagueCode("");
-              setShowJoinLeague(false);
-            }}
-            onClick2={handleJoinLeague}
-            loading={false}
-          />
-        </div>
+              fullWidth
+              required
+              size="small"
+              autoComplete="off"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "1rem" } }}
+            />
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={!leagueCode.trim() || joinLeagueMutation.isPending}
+                className="rounded-full bg-colors-nba-blue px-4 py-2.5 text-sm font-semibold text-white shadow-sm active:opacity-90 disabled:opacity-50"
+              >
+                {joinLeagueMutation.isPending ? "Joining…" : "Join league"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLeagueCode("");
+                  setShowJoinLeague(false);
+                }}
+                className="rounded-full border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 active:bg-black/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
       )}
+
       {showCreateNewLeague && (
-        <div className="w-1/2 sm:w-1/5 ">
-          <h3 className="text-center text-xl sm:text-2xl font-semibold mb-4">
-            Create New League
-          </h3>
-          <FormControl fullWidth required>
-            <Input
-              type="text"
+        <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+          <div className="border-b border-gray-100 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-colors-nba-blue/10 text-colors-nba-blue">
+                <PlusCircleIcon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-colors-nba-blue">
+                  Create league
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Pick a name, then share the invite code
+                </p>
+              </div>
+            </div>
+          </div>
+          <form
+            className="space-y-3 px-4 py-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmitNewLeague();
+            }}
+          >
+            <TextField
+              label="League name"
               name="leagueName"
-              placeholder="League Name"
               value={leagueName}
               onChange={(e) => setLeagueName(e.target.value)}
-              className="w-full p-3 mb-6 border border-gray-300 rounded-2xl mt-2 bg-white"
-            ></Input>
-          </FormControl>
-
-          <ActionButtons
-            text1="Close"
-            text2="Create new League"
-            onClick1={() => {
-              setLeagueName("");
-              setShowCreateNewLeague(false);
-            }}
-            onClick2={handleSubmitNewLeague}
-            loading={false}
-          />
-        </div>
+              fullWidth
+              required
+              size="small"
+              autoComplete="off"
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: "1rem" } }}
+            />
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={!leagueName.trim()}
+                className="rounded-full bg-colors-nba-blue px-4 py-2.5 text-sm font-semibold text-white shadow-sm active:opacity-90 disabled:opacity-50"
+              >
+                Create league
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLeagueName("");
+                  setShowCreateNewLeague(false);
+                }}
+                className="rounded-full border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 active:bg-black/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
       )}
 
-      {/* League Tables */}
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-md">
-        {/** Private Leagues */}
+      <div className="space-y-3">
         <LeagueSection
           title="Private leagues"
           leagues={privateLeagues ?? []}
-          onOpenModal={handleOpenModal}
+          onOpenOptions={handleOpenOptions}
+          onOpenLeague={handleLeagueClick}
         />
-        {/** Global Leagues */}
         <LeagueSection
           title="Global leagues"
           leagues={overallLeague ? [overallLeague] : []}
-          onOpenModal={handleOpenModal}
+          onOpenOptions={handleOpenOptions}
+          onOpenLeague={handleLeagueClick}
         />
       </div>
-      <Dialog
-        open={modalOpen}
-        onClose={handleCloseModal}
-        aria-labelledby="league-dialog"
-        aria-describedby="league-dialog-description"
-        className="flex justify-center items-center w-full"
+
+      <SwipeableDrawer
+        anchor="bottom"
+        open={optionsOpen}
+        onOpen={() => setOptionsOpen(true)}
+        onClose={handleCloseOptions}
+        disableSwipeToOpen
+        PaperProps={{
+          id: "league-options-sheet",
+          role: "dialog",
+          "aria-modal": true,
+          "aria-labelledby": "league-options-title",
+          sx: glassSheetPaperSx,
+        }}
       >
-        <DialogContent className=" sm:max-w-sm md:max-w-md lg:max-w-lg bg-white rounded-lg shadow-lg p-4 sm:p-6 relative">
-          {/* Header */}
-          <div className="bg-colors-nba-blue text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
-            <span className="text-sm md:text-lg font-bold">
-              {selectedLeague?.name || "League"}
-            </span>
-            <IconButton
-              onClick={handleCloseModal}
-              className="absolute "
-              size="large"
+        <div className="flex max-h-[80dvh] flex-col">
+          <div className="shrink-0 px-4 pb-2 pt-2">
+            <div aria-hidden className={glassSheetHandleClassName} />
+            <h2
+              id="league-options-title"
+              className="text-base font-semibold text-colors-nba-blue"
             >
-              <Close
-                sx={{
-                  color: "white",
-                  backgroundColor: "#C8102E",
-                  borderRadius: "50%",
-                  padding: "2px",
-                }}
-                fontSize="inherit"
-              />
-            </IconButton>
+              {selectedLeague?.name || "League options"}
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-500">Choose an action</p>
           </div>
 
-          {/* Modal Content */}
-          <div className="flex flex-col items-center space-y-4 mt-4">
+          <div className="space-y-1 px-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {selectedLeague && (
               <button
-                className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-yellow hover:opacity-80 py-2 rounded-lg text-black shadow-md font-semibold"
-                onClick={() => handleLeagueClick(selectedLeague)}
+                type="button"
+                onClick={() => {
+                  handleCloseOptions();
+                  handleLeagueClick(selectedLeague);
+                }}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-gray-900 active:bg-black/5"
               >
-                Standings
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-colors-nba-blue/10 text-colors-nba-blue">
+                  <TrophyIcon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="flex-1 text-sm font-medium">Standings</span>
+                <ChevronRightIcon className="h-4 w-4 text-gray-300" aria-hidden />
               </button>
             )}
 
-            {selectedLeague?.admin?.id === currentUser?.id &&
-              selectedLeague && (
-                <button
-                  className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-yellow hover:opacity-80 py-2 rounded-lg text-black shadow-md font-semibold"
-                  onClick={() => handleManageLeague(selectedLeague)}
-                >
-                  Manage League
-                </button>
-              )}
+            {isAdminOfSelected && selectedLeague && (
+              <button
+                type="button"
+                onClick={() => {
+                  handleCloseOptions();
+                  handleManageLeague(selectedLeague);
+                }}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-gray-900 active:bg-black/5"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                  <UserGroupIcon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="flex-1 text-sm font-medium">Manage league</span>
+                <ChevronRightIcon className="h-4 w-4 text-gray-300" aria-hidden />
+              </button>
+            )}
 
-            {selectedLeague?.name !== "Overall" &&
-              selectedLeague?.admin?.id !== currentUser?.id &&
-              selectedLeague && (
-                <button
-                  className="w-full max-w-xs sm:max-w-sm md:max-w-md text-lg bg-colors-nba-red hover:bg-red-700 py-2 rounded-lg text-white shadow-md font-semibold"
-                  onClick={() => handleLeaveLeague(selectedLeague)}
-                >
-                  Leave League
-                </button>
-              )}
+            {canLeaveSelected && selectedLeague && (
+              <button
+                type="button"
+                onClick={() => void handleLeaveLeague(selectedLeague)}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-red-600 active:bg-red-50"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="flex-1 text-sm font-medium">Leave league</span>
+              </button>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </SwipeableDrawer>
     </div>
   );
 };
@@ -377,57 +477,62 @@ const LeaguesSelectionPage: React.FC = () => {
 const LeagueSection: React.FC<{
   title: string;
   leagues: League[];
-  onOpenModal: (league: League) => void;
-}> = ({ title, leagues, onOpenModal }) => {
-  const navigate = useNavigate();
-  const handleLeagueClick = (league: League) => {
-    navigate(`/league`, { state: { league: league } });
-  };
-
+  onOpenOptions: (league: League) => void;
+  onOpenLeague: (league: League) => void;
+}> = ({ title, leagues, onOpenOptions, onOpenLeague }) => {
   return (
-    <div className="mb-2">
-      <div className="bg-colors-nba-blue text-white px-6 py-2 text-lg font-semibold">
-        {title}
+    <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+      <div className="border-b border-gray-100 px-4 py-3">
+        <h2 className="text-base font-semibold text-colors-nba-blue">{title}</h2>
       </div>
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b">
-            <th className="px-6 py-2">League</th>
-            <th className="p-2 text-center">Options</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leagues.length > 0 ? (
-            leagues.map((league, index) => (
-              <tr key={index} className="border-b hover:bg-gray-100">
-                <td
-                  className="px-6 py-2 w-1/2 hover:cursor-pointer hover:underline"
-                  onClick={() => handleLeagueClick(league)}
-                >
-                  {league.name}
-                </td>
 
-                <td className="px-6 py-2 text-center">
-                  <IconButton
-                    onClick={() => {
-                      onOpenModal(league);
-                    }}
-                  >
-                    <Settings />
-                  </IconButton>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={4} className="p-4 text-center text-gray-500">
-                No leagues available.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+      {leagues.length === 0 ? (
+        <p className="px-4 py-6 text-center text-sm text-gray-500">
+          No leagues available.
+        </p>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {leagues.map((league) => (
+            <li
+              key={league.id ?? league.name}
+              className="flex items-center gap-2 px-2 py-1.5"
+            >
+              <button
+                type="button"
+                onClick={() => onOpenLeague(league)}
+                className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-black/5"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                  <TrophyIcon className="h-5 w-5" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-gray-900">
+                    {league.name}
+                  </span>
+                  <span className="block text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                    {league.users?.length
+                      ? `${league.users.length} member${league.users.length === 1 ? "" : "s"}`
+                      : "Open standings"}
+                  </span>
+                </span>
+                <ChevronRightIcon
+                  className="h-4 w-4 shrink-0 text-gray-300"
+                  aria-hidden
+                />
+              </button>
+              <button
+                type="button"
+                aria-label={`Options for ${league.name}`}
+                onClick={() => onOpenOptions(league)}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-colors-nba-blue active:bg-colors-nba-blue/10"
+              >
+                <Cog6ToothIcon className="h-5 w-5" aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 };
 

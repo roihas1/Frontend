@@ -57,17 +57,22 @@ const SecuritySection: React.FC<SecuritySectionProps> = ({
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-xl font-semibold text-colors-nba-blue mb-2">
-        Security
-      </h2>
-      <p className="text-sm text-gray-600 mb-4">
-        {profile.hasPassword
-          ? "Change your account password."
-          : "Set a password so you can sign in without Google."}
-      </p>
+    <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+      <div className="border-b border-gray-100 px-4 py-3">
+        <h2 className="text-base font-semibold text-colors-nba-blue">
+          Security
+        </h2>
+        <p className="mt-0.5 text-xs text-gray-500">
+          {profile.hasPassword
+            ? "Change your account password."
+            : "Set a password so you can sign in without Google."}
+        </p>
+      </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3 max-w-md">
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="space-y-3 px-4 py-4"
+      >
         {profile.hasPassword && (
           <TextField
             label="Current password"

@@ -10,6 +10,7 @@ import type { LeagueMessage } from "../../types";
 import axiosInstance from "../../api/axiosInstance";
 import { buildCreateLeagueMessageRequest } from "../../api/privateLeagueRequests";
 import {
+  glassChipClassName,
   glassSheetHandleClassName,
   glassSheetPanelClassName,
 } from "../common/glassSheet";
@@ -506,7 +507,7 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
       <button
         type="button"
         onClick={() => setIsMobileSheetOpen(true)}
-        className="fixed bottom-nav-offset right-3 z-30 flex items-center gap-2 rounded-full bg-colors-nba-blue px-4 py-3 text-sm font-bold text-white shadow-xl ring-2 ring-colors-nba-yellow/60 lg:hidden"
+        className={`fixed bottom-nav-offset right-3 z-30 inline-flex items-center gap-2 rounded-full px-3.5 py-2.5 text-sm font-semibold text-colors-nba-blue transition-colors active:bg-black/5 lg:hidden ${glassChipClassName}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -525,9 +526,11 @@ const LeagueWall: React.FC<LeagueWallProps> = ({
         </svg>
         <span className="hidden sm:inline">League Trash Talk</span>
         <span className="sm:hidden">Trash Talk</span>
-        <span className="ml-2 rounded-full bg-colors-nba-yellow px-2 py-0.5 text-xs text-black">
-          {unreadCount}
-        </span>
+        {unreadCount > 0 && (
+          <span className="ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-colors-nba-blue px-1.5 py-0.5 text-[11px] font-bold text-white">
+            {unreadCount}
+          </span>
+        )}
       </button>
 
       {isMobileSheetOpen && (

@@ -2,6 +2,8 @@ import React from "react";
 import { Skeleton } from "@mui/material";
 import LeagueStandingsMyPlace from "../../components/forPages/LeagueStandingsMyPlace";
 import LeagueWall from "../../components/forPages/LeagueWall";
+import PullToRefreshIndicator from "../../components/common/PullToRefreshIndicator";
+import { usePullToRefresh } from "../../hooks/usePullToRefresh";
 import LeagueStandingsPagination from "./LeagueStandingsPagination";
 import type { LeaguesPageModel } from "./useLeaguesPageModel";
 import {
@@ -52,7 +54,17 @@ const LeaguesPageMobileView: React.FC<LeaguesPageModel> = (model) => {
     handlePreviousPage,
     handleNextPage,
     handleLimitSelection,
+    handleRefreshStandings,
   } = model;
+
+  const {
+    pullDistance,
+    progress,
+    isRefreshing,
+  } = usePullToRefresh({
+    onRefresh: handleRefreshStandings,
+    enabled: Boolean(league),
+  });
 
   if (!league) {
     return null;
@@ -60,7 +72,12 @@ const LeaguesPageMobileView: React.FC<LeaguesPageModel> = (model) => {
 
   return (
     <div className="flex flex-col min-h-0">
-      <div className="px-3 pt-3 pb-2 bg-white border-b border-gray-100 sticky top-0 z-30">
+      <PullToRefreshIndicator
+        pullDistance={pullDistance}
+        progress={progress}
+        isRefreshing={isRefreshing}
+      />
+      <div className="px-3 pt-3 pb-2 bg-white/80 border-b border-gray-200/70 sticky top-0 z-30 backdrop-blur-xl supports-[backdrop-filter]:bg-white/65">
         <div className="flex items-center gap-2 min-h-11">
           <button
             type="button"

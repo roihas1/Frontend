@@ -77,6 +77,7 @@ export function useLeaguesPageModel() {
     isLoading: isStandingsLoading,
     isFetching: isStandingsFetching,
     isError: isStandingsError,
+    refetch: refetchStandings,
   } = useQuery({
     queryKey: standingsQueryKey,
     enabled: leagueReady,
@@ -103,7 +104,7 @@ export function useLeaguesPageModel() {
     meta: { errorMessage: "Couldn't load standings. Try again." },
   });
 
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, refetch: refetchCurrentUser } = useQuery({
     queryKey: ["auth-user"],
     enabled: leagueReady,
     queryFn: async (): Promise<StandingsUserRow> => {
@@ -193,6 +194,10 @@ export function useLeaguesPageModel() {
     setLimit(Number(e.target.value));
   }, []);
 
+  const handleRefreshStandings = useCallback(async () => {
+    await Promise.all([refetchStandings(), refetchCurrentUser()]);
+  }, [refetchStandings, refetchCurrentUser]);
+
   const standingsLoading =
     leagueReady && (isStandingsLoading || (isStandingsFetching && !users.length));
 
@@ -219,6 +224,7 @@ export function useLeaguesPageModel() {
     handlePreviousPage,
     handleNextPage,
     handleLimitSelection,
+    handleRefreshStandings,
   };
 }
 

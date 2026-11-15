@@ -8,6 +8,8 @@ import {
   DialogTitle,
   Skeleton,
 } from "@mui/material";
+import { ChevronRightIcon } from "@heroicons/react/20/solid";
+import { TrophyIcon } from "@heroicons/react/24/outline";
 import { League } from "../../../pages/LeagueSelectionPage";
 import { UserProfile } from "../../../types";
 
@@ -39,65 +41,75 @@ const LeaguesSection: React.FC<LeaguesSectionProps> = ({
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-xl font-semibold text-colors-nba-blue mb-4">
-        My leagues
-      </h2>
+    <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+      <div className="border-b border-gray-100 px-4 py-3">
+        <h2 className="text-base font-semibold text-colors-nba-blue">
+          My leagues
+        </h2>
+      </div>
 
-      {loading ? (
-        <div className="space-y-2">
-          <Skeleton variant="rounded" height={56} />
-          <Skeleton variant="rounded" height={56} />
-        </div>
-      ) : leagues.length === 0 ? (
-        <p className="text-sm text-gray-600">
-          You are not in any private leagues for this tournament yet.
-        </p>
-      ) : (
-        <ul className="divide-y divide-gray-100">
-          {leagues.map((league) => {
-            const isAdmin = league.admin?.id === profile.id;
-            const memberCount = league.users?.length ?? 0;
-            return (
-              <li
-                key={league.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900 truncate">
-                    {league.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {memberCount} member{memberCount === 1 ? "" : "s"}
-                    {isAdmin ? " · You manage this league" : ""}
-                  </p>
-                </div>
-                <div className="flex shrink-0 gap-2">
-                  {isAdmin ? (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => onManage(league)}
-                    >
-                      Manage
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      size="small"
-                      onClick={() => setLeaveTarget(league)}
-                      disabled={isLeaving}
-                    >
-                      Leave
-                    </Button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <div className="px-2 py-2">
+        {loading ? (
+          <div className="space-y-2 px-2 py-1">
+            <Skeleton variant="rounded" height={52} />
+            <Skeleton variant="rounded" height={52} />
+          </div>
+        ) : leagues.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-colors-nba-blue/10 text-colors-nba-blue">
+              <TrophyIcon className="h-5 w-5" aria-hidden />
+            </span>
+            <p className="text-sm font-medium text-gray-900">No leagues yet</p>
+            <p className="text-xs text-gray-500">
+              You are not in any private leagues for this tournament.
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-0.5">
+            {leagues.map((league) => {
+              const isAdmin = league.admin?.id === profile.id;
+              const memberCount = league.users?.length ?? 0;
+              return (
+                <li key={league.id}>
+                  <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                      <TrophyIcon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {league.name}
+                      </p>
+                      <p className="truncate text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                        {memberCount} member{memberCount === 1 ? "" : "s"}
+                        {isAdmin ? " · Admin" : ""}
+                      </p>
+                    </div>
+                    {isAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => onManage(league)}
+                        className="inline-flex items-center gap-1 rounded-full bg-colors-nba-blue/10 px-2.5 py-1 text-[11px] font-semibold text-colors-nba-blue active:bg-colors-nba-blue/15"
+                      >
+                        Manage
+                        <ChevronRightIcon className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setLeaveTarget(league)}
+                        disabled={isLeaving}
+                        className="rounded-full border border-red-200 px-2.5 py-1 text-[11px] font-semibold text-red-600 active:bg-red-50 disabled:opacity-50"
+                      >
+                        Leave
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <Dialog open={!!leaveTarget} onClose={() => setLeaveTarget(null)}>
         <DialogTitle>Leave league?</DialogTitle>

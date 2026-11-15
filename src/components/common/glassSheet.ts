@@ -27,3 +27,7 @@ export const glassSheetPanelClassName =
 
 export const glassSheetHandleClassName =
   "mx-auto mb-3 h-1 w-10 rounded-full bg-gray-400/60";
+
+/** Shared glass chip / FAB surface (install prompt, league chat, etc.). */
+export const glassChipClassName =
+  "border border-white/40 bg-white/95 shadow-glass ring-1 ring-black/5 supports-[backdrop-filter]:bg-white/60 supports-[backdrop-filter]:backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-150 [@media(prefers-reduced-transparency:reduce)]:bg-white/95 [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none";

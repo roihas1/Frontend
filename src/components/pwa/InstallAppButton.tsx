@@ -1,12 +1,10 @@
 import { ArrowDownTrayIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 import { useShowBottomNav } from "../../hooks/useShowBottomNav";
+import { glassChipClassName } from "../common/glassSheet";
 import { useEffect, useState } from "react";
 
 const IOS_HINT_KEY = "pwa_ios_install_hint_dismissed";
-
-const glassChipClassName =
-  "border border-white/40 bg-white/95 shadow-glass ring-1 ring-black/5 supports-[backdrop-filter]:bg-white/60 supports-[backdrop-filter]:backdrop-blur-2xl supports-[backdrop-filter]:backdrop-saturate-150 [@media(prefers-reduced-transparency:reduce)]:bg-white/95 [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none";
 
 const InstallAppButton = () => {
   const { isInstallAvailable, promptInstall, showIosManualInstallHint } =

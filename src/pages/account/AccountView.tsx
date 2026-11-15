@@ -11,10 +11,12 @@ const AccountView: React.FC<AccountPageModel> = (model) => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold text-colors-nba-blue">Account</h1>
-        <p className="text-sm text-gray-500 mt-1">
+    <div className="mx-auto max-w-2xl space-y-4 px-2 py-4 sm:px-4 sm:py-6 sm:space-y-6">
+      <div className="px-2 sm:px-0">
+        <h1 className="text-2xl font-semibold text-colors-nba-blue sm:text-3xl">
+          Account
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
           Manage your profile, security, and league memberships.
         </p>
       </div>

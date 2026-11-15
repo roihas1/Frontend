@@ -53,6 +53,8 @@ import { Box, Modal, Skeleton, Slide, Zoom } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
 import { useLeagueStandingsPreview } from "../components/providers&context/LeagueStandingsPreviewContext";
 import { useMissingBets } from "../components/providers&context/MissingBetsContext";
+import PullToRefreshIndicator from "../components/common/PullToRefreshIndicator";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
 export interface Series {
   id?: string;
@@ -666,6 +668,16 @@ const HomePage: React.FC = () => {
     }
     setShowMobileChampInput(false);
   };
+
+  const {
+    pullDistance: homePullDistance,
+    progress: homePullProgress,
+    isRefreshing: isHomeRefreshing,
+  } = usePullToRefresh({
+    onRefresh: () => fetchHomepageData({ silent: true }),
+    enabled: !loading,
+  });
+
   if (loading) {
     return (
       <div className="relative z-10 bg-gray-100 p-4">
@@ -733,6 +745,11 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="relative z-10 bg-gray-100 px-0 pb-4 pt-2 md:p-4">
+      <PullToRefreshIndicator
+        pullDistance={homePullDistance}
+        progress={homePullProgress}
+        isRefreshing={isHomeRefreshing}
+      />
       <h1 className="sr-only">Playoff bracket</h1>
 
       {/* Mobile View */}

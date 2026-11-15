@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { TextField } from "@mui/material";
-import axios from "axios";
+import { ChevronRightIcon } from "@heroicons/react/20/solid";
 import SubmitButton from "../../common/SubmitButton";
 import { UpdateProfilePayload, UserProfile } from "../../../types";
+import axios from "axios";
 
 const USERNAME_TAKEN_MESSAGE =
   "This username is already taken. Please choose another one.";
@@ -105,37 +106,56 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="text-xl font-semibold text-colors-nba-blue mb-4">Profile</h2>
-      <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-4">
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-colors-nba-blue text-xl font-semibold text-white"
-          aria-hidden
-        >
-          {initials(profile)}
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-lg font-medium text-gray-900">
-            {profile.firstName} {profile.lastName}
-          </p>
-          <p className="text-sm text-gray-600">@{profile.username}</p>
-          <span className="inline-block rounded-full bg-gray-100 px-3 py-0.5 text-xs font-medium text-gray-700">
-            Sign-in: {signInMethodLabel(profile)}
-          </span>
-        </div>
+    <section className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/80 shadow-sm supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:backdrop-blur-xl">
+      <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+        <h2 className="text-base font-semibold text-colors-nba-blue">Profile</h2>
         {!isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="shrink-0 rounded-lg border border-colors-nba-blue px-4 py-2 text-sm font-medium text-colors-nba-blue hover:bg-colors-nba-blue/5"
+            className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-colors-nba-blue active:bg-colors-nba-blue/5 sm:inline-flex"
           >
             Edit
           </button>
         )}
       </div>
 
-      {isEditing ? (
-        <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+      <div className="px-2 py-2">
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-colors-nba-blue text-sm font-semibold text-white"
+            aria-hidden
+          >
+            {initials(profile)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-gray-900">
+              {profile.firstName} {profile.lastName}
+            </p>
+            <p className="truncate text-xs text-gray-500">@{profile.username}</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-medium text-gray-600">
+            {signInMethodLabel(profile)}
+          </span>
+        </div>
+
+        {!isEditing && (
+          <div className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5">
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+                Email
+              </p>
+              <p className="truncate text-sm text-gray-900">{profile.email}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {isEditing && (
+        <form
+          onSubmit={(e) => void handleSubmit(e)}
+          className="space-y-3 border-t border-gray-100 px-4 py-4"
+        >
           <TextField
             label="First name"
             value={firstName}
@@ -165,9 +185,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
             required
             size="small"
             error={!!usernameError}
-            helperText={
-              usernameError ?? "4–12 characters. Must be unique."
-            }
+            helperText={usernameError ?? "4–12 characters. Must be unique."}
             inputProps={{ minLength: 4, maxLength: 12 }}
           />
           <TextField
@@ -178,7 +196,7 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
             disabled
             helperText="Email cannot be changed here."
           />
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-wrap gap-3 pt-1">
             <SubmitButton
               loading={isSaving || isCheckingUsername}
               text="Save"
@@ -189,19 +207,23 @@ const ProfileSection: React.FC<ProfileSectionProps> = ({
               type="button"
               onClick={handleCancel}
               disabled={isSaving}
-              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 active:bg-black/5 disabled:opacity-50"
             >
               Cancel
             </button>
           </div>
         </form>
-      ) : (
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-gray-500">Email</dt>
-            <dd className="font-medium text-gray-900 break-all">{profile.email}</dd>
-          </div>
-        </dl>
+      )}
+
+      {!isEditing && (
+        <button
+          type="button"
+          onClick={() => setIsEditing(true)}
+          className="flex min-h-12 w-full items-center gap-2 border-t border-gray-100 px-4 py-3 text-left text-sm font-medium text-colors-nba-blue active:bg-black/5 sm:hidden"
+        >
+          <span className="flex-1">Edit profile</span>
+          <ChevronRightIcon className="h-4 w-4 text-gray-300" aria-hidden />
+        </button>
       )}
     </section>
   );
