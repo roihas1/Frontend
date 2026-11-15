@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Accordion, AccordionDetails, AccordionSummary, Skeleton } from "@mui/material";
+import { Skeleton } from "@mui/material";
 import { useLeagueStandingsPreview } from "../providers&context/LeagueStandingsPreviewContext";
 import type { LeagueStandingsPreviewData } from "../../types";
 
@@ -24,143 +24,105 @@ function ChevronRightIcon({ className }: { className?: string }) {
   );
 }
 
-export type HomeLeagueStandingsVariant = "mobile" | "desktop";
+export type HomeLeagueStandingsVariant = "mobile" | "desktop" | "sheet";
 
 interface HomeLeagueStandingsPreviewProps {
   variant: HomeLeagueStandingsVariant;
+  onNavigate?: () => void;
+}
+
+function StandingsDetailBody({
+  data,
+  onNavigate,
+}: {
+  data: LeagueStandingsPreviewData;
+  onNavigate?: () => void;
+}) {
+  const globalLabel = data.global.label?.trim() || "Global";
+  const { global, privateLeagues } = data;
+
+  return (
+    <div className="px-4 pb-4">
+      <div className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/90 px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold uppercase text-indigo-900/80">
+            {globalLabel}
+          </span>
+          <span className="text-lg font-semibold tabular-nums text-colors-nba-blue">
+            #{global.position}
+          </span>
+        </div>
+        <p className="mt-0.5 text-sm text-gray-800">
+          Total:{" "}
+          <span className="font-medium tabular-nums">{global.totalPoints}</span>
+        </p>
+      </div>
+
+      <h3 className="mb-2 text-xs font-semibold uppercase text-gray-500">
+        Private
+      </h3>
+      <ul className="flex flex-col gap-2">
+        {privateLeagues.length === 0 ? (
+          <li className="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-600">
+            No private leagues yet
+          </li>
+        ) : (
+          privateLeagues.map((league) => (
+            <li key={league.id}>
+              <Link
+                to="/league"
+                state={{ league: { id: league.id, name: league.name } }}
+                onClick={onNavigate}
+                className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 active:bg-gray-100"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-900">
+                    {league.name}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    <span className="tabular-nums">{league.totalPoints}</span>{" "}
+                    pts
+                  </p>
+                </div>
+                <span className="shrink-0 text-base font-semibold tabular-nums text-colors-nba-blue">
+                  #{league.position}
+                </span>
+                <ChevronRightIcon className="size-4 shrink-0 text-gray-400" />
+              </Link>
+            </li>
+          ))
+        )}
+      </ul>
+      <Link
+        to="/leagues"
+        onClick={onNavigate}
+        className="mt-3 block text-center text-sm font-medium text-colors-nba-blue"
+      >
+        All leagues
+      </Link>
+    </div>
+  );
 }
 
 function PreviewBody({
   data,
   variant,
+  onNavigate,
 }: {
   data: LeagueStandingsPreviewData;
   variant: HomeLeagueStandingsVariant;
+  onNavigate?: () => void;
 }) {
-  const globalLabel = data.global.label?.trim() || "Global";
-  const { global, privateLeagues } = data;
-
-  if (variant === "mobile") {
-    const privatePreview =
-      privateLeagues.length === 0
-        ? "No private leagues"
-        : privateLeagues.length === 1
-          ? `${privateLeagues[0].name.slice(0, 18)}${privateLeagues[0].name.length > 18 ? "…" : ""} #${privateLeagues[0].position}`
-          : `${privateLeagues.length} private leagues`;
-
+  if (variant === "sheet" || variant === "mobile") {
     return (
-      <section className="mb-2 px-1" aria-label="Your league standings">
-        <Accordion
-          defaultExpanded={false}
-          disableGutters
-          elevation={0}
-          slots={{ heading: "div" }}
-          className="rounded-xl border border-gray-200 bg-white shadow-sm before:hidden"
-          sx={{
-            "&:before": { display: "none" },
-            "&.Mui-expanded": { margin: 0 },
-          }}
-        >
-          <AccordionSummary
-            expandIcon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-                className="size-5 text-gray-500 shrink-0"
-                aria-hidden
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m19.5 8.25-7.5 7.5-7.5-7.5"
-                />
-              </svg>
-            }
-            className="px-3 py-2 min-h-0 [&.Mui-expanded]:min-h-0"
-          >
-            <div className="flex flex-col gap-1.5 w-full min-w-0 pr-2 text-left">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Your standings
-              </span>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-800">
-                <span className="font-semibold text-colors-nba-blue tabular-nums">
-                  {globalLabel} #{global.position}
-                </span>
-                <span className="text-gray-400" aria-hidden>
-                  ·
-                </span>
-                <span className="text-gray-700 truncate">{privatePreview}</span>
-              </div>
-            </div>
-          </AccordionSummary>
-          <AccordionDetails className="pt-0 px-3 pb-3 border-t border-gray-100">
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50/90 px-3 py-2.5 mb-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold uppercase text-indigo-900/80">
-                  {globalLabel}
-                </span>
-                <span className="text-lg font-semibold text-colors-nba-blue tabular-nums">
-                  #{global.position}
-                </span>
-              </div>
-              <p className="text-sm text-gray-800 mt-0.5">
-                Total:{" "}
-                <span className="font-medium tabular-nums">
-                  {global.totalPoints}
-                </span>
-              </p>
-            </div>
-
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-              Private
-            </h3>
-            <ul className="flex flex-col gap-2">
-              {privateLeagues.length === 0 ? (
-                <li className="rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-600">
-                  No private leagues yet
-                </li>
-              ) : (
-                privateLeagues.map((league) => (
-                  <li key={league.id}>
-                    <Link
-                      to="/league"
-                      state={{ league: { id: league.id, name: league.name } }}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 active:bg-gray-100"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 text-sm truncate">
-                          {league.name}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          <span className="tabular-nums">
-                            {league.totalPoints}
-                          </span>{" "}
-                          pts
-                        </p>
-                      </div>
-                      <span className="text-base font-semibold text-colors-nba-blue tabular-nums shrink-0">
-                        #{league.position}
-                      </span>
-                      <ChevronRightIcon className="size-4 text-gray-400 shrink-0" />
-                    </Link>
-                  </li>
-                ))
-              )}
-            </ul>
-            <Link
-              to="/leagues"
-              className="mt-3 block text-center text-sm font-medium text-colors-nba-blue"
-            >
-              All leagues
-            </Link>
-          </AccordionDetails>
-        </Accordion>
+      <section aria-label="Your league standings">
+        <StandingsDetailBody data={data} onNavigate={onNavigate} />
       </section>
     );
   }
+
+  const globalLabel = data.global.label?.trim() || "Global";
+  const { global, privateLeagues } = data;
 
   return (
     <aside
@@ -238,38 +200,33 @@ function PreviewBody({
  */
 const HomeLeagueStandingsPreview: React.FC<HomeLeagueStandingsPreviewProps> = ({
   variant,
+  onNavigate,
 }) => {
   const { standingsPreview, standingsPreviewLoading } =
     useLeagueStandingsPreview();
+
+  const isSheet = variant === "sheet" || variant === "mobile";
 
   if (standingsPreviewLoading) {
     return (
       <div
         className={
-          variant === "mobile"
-            ? "mb-2 px-1"
-            : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"
+          isSheet ? "px-4 pb-4" : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"
         }
         aria-busy="true"
         aria-label="Loading your league standings"
       >
-        <Skeleton variant="rounded" height={variant === "mobile" ? 72 : 120} />
+        <Skeleton variant="rounded" height={isSheet ? 160 : 120} />
       </div>
     );
   }
 
   if (!standingsPreview) {
     return (
-      <div
-        className={
-          variant === "mobile"
-            ? "mb-2 px-1"
-            : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"
-        }
-      >
+      <div className={isSheet ? "px-4 pb-4" : "w-full max-w-[220px] xl:max-w-[240px] shrink-0"}>
         <div
           className={
-            variant === "mobile"
+            isSheet
               ? "rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-600"
               : "rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3 text-xs text-gray-600"
           }
@@ -280,7 +237,13 @@ const HomeLeagueStandingsPreview: React.FC<HomeLeagueStandingsPreviewProps> = ({
     );
   }
 
-  return <PreviewBody data={standingsPreview} variant={variant} />;
+  return (
+    <PreviewBody
+      data={standingsPreview}
+      variant={variant}
+      onNavigate={onNavigate}
+    />
+  );
 };
 
 export default HomeLeagueStandingsPreview;

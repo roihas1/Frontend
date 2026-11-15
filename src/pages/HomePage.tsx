@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import NBASeedCard from "../components/forPages/NBASeedCard";
-import MobileSeriesCard from "../components/forPages/MobileSeriesCard";
 // import { Team } from "../components/form/TeamDialog";
+import HomeMobileActionStrip from "../components/forPages/HomeMobileActionStrip";
+import HomeMobileMatchupList from "../components/forPages/HomeMobileMatchupList";
 import bostonCelticsLogo from "../assets/logos/boston_logo.png";
 import losAngelesLakersLogo from "../assets/logos/los_angeles_lakers_logo.png";
 import memphisGrizzliesLogo from "../assets/logos/memphis_grizzlies_logo.png";
@@ -49,12 +50,16 @@ import { useError } from "../components/providers&context/NotificationProvider";
 import { getErrorMessage } from "../api/getErrorMessage";
 import Tooltip from "@mui/material/Tooltip";
 import defaultLogo from "../assets/logos/defaultLogoTBD.png";
-import { Box, Modal, Skeleton, Slide, Zoom } from "@mui/material";
+import { Box, Modal, Skeleton, Slide, SwipeableDrawer, Zoom } from "@mui/material";
 import { useTournament } from "../components/providers&context/TournamentContext";
 import { useLeagueStandingsPreview } from "../components/providers&context/LeagueStandingsPreviewContext";
 import { useMissingBets } from "../components/providers&context/MissingBetsContext";
 import PullToRefreshIndicator from "../components/common/PullToRefreshIndicator";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import {
+  glassSheetHandleClassName,
+  glassSheetPaperSx,
+} from "../components/common/glassSheet";
 
 export interface Series {
   id?: string;
@@ -245,6 +250,7 @@ const HomePage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showMobileChampInput, setShowMobileChampInput] =
     useState<boolean>(false);
+  const [showStandingsSheet, setShowStandingsSheet] = useState(false);
   const [hasGuessedChampions, setHasGuessedChampions] = useState<
     boolean | null
   >(null);
@@ -724,21 +730,20 @@ const HomePage: React.FC = () => {
     </div>
   );
 
-  const mobileMatchups = [...series.west, ...series.east, ...series.finals];
-  const now = new Date();
-  const missingSeriesPicks = mobileMatchups.filter(
-    (matchup) => matchup.id && !isSeriesGuessComplete(matchup.id),
-  ).length;
   const totalSeriesPoints = Object.values(userPointsPerSeries ?? {}).reduce(
     (sum, points) => sum + points,
     0,
   );
-  const nextSeriesStart = mobileMatchups
-    .map((matchup) => getSeriesStartAt(matchup))
-    .filter((startAt) => startAt > now)
-    .sort((a, b) => a.getTime() - b.getTime())[0];
-  const nextSeriesStartLabel = nextSeriesStart
-    ? nextSeriesStart.toLocaleString("he-IL", {
+  const now = new Date();
+  const nextUpcomingSeries = [...series.west, ...series.east, ...series.finals]
+    .map((matchup) => ({ matchup, startAt: getSeriesStartAt(matchup) }))
+    .filter(({ startAt }) => startAt > now)
+    .sort((a, b) => a.startAt.getTime() - b.startAt.getTime())[0];
+  const nextSeriesMatchupLabel = nextUpcomingSeries
+    ? `${nextUpcomingSeries.matchup.team1 ?? "TBD"} vs ${nextUpcomingSeries.matchup.team2 ?? "TBD"}`
+    : null;
+  const nextSeriesStartLabel = nextUpcomingSeries
+    ? nextUpcomingSeries.startAt.toLocaleString("he-IL", {
         timeZone: "Asia/Jerusalem",
       })
     : null;
@@ -757,7 +762,7 @@ const HomePage: React.FC = () => {
       <div className="md:hidden">
         {loadError && (
           <div
-            className="mb-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            className="mb-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
             role="alert"
           >
             <p className="font-medium">{loadError}</p>
@@ -771,263 +776,184 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
-        {mobileMatchups.length > 0 && (
-          <div className="mb-2 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-            <div
-              className="flex flex-wrap gap-2 justify-center"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              <span
-                className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                  missingSeriesPicks > 0
-                    ? "bg-yellow-50 text-yellow-800"
-                    : "bg-green-50 text-green-700"
-                }`}
-              >
-                Missing picks: {missingSeriesPicks}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-colors-nba-blue/10 px-2.5 py-1 text-xs font-semibold text-colors-nba-blue">
-                Series points: {totalSeriesPoints}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                Next start: {nextSeriesStartLabel ?? "No upcoming starts"}
-              </span>
-            </div>
-          </div>
+        <HomeMobileActionStrip
+          hasPlayoffStages={hasPlayoffStages}
+          hasGuessedChampions={hasGuessedChampions}
+          stage={stage}
+          totalSeriesPoints={totalSeriesPoints}
+          nextSeriesMatchupLabel={nextSeriesMatchupLabel}
+          nextSeriesStartLabel={nextSeriesStartLabel}
+          onOpenStandings={() => setShowStandingsSheet(true)}
+          onOpenChampions={() => setShowMobileChampInput(true)}
+        />
+
+        {!hasPlayoffStages && (
+          <div className="mb-3">{championsStagesEmptyState}</div>
         )}
 
-        {hasPlayoffStages ? (
-          <>
-            {stage !== "Finish" && hasGuessedChampions === null ? (
-              <div className="mb-3 flex justify-center">
-                <Skeleton
-                  variant="rounded"
-                  height={50}
-                  sx={{ width: "100%", maxWidth: 320, borderRadius: "16px" }}
-                />
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <button
-                  type="button"
-                  aria-expanded={showMobileChampInput}
-                  className={`w-full max-w-xs min-h-[50px] px-6 py-3 text-[15px] font-bold rounded-2xl transition-all duration-200 mb-3 tracking-wide
-      ${
-        hasGuessedChampions !== false
-          ? "bg-white border border-colors-nba-blue/25 text-colors-nba-blue shadow-md shadow-blue-900/10 active:scale-[0.97] active:bg-blue-50"
-          : "bg-colors-nba-yellow text-black shadow-lg shadow-yellow-500/25 ring-1 ring-yellow-500/40 animate-scale-pulse motion-reduce:animate-none active:scale-[0.97]"
-      }
-    `}
-                  onClick={() => setShowMobileChampInput(true)}
-                >
-                  {hasGuessedChampions !== false
-                    ? "My champion picks"
-                    : "Guess the Champions"}
-                </button>
-              </div>
-            )}
+        <HomeMobileMatchupList
+          west={series.west}
+          east={series.east}
+          finals={series.finals}
+          userPointsPerSeries={userPointsPerSeries}
+          isSeriesGuessComplete={isSeriesGuessComplete}
+          fetchData={() => fetchHomepageData({ silent: true })}
+        />
 
-            <Modal
-              open={showMobileChampInput}
-              onClose={() => setShowMobileChampInput(false)}
-              closeAfterTransition
-              slotProps={{
-                backdrop: {
-                  sx: { backgroundColor: "rgba(0, 0, 0, 0.25)" },
-                },
-              }}
+        <Modal
+          open={showMobileChampInput}
+          onClose={() => setShowMobileChampInput(false)}
+          closeAfterTransition
+          slotProps={{
+            backdrop: {
+              sx: { backgroundColor: "rgba(0, 0, 0, 0.25)" },
+            },
+          }}
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "center",
+          }}
+        >
+          <Slide
+            direction="down"
+            in={showMobileChampInput}
+            mountOnEnter
+            unmountOnExit
+          >
+            <Box
+              role="dialog"
+              aria-labelledby="mobile-champions-curtain-title"
               sx={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                width: "100%",
+                maxHeight: "90dvh",
+                bgcolor: "background.paper",
+                borderBottomLeftRadius: 16,
+                borderBottomRightRadius: 16,
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
                 display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "center",
+                flexDirection: "column",
+                overflow: "hidden",
+                outline: "none",
               }}
             >
-              <Slide
-                direction="down"
-                in={showMobileChampInput}
-                mountOnEnter
-                unmountOnExit
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  px: 2,
+                  pt: 1.5,
+                  pb: 1.5,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
               >
                 <Box
-                  role="dialog"
-                  aria-labelledby="mobile-champions-curtain-title"
+                  aria-hidden
                   sx={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    width: "100%",
-                    maxHeight: "90dvh",
-                    bgcolor: "background.paper",
-                    borderBottomLeftRadius: 16,
-                    borderBottomRightRadius: 16,
-                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+                    width: 40,
+                    height: 4,
+                    bgcolor: "grey.300",
+                    borderRadius: 2,
+                    mx: "auto",
+                    mb: 1.5,
+                  }}
+                />
+                <Box
+                  sx={{
                     display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden",
-                    outline: "none",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
                   }}
                 >
-                  <Box
-                    sx={{
-                      flexShrink: 0,
-                      px: 2,
-                      pt: 1.5,
-                      pb: 1.5,
-                      borderBottom: "1px solid",
-                      borderColor: "divider",
-                    }}
+                  <h2
+                    id="mobile-champions-curtain-title"
+                    className="text-base font-semibold text-colors-nba-blue"
                   >
-                    <Box
+                    Champions Bets
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileChampInput(false)}
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-sm font-medium text-colors-nba-blue active:bg-gray-100"
+                    aria-label="Close champions bets"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      className="size-5"
                       aria-hidden
-                      sx={{
-                        width: 40,
-                        height: 4,
-                        bgcolor: "grey.300",
-                        borderRadius: 2,
-                        mx: "auto",
-                        mb: 1.5,
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 2,
-                      }}
                     >
-                      <h2
-                        id="mobile-champions-curtain-title"
-                        className="text-base font-semibold text-colors-nba-blue"
-                      >
-                        Champions Bets
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={() => setShowMobileChampInput(false)}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-sm font-medium text-colors-nba-blue active:bg-gray-100"
-                        aria-label="Close champions bets"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                          className="size-5"
-                          aria-hidden
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18 18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </Box>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      flex: "1 1 auto",
-                      minHeight: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <ChampionsInput
-                      west={series.west}
-                      east={series.east}
-                      startDate={stageStartDate}
-                      stage={stage}
-                      setShowInput={setHasGuessedAndInput}
-                    />
-                  </Box>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18 18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </Box>
-              </Slide>
-            </Modal>
-          </>
-        ) : (
-          <div className="mb-3 px-2">{championsStagesEmptyState}</div>
-        )}
+              </Box>
 
-        {mobileMatchups.length === 0 && !loadError && (
-          <div className="mb-4 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-5 text-center text-sm text-gray-600">
-            <p className="font-semibold text-gray-800 mb-1">No series yet</p>
-            <p>Playoff matchups will appear here once they are created.</p>
-          </div>
-        )}
+              <Box
+                sx={{
+                  flex: "1 1 auto",
+                  minHeight: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                }}
+              >
+                <ChampionsInput
+                  west={series.west}
+                  east={series.east}
+                  startDate={stageStartDate}
+                  stage={stage}
+                  setShowInput={setHasGuessedAndInput}
+                />
+              </Box>
+            </Box>
+          </Slide>
+        </Modal>
 
-        {[
-          "NBA Finals",
-          "Conference Finals",
-          "Conference Semifinals",
-          "First Round",
-        ].map((round) => {
-          // Filter conferences that have matchups in this round
-          const conferencesWithMatchups = ["finals", "west", "east"].filter(
-            (conference) =>
-              series[conference as keyof typeof series].some(
-                (matchup) => matchup.round === round,
-              ),
-          );
-
-          if (conferencesWithMatchups.length === 0) return null; // Skip if no matchups in this round
-
-          return (
-            <div key={round} className="mb-8 last:mb-0">
-              {/* Round Title (Skip "NBA Finals" title) */}
-
-              <h3 className="text-lg font-bold text-center text-colors-nba-blue border-b-2 border-colors-nba-blue/20 pb-2 mt-2 mb-3">
-                {round}
-              </h3>
-
-              {/* Loop through conferences that have matchups in this round */}
-              {conferencesWithMatchups.map((conference) => {
-                const matchupsInRound = series[
-                  conference as keyof typeof series
-                ].filter((matchup) => matchup.round === round);
-
-                if (matchupsInRound.length === 0) return null; // Skip empty conferences
-
-                const conferenceName =
-                  conference === "west"
-                    ? "Western Conference"
-                    : conference === "east"
-                      ? "Eastern Conference"
-                      : "NBA Finals";
-
-                return (
-                  <div key={conference} className="mb-3">
-                    {/* Conference Title (Skip if it's the NBA Finals) */}
-                    {conference !== "finals" && (
-                      <h4 className="text-sm font-medium text-center text-gray-600 border-b border-gray-200 pb-1 mb-2">
-                        {conferenceName}
-                      </h4>
-                    )}
-
-                    <div className="space-y-2">
-                      {matchupsInRound.map((matchup) => (
-                        <MobileSeriesCard
-                          key={matchup.id}
-                          series={matchup}
-                          userPoints={
-                            userPointsPerSeries?.[matchup.id ?? ""] ?? 0
-                          }
-                          isGuessComplete={isSeriesGuessComplete(matchup.id)}
-                          fetchData={() => fetchHomepageData({ silent: true })}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+        <SwipeableDrawer
+          anchor="bottom"
+          open={showStandingsSheet}
+          onOpen={() => setShowStandingsSheet(true)}
+          onClose={() => setShowStandingsSheet(false)}
+          disableSwipeToOpen
+          ModalProps={{ keepMounted: false }}
+          PaperProps={{
+            role: "dialog",
+            "aria-modal": true,
+            "aria-labelledby": "home-standings-sheet-title",
+            sx: glassSheetPaperSx,
+          }}
+        >
+          <div className="flex max-h-[80dvh] flex-col">
+            <div className="shrink-0 px-4 pb-2 pt-2">
+              <div aria-hidden className={glassSheetHandleClassName} />
+              <h2
+                id="home-standings-sheet-title"
+                className="text-base font-semibold text-colors-nba-blue"
+              >
+                Your standings
+              </h2>
             </div>
-          );
-        })}
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <HomeLeagueStandingsPreview
+                variant="sheet"
+                onNavigate={() => setShowStandingsSheet(false)}
+              />
+            </div>
+          </div>
+        </SwipeableDrawer>
       </div>
 
       {/* Desktop View: standings sidebar + bracket */}
