@@ -69,6 +69,7 @@ if (!self.define) {
 }
 define(['./workbox-04ff6d6c'], (function (workbox) { 'use strict';
 
+  importScripts("/push-sw.js?v=2");
   self.skipWaiting();
   workbox.clientsClaim();
 
@@ -79,7 +80,7 @@ define(['./workbox-04ff6d6c'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "index.html",
-    "revision": "0.7aqbgoprcro"
+    "revision": "0.9tsaauf7a5k"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {

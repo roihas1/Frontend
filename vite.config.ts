@@ -76,9 +76,13 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          // Push handlers live in public/push-sw.js and are loaded into the generated SW.
+          // Query bump forces browsers to reload push-sw.js when its behavior changes.
+          importScripts: ["/push-sw.js?v=2"],
           globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
           // Dev SW is served at /dev-sw.js, so precached registerSW.js resolves to /registerSW.js
           // and 404. Registration uses virtual:pwa-register; strip it from the precache manifest.
+          // Keep push-sw.js available as a runtime script (not stripped from public/).
           globIgnores: ["**/registerSW.js", "**/config.js"],
           manifestTransforms: [
             async (entries) => ({
@@ -102,6 +106,12 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
+    server: {
+      headers: {
+        // Avoid stale push handlers during local PWA testing.
+        "Cache-Control": "no-store",
+      },
+    },
     build: {
       outDir: "dist", // Output directory for production
       emptyOutDir: true, // Clears the output directory before building

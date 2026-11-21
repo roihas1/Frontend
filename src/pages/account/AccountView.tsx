@@ -1,6 +1,7 @@
 import React from "react";
 import ProfileSection from "../../components/forPages/account/ProfileSection";
 import SecuritySection from "../../components/forPages/account/SecuritySection";
+import NotificationsSection from "../../components/forPages/account/NotificationsSection";
 import LeaguesSection from "../../components/forPages/account/LeaguesSection";
 import { AccountPageModel } from "./useAccountPageModel";
 
@@ -17,7 +18,7 @@ const AccountView: React.FC<AccountPageModel> = (model) => {
           Account
         </h1>
         <p className="mt-1 text-sm text-gray-500">
-          Manage your profile, security, and league memberships.
+          Manage your profile, security, notifications, and league memberships.
         </p>
       </div>
 
@@ -33,6 +34,12 @@ const AccountView: React.FC<AccountPageModel> = (model) => {
         profile={profile}
         onChangePassword={model.changePassword}
         isSubmitting={model.isChangingPassword}
+      />
+      <NotificationsSection
+        state={model.pushState}
+        isBusy={model.pushBusy}
+        onEnable={model.handleEnablePush}
+        onDisable={model.handleDisablePush}
       />
       <LeaguesSection
         profile={profile}

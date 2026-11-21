@@ -12,6 +12,7 @@ const AccountPage: React.FC = () => {
         <Skeleton variant="rounded" height={48} />
         <Skeleton variant="rounded" height={220} />
         <Skeleton variant="rounded" height={200} />
+        <Skeleton variant="rounded" height={140} />
         <Skeleton variant="rounded" height={160} />
       </div>
     );

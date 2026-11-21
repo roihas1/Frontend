@@ -8,6 +8,7 @@ import { completeLoginSession } from "../../auth/completeLoginSession";
 import { useAuth } from "../../components/providers&context/AuthContext";
 import { useError, useSuccessMessage } from "../../components/providers&context/NotificationProvider";
 import { useTournament } from "../../components/providers&context/TournamentContext";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { League } from "../LeagueSelectionPage";
 import {
   UpdateMyProfileResponse,
@@ -22,6 +23,12 @@ export function useAccountPageModel() {
   const { showSuccessMessage } = useSuccessMessage();
   const { selectedTournamentId } = useTournament();
   const queryClient = useQueryClient();
+  const {
+    state: pushState,
+    isBusy: pushBusy,
+    enable: enablePush,
+    disable: disablePush,
+  } = usePushNotifications();
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -148,6 +155,41 @@ export function useAccountPageModel() {
     [navigate],
   );
 
+  const handleEnablePush = useCallback(async () => {
+    const result = await enablePush();
+    if (result.ok) {
+      showSuccessMessage("Notifications enabled on this device.");
+      return;
+    }
+    if (result.reason === "denied") {
+      showError(
+        "Notifications blocked",
+        "Allow notifications in your browser or device settings to get nightly updates.",
+      );
+      return;
+    }
+    if (result.reason === "unavailable") {
+      showError("Notifications unavailable", "Try again later.");
+      return;
+    }
+    if (result.reason === "unsupported") {
+      showError(
+        "Not supported",
+        "Push notifications aren't available in this browser.",
+      );
+      return;
+    }
+    showError(
+      "Couldn't enable notifications",
+      result.detail ?? "Try again.",
+    );
+  }, [enablePush, showError, showSuccessMessage]);
+
+  const handleDisablePush = useCallback(async () => {
+    await disablePush();
+    showSuccessMessage("Notifications turned off on this device.");
+  }, [disablePush, showSuccessMessage]);
+
   const loading =
     !isLoggedIn ||
     profileQuery.isLoading ||
@@ -166,6 +208,10 @@ export function useAccountPageModel() {
     leaveLeague: leaveLeagueMutation.mutateAsync,
     isLeavingLeague: leaveLeagueMutation.isPending,
     handleManageLeague,
+    pushState,
+    pushBusy,
+    handleEnablePush,
+    handleDisablePush,
   };
 }
 

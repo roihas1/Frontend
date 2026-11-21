@@ -10,6 +10,23 @@ import { notify } from "./components/common/notify";
 
 registerSW({ immediate: true });
 
+// Foreground toast when the SW delivers a push while a window is visible.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event: MessageEvent) => {
+    const data = event.data as
+      | { type?: string; title?: string; body?: string }
+      | undefined;
+    if (!data || data.type !== "push") return;
+    const title =
+      typeof data.title === "string" && data.title.trim()
+        ? data.title
+        : "Update ready";
+    const body =
+      typeof data.body === "string" && data.body.trim() ? data.body : undefined;
+    notify.info(title, body);
+  });
+}
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
