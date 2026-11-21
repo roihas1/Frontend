@@ -139,6 +139,8 @@ export interface BestOf7Bet {
   export enum PlayerMatchupType {
     UNDEROVER = "UNDER/OVER",
     PLAYERMATCHUP = "PLAYERMATCHUP",
+    TEAM_MATCHUP = "Team Matchup",
+    OVERALL = "Overall",
   }
   
   // Enum for matchup categories
@@ -150,6 +152,9 @@ export interface BestOf7Bet {
     BLOCKS = "Blocks",
     THREE_POINT_SHOTS_MADE = "3-Point Shots Made",
     TURNOVERS = "Turnovers",
+    FIELD_GOAL_PERCENTAGE = "Field Goal Percentage",
+    FREE_THROW_PERCENTAGE = "Free Throw Percentage",
+    MINUTES_PLAYED = "Minutes Played",
     DOUBLE_DOUBLE = 'Double Double',
     TRIPLE_DOUBLE = 'Triple Double',
   }

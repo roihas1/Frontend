@@ -2,6 +2,7 @@
 import "./App.css";
 import {
   BrowserRouter as Router,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -12,7 +13,6 @@ import { NotificationProvider } from "./components/providers&context/Notificatio
 import Navbar from "./components/Layout/NavBar";
 import HomePage from "./pages/HomePage";
 import { UserProvider } from "./components/providers&context/userContext";
-import UpdateBetsPage from "./pages/UpdateBetsPage";
 import LeaguesPage from "./pages/LeaguesPage";
 import WelcomePage from "./pages/WelcomePage";
 import Footer from "./components/common/Footer";
@@ -28,6 +28,12 @@ import TermsOfUsePage from "./pages/TermsOfUsePage";
 import AboutUsPage from "./pages/AboutUsPage";
 import GuessStatsPage from "./pages/GuessStatsPage";
 import AccountPage from "./pages/AccountPage";
+import AdminPage from "./pages/AdminPage";
+import AdminHubView from "./pages/admin/AdminHubView";
+import AdminSetupPage from "./pages/admin/AdminSetupPage";
+import ChampionsClosePage from "./pages/admin/ChampionsClosePage";
+import SeriesWorkbenchPage from "./pages/admin/SeriesWorkbenchPage";
+import RequireAdmin from "./components/common/RequireAdmin";
 import { TournamentProvider } from "./components/providers&context/TournamentContext";
 import { LeagueStandingsPreviewProvider } from "./components/providers&context/LeagueStandingsPreviewContext";
 import InstallAppButton from "./components/pwa/InstallAppButton";
@@ -71,7 +77,24 @@ function AppShell() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/updateBets" element={<UpdateBetsPage />} />
+            <Route path="/updateBets" element={<Navigate to="/admin" replace />} />
+            <Route
+              path="/admin"
+              element={
+                <RequireAdmin>
+                  <AdminPage />
+                </RequireAdmin>
+              }
+            >
+              <Route index element={<AdminHubView />} />
+              <Route path="series" element={<SeriesWorkbenchPage />} />
+              <Route
+                path="series/:seriesId/:tab"
+                element={<SeriesWorkbenchPage />}
+              />
+              <Route path="setup" element={<AdminSetupPage />} />
+              <Route path="champions" element={<ChampionsClosePage />} />
+            </Route>
             <Route path="/leagues" element={<LeaguesSelectionPage />} />
             <Route path="/league" element={<LeaguesPage />} />
             <Route path="/comparing" element={<ComparingPage />} />

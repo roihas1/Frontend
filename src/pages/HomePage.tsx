@@ -238,8 +238,8 @@ const HomePage: React.FC = () => {
   const [userPointsPerSeries, setUserPointsPerSeries] = useState<{
     [key: string]: number;
   } | null>(null);
-  const [isGuessCompleteBySeries, setIsGuessCompleteBySeries] = useState<{
-    [key: string]: boolean;
+  const [guessStatusBySeries, setGuessStatusBySeries] = useState<{
+    [key: string]: "complete" | "missing" | "no_bets" | boolean;
   }>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -277,7 +277,19 @@ const HomePage: React.FC = () => {
     setShowInput(false);
   };
 
-  const isSeriesGuessComplete = (id?: string) => Boolean(id && isGuessCompleteBySeries[id]);
+  const getSeriesGuessStatus = (
+    id?: string,
+  ): "complete" | "missing" | "no_bets" => {
+    if (!id) return "no_bets";
+    const status = guessStatusBySeries[id];
+    // Backward-compatible if an older API still returns booleans.
+    if (status === true || status === "complete") return "complete";
+    if (status === false || status === "missing") return "missing";
+    if (status === "no_bets") return "no_bets";
+    return "no_bets";
+  };
+  const isSeriesGuessMissing = (id?: string) =>
+    getSeriesGuessStatus(id) === "missing";
 
   const fetchHomepageData = async (options?: { silent?: boolean }) => {
     if (!selectedTournamentId) {
@@ -365,7 +377,7 @@ const HomePage: React.FC = () => {
 
         setSeries(updatedSeries);
         setUserPointsPerSeries(userPoints);
-        setIsGuessCompleteBySeries(userGuessedAll);
+        setGuessStatusBySeries(userGuessedAll ?? {});
 
         const stages: Stage[] = Array.isArray(playoffsStages)
           ? playoffsStages
@@ -544,7 +556,7 @@ const HomePage: React.FC = () => {
             {sortedMatchups.map((matchup, idx) => {
               const seriesStartAt = getSeriesStartAt(matchup);
               const hasSeriesStarted = new Date() > seriesStartAt;
-              const guessComplete = isSeriesGuessComplete(matchup.id);
+              const guessStatus = getSeriesGuessStatus(matchup.id);
 
               return (
                 <div
@@ -575,7 +587,7 @@ const HomePage: React.FC = () => {
                     </Tooltip>
                   )}
 
-                  {!guessComplete ? (
+                  {!hasSeriesStarted && guessStatus === "missing" && (
                     <div className="absolute top-[-24px]  transform mb-4 ">
                       <Tooltip
                         title="Missing guesses"
@@ -599,7 +611,8 @@ const HomePage: React.FC = () => {
                         </svg>
                       </Tooltip>
                     </div>
-                  ) : (
+                  )}
+                  {!hasSeriesStarted && guessStatus === "complete" && (
                     <div className="absolute top-[-24px] transform mb-4">
                       <Tooltip
                         title="Guessed all"
@@ -622,6 +635,30 @@ const HomePage: React.FC = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             fill="none"
+                          />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                  )}
+                  {!hasSeriesStarted && guessStatus === "no_bets" && (
+                    <div className="absolute top-[-24px] transform mb-4">
+                      <Tooltip
+                        title="No open picks yet"
+                        slots={{
+                          transition: Zoom,
+                        }}
+                        arrow
+                        placement="left"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="size-6"
+                        >
+                          <circle cx="12" cy="12" r="9" fill="#9CA3AF" />
+                          <path
+                            fill="white"
+                            d="M12 7.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0112 7.5zm0 9a.75.75 0 100-1.5.75.75 0 000 1.5z"
                           />
                         </svg>
                       </Tooltip>
@@ -726,9 +763,10 @@ const HomePage: React.FC = () => {
 
   const mobileMatchups = [...series.west, ...series.east, ...series.finals];
   const now = new Date();
-  const missingSeriesPicks = mobileMatchups.filter(
-    (matchup) => matchup.id && !isSeriesGuessComplete(matchup.id),
-  ).length;
+  const missingSeriesPicks = mobileMatchups.filter((matchup) => {
+    if (!matchup.id || getSeriesStartAt(matchup) <= now) return false;
+    return isSeriesGuessMissing(matchup.id);
+  }).length;
   const totalSeriesPoints = Object.values(userPointsPerSeries ?? {}).reduce(
     (sum, points) => sum + points,
     0,
@@ -1017,7 +1055,7 @@ const HomePage: React.FC = () => {
                           userPoints={
                             userPointsPerSeries?.[matchup.id ?? ""] ?? 0
                           }
-                          isGuessComplete={isSeriesGuessComplete(matchup.id)}
+                          guessStatus={getSeriesGuessStatus(matchup.id)}
                           fetchData={() => fetchHomepageData({ silent: true })}
                         />
                       ))}

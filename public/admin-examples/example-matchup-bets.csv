@@ -1,0 +1,7 @@
+player1,player2,categories,typeOfMatchup,fantasyPoints,differential
+Shai Gilgeous-Alexander,Ja Morant,Points,PLAYERMATCHUP,2,0
+Chet Holmgren,Jaren Jackson Jr.,Points|Rebounds|Blocks,PLAYERMATCHUP,3,0
+Oklahoma City Thunder,Memphis Grizzlies,Points,Team Matchup,2,0
+Shai Gilgeous-Alexander,Ja Morant,Assists,UNDER/OVER,2,0
+Chet Holmgren,Desmond Bane,3-Point Shots Made,PLAYERMATCHUP,2,0
+Shai Gilgeous-Alexander,Ja Morant,Minutes Played,Overall,1,0

@@ -1,0 +1,9 @@
+team1,team2,seed1,seed2,round,conference,dateOfStart,timeOfStart,tournamentId
+OKC,MEM,1,8,First Round,West,2026-04-18,19:30,
+DEN,LAC,2,7,First Round,West,2026-04-19,21:00,
+MIN,LAL,3,6,First Round,West,2026-04-20,19:30,
+DAL,GSW,4,5,First Round,West,2026-04-21,22:00,
+BOS,ORL,1,8,First Round,East,2026-04-18,20:00,
+NYK,MIA,2,7,First Round,East,2026-04-19,19:30,
+CLE,IND,3,6,First Round,East,2026-04-20,21:00,
+MIL,PHI,4,5,First Round,East,2026-04-21,19:00,

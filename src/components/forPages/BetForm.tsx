@@ -1,25 +1,30 @@
 import React from "react";
+import { SelectChangeEvent } from "@mui/material";
 import {
-  InputLabel,
-  FormControl,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
-} from "@mui/material";
-
-import SubmitButton from "../common/SubmitButton";
-import { PlayerMatchupBet, SpontaneousBet } from "../../types/index";
-import { MatchupCategory, PlayerMatchupType } from "../../types/index";
+  MatchupCategory,
+  PlayerMatchupBet,
+  PlayerMatchupType,
+  SpontaneousBet,
+} from "../../types/index";
+import {
+  AdminChipGroup,
+  AdminChoiceGroup,
+  AdminField,
+  AdminFieldGrid,
+  AdminFormActions,
+  AdminFormCard,
+  adminControlClass,
+} from "../../pages/admin/AdminFormPrimitives";
 
 interface BetFormProps {
-  selectedBet: PlayerMatchupBet|SpontaneousBet;
+  selectedBet: PlayerMatchupBet | SpontaneousBet;
   handleInputChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleCategoriesSelection: (e: SelectChangeEvent<MatchupCategory[]>) => void;
   handleGameNumberSelection: (e: SelectChangeEvent<string>) => void;
   handleCloseEditBet: () => void;
-  handleDateAndTimeSelection: (e:React.ChangeEvent<HTMLInputElement>) => void;
+  handleDateAndTimeSelection: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   loading: boolean;
   isSpontaneous: boolean;
@@ -40,195 +45,197 @@ const BetForm: React.FC<BetFormProps> = ({
   startDate,
   startTime,
 }) => {
-  
+  const isEditing = Boolean(selectedBet.id);
+  const title = isSpontaneous
+    ? isEditing
+      ? "Edit spontaneous bet"
+      : "Create spontaneous bet"
+    : isEditing
+      ? "Edit matchup bet"
+      : "Create matchup bet";
+
+  const toggleCategory = (category: string) => {
+    const current = selectedBet.categories ?? [];
+    const next = current.includes(category as MatchupCategory)
+      ? current.filter((c) => c !== category)
+      : [...current, category as MatchupCategory];
+    handleCategoriesSelection({
+      target: { value: next },
+    } as SelectChangeEvent<MatchupCategory[]>);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Matchup Type */}
-      <div>
-        <label className="block text-lg font-semibold">Matchup Type</label>
-        <select
-          name="typeOfMatchup"
-          value={selectedBet?.typeOfMatchup}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-        >
-          {Object.values(PlayerMatchupType).map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
+    <AdminFormCard
+      as="form"
+      onSubmit={handleSubmit}
+      title={title}
+      description={
+        isSpontaneous
+          ? "Tied to a single game tip-off. Set the game number and start time."
+          : "Series-long player matchup. Differential is applied to player 2."
+      }
+    >
+      <section className="space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Players
+        </h4>
+        <AdminFieldGrid>
+          <AdminField label="Player 1" htmlFor="bet-player1" required>
+            <input
+              id="bet-player1"
+              type="text"
+              name="player1"
+              value={selectedBet.player1}
+              onChange={handleInputChange}
+              disabled={loading}
+              placeholder="e.g. LeBron James"
+              className={adminControlClass}
+              required
+            />
+          </AdminField>
+          <AdminField label="Player 2" htmlFor="bet-player2" required>
+            <input
+              id="bet-player2"
+              type="text"
+              name="player2"
+              value={selectedBet.player2}
+              onChange={handleInputChange}
+              disabled={loading}
+              placeholder="e.g. Jayson Tatum"
+              className={adminControlClass}
+              required
+            />
+          </AdminField>
+        </AdminFieldGrid>
+      </section>
 
-      {/* Player 1 */}
-      <div>
-        <label className="block text-lg font-semibold">Player 1</label>
-        <input
-          type="text"
-          name="player1"
-          value={selectedBet?.player1}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-        />
-      </div>
-
-      {/* Player 2 */}
-      <div>
-        <label className="block text-lg font-semibold">Player 2</label>
-        <input
-          type="text"
-          name="player2"
-          value={selectedBet.player2}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-        />
-      </div>
-
-      {/* Differential */}
-      <div>
-        <label className="block text-lg font-semibold">
-          Differential (On player 2)
-        </label>
-        <input
-          type="number"
-          name="differential"
-          value={selectedBet.differential}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-          step="any"
-        />
-      </div>
-
-      {/* Fantasy Points */}
-      <div>
-        <label className="block text-lg font-semibold">Fantasy Points</label>
-        <input
-          type="number"
-          name="fantasyPoints"
-          value={selectedBet.fantasyPoints}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg mt-2"
-        />
-      </div>
-
-      {/* Categories */}
-      <div>
-        <FormControl fullWidth>
-          <InputLabel id="categories">Categories</InputLabel>
-          <Select
-            labelId="categories"
-            id="categoriesSelection"
-            multiple
-            value={selectedBet.categories}
-            onChange={handleCategoriesSelection}
-            sx={{
-              backgroundColor: "white",
-              borderRadius: "0.5rem",
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "white", // Ensure that the dropdown input also has a white background
-              },
-            }}
+      <section className="space-y-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Scoring
+        </h4>
+        <AdminField label="Matchup type" htmlFor="bet-type" required>
+          <select
+            id="bet-type"
+            name="typeOfMatchup"
+            value={selectedBet.typeOfMatchup}
+            onChange={handleInputChange}
+            disabled={loading}
+            className={adminControlClass}
           >
-            {Object.values(MatchupCategory).map((category) => (
-              <MenuItem
-                key={category}
-                value={category}
-                sx={{
-                  "&.Mui-selected": {
-                    backgroundColor: "#ccffcc",
-                    color: "black", // Customize the color of the selected item text
-                  },
-                  "&.Mui-selected:hover": {
-                    backgroundColor: "#ccffcc",
-                  },
-                }}
-              >
-                {category}
-              </MenuItem>
+            {Object.values(PlayerMatchupType).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
-          </Select>
-        </FormControl>
-      </div>
+          </select>
+        </AdminField>
+
+        <AdminField
+          label="Categories"
+          hint="Tap to toggle. Use one or more stats."
+          required
+        >
+          <AdminChipGroup
+            options={Object.values(MatchupCategory)}
+            selected={selectedBet.categories ?? []}
+            onToggle={toggleCategory}
+            disabled={loading}
+          />
+        </AdminField>
+
+        <AdminFieldGrid>
+          <AdminField
+            label="Differential (on player 2)"
+            htmlFor="bet-diff"
+            hint="Added to player 2 before comparing."
+          >
+            <input
+              id="bet-diff"
+              type="number"
+              name="differential"
+              value={selectedBet.differential}
+              onChange={handleInputChange}
+              disabled={loading}
+              step="any"
+              className={adminControlClass}
+            />
+          </AdminField>
+          <AdminField label="Fantasy points" htmlFor="bet-fp" required>
+            <input
+              id="bet-fp"
+              type="number"
+              name="fantasyPoints"
+              value={selectedBet.fantasyPoints}
+              onChange={handleInputChange}
+              disabled={loading}
+              min={0}
+              className={adminControlClass}
+              required
+            />
+          </AdminField>
+        </AdminFieldGrid>
+      </section>
+
       {isSpontaneous && (
-        <div>
-          <div>
-          <label className="block text-lg font-semibold" > Game Number</label>
-            <FormControl fullWidth>
-              <InputLabel id="gameNumber">Game Number</InputLabel>
-              <Select
-                labelId="Game Number"
-                id="gameNumber"
-                value={
-                  "gameNumber" in selectedBet && selectedBet.gameNumber
-                    ? selectedBet.gameNumber.toString()
-                    : "0"
-                }
-                onChange={handleGameNumberSelection}
-                sx={{
-                  backgroundColor: "white",
-                  borderRadius: "0.5rem",
-                  "& .MuiOutlinedInput-root": {
-                    backgroundColor: "white", // Ensure that the dropdown input also has a white background
-                  },
-                }}
-              >
-                {Array.from([0,1, 2, 3, 4, 5, 6, 7]).map((num) => (
-                  <MenuItem
-                    key={num}
-                    value={num}
-                    sx={{
-                      "&.Mui-selected": {
-                        backgroundColor: "#ccffcc",
-                        color: "black", // Customize the color of the selected item text
-                      },
-                      "&.Mui-selected:hover": {
-                        backgroundColor: "#ccffcc",
-                      },
-                    }}
-                  >
-                    {num}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </div>
-          <div className="mt-2">
-            <label className="block text-lg font-semibold" > Start Date</label>
-            <input
-              type="date"
-              name="dateOfStart"
-              value={startDate}
-              onChange={handleDateAndTimeSelection}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-2 bg-white"
+        <section className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Game schedule
+          </h4>
+          <AdminField label="Game number" required>
+            <AdminChoiceGroup
+              options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({
+                value: String(n),
+                label: String(n),
+              }))}
+              value={
+                "gameNumber" in selectedBet && selectedBet.gameNumber
+                  ? String(selectedBet.gameNumber)
+                  : ""
+              }
+              onChange={(value) =>
+                handleGameNumberSelection({
+                  target: { value },
+                } as SelectChangeEvent<string>)
+              }
+              disabled={loading}
             />
-            <label className="block text-lg font-semibold">Start Time</label>
-            <input
-              type="time"
-              name="startTime"
-              value={startTime}
-              onChange={ handleDateAndTimeSelection}
-              className="w-full p-3 border border-gray-300 rounded-lg mt-2 bg-white"
-            />
-          </div>
-        </div>
+          </AdminField>
+          <AdminFieldGrid>
+            <AdminField label="Start date" htmlFor="bet-start-date" required>
+              <input
+                id="bet-start-date"
+                type="date"
+                name="dateOfStart"
+                value={startDate}
+                onChange={handleDateAndTimeSelection}
+                disabled={loading}
+                className={adminControlClass}
+                required
+              />
+            </AdminField>
+            <AdminField label="Start time" htmlFor="bet-start-time" required>
+              <input
+                id="bet-start-time"
+                type="time"
+                name="startTime"
+                value={startTime}
+                onChange={handleDateAndTimeSelection}
+                disabled={loading}
+                className={adminControlClass}
+                required
+              />
+            </AdminField>
+          </AdminFieldGrid>
+        </section>
       )}
 
-      {/* Submit and Close Buttons */}
-      <div className="flex justify-between mt-4">
-        <button
-          type="button"
-          onClick={handleCloseEditBet}
-          className="text-colors-nba-red hover:scale-110 transition-transform"
-        >
-          Close Edit Bet
-        </button>
-        <SubmitButton
-          loading={loading}
-          text={loading ? "Updating" : "Update"}
-          onClick={handleSubmit}
-        />
-      </div>
-    </form>
+      <AdminFormActions
+        cancelLabel="Cancel"
+        submitLabel={isEditing ? "Save changes" : "Create bet"}
+        onCancel={handleCloseEditBet}
+        loading={loading}
+      />
+    </AdminFormCard>
   );
 };
 

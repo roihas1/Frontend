@@ -4,34 +4,56 @@ import { Zoom } from "@mui/material";
 import TeamDialog from "../form/TeamDialog";
 import { Series, getSeriesStartAt } from "../../pages/HomePage";
 
+export type SeriesGuessStatus = "complete" | "missing" | "no_bets";
+
 interface MobileSeriesCardProps {
   series: Series;
   userPoints: number;
-  isGuessComplete: boolean;
+  guessStatus: SeriesGuessStatus;
   fetchData: () => void;
 }
 
 const GuessStatusIcon: React.FC<{
-  isGuessComplete: boolean;
+  guessStatus: SeriesGuessStatus;
   className?: string;
-}> = ({ isGuessComplete, className = "w-5 h-5" }) =>
-  isGuessComplete ? (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="9" fill="green" />
-      <path
-        d="M9 12.75L11.25 15L15 9.75"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </svg>
-  ) : (
+}> = ({ guessStatus, className = "w-5 h-5" }) => {
+  if (guessStatus === "complete") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        className={className}
+      >
+        <circle cx="12" cy="12" r="9" fill="green" />
+        <path
+          d="M9 12.75L11.25 15L15 9.75"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </svg>
+    );
+  }
+
+  if (guessStatus === "no_bets") {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        className={className}
+      >
+        <circle cx="12" cy="12" r="9" fill="#9CA3AF" />
+        <path
+          fill="white"
+          d="M12 7.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0112 7.5zm0 9a.75.75 0 100-1.5.75.75 0 000 1.5z"
+        />
+      </svg>
+    );
+  }
+
+  return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
@@ -45,11 +67,33 @@ const GuessStatusIcon: React.FC<{
       />
     </svg>
   );
+};
+
+const statusMeta: Record<
+  SeriesGuessStatus,
+  { title: string; label: string; className: string }
+> = {
+  complete: {
+    title: "Guessed all open picks",
+    label: "Complete",
+    className: "bg-green-50 text-green-700",
+  },
+  missing: {
+    title: "Missing open picks",
+    label: "Missing picks",
+    className: "bg-yellow-50 text-yellow-800",
+  },
+  no_bets: {
+    title: "No open picks for this series yet",
+    label: "No open picks",
+    className: "bg-gray-100 text-gray-600",
+  },
+};
 
 const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
   series,
   userPoints,
-  isGuessComplete,
+  guessStatus,
   fetchData,
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -79,6 +123,7 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
 
   const openDialog = () => setIsDialogOpen(true);
   const closeDialog = () => setIsDialogOpen(false);
+  const meta = statusMeta[guessStatus] ?? statusMeta.no_bets;
 
   return (
     <>
@@ -89,7 +134,7 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
         tabIndex={0}
         aria-label={`${series.team1} vs ${series.team2}, ${statusText}${
           hasStarted ? `, ${userPoints} points earned` : ""
-        }, tap to place bets`}
+        }, ${meta.label}, tap to place bets`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
@@ -97,7 +142,6 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
           }
         }}
       >
-        {/* Tap affordance */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -115,7 +159,6 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
         </svg>
 
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-3 py-4 pr-7">
-          {/* Team 1 */}
           <div className="flex flex-col items-center gap-0.5 min-w-0">
             <img
               src={series.logo1}
@@ -129,7 +172,6 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
             <span className="text-xs text-gray-500">#{series.seed1}</span>
           </div>
 
-          {/* Center: status, points / CTA, guess icon */}
           <div className="flex flex-col items-center justify-center gap-1 text-center shrink-0 px-1">
             <span
               className={`font-extrabold leading-tight ${
@@ -148,35 +190,31 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
                 +{userPoints} pts
               </span>
             ) : (
-              <span className="text-xs text-gray-400">Tap to set picks</span>
+              <>
+                <span className="text-xs text-gray-400">Tap to set picks</span>
+                <Tooltip
+                  title={meta.title}
+                  arrow
+                  placement="bottom"
+                  enterTouchDelay={0}
+                  leaveTouchDelay={2000}
+                  slots={{ transition: Zoom }}
+                >
+                  <div
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold cursor-default ${meta.className}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <GuessStatusIcon
+                      guessStatus={guessStatus}
+                      className="w-3.5 h-3.5"
+                    />
+                    {meta.label}
+                  </div>
+                </Tooltip>
+              </>
             )}
-
-            <Tooltip
-              title={isGuessComplete ? "Guessed all" : "Missing guesses"}
-              arrow
-              placement="bottom"
-              enterTouchDelay={0}
-              leaveTouchDelay={2000}
-              slots={{ transition: Zoom }}
-            >
-              <div
-                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold cursor-default ${
-                  isGuessComplete
-                    ? "bg-green-50 text-green-700"
-                    : "bg-yellow-50 text-yellow-800"
-                }`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <GuessStatusIcon
-                  isGuessComplete={isGuessComplete}
-                  className="w-3.5 h-3.5"
-                />
-                {isGuessComplete ? "Complete" : "Missing picks"}
-              </div>
-            </Tooltip>
           </div>
 
-          {/* Team 2 */}
           <div className="flex flex-col items-center gap-0.5 min-w-0">
             <img
               src={series.logo2}
@@ -195,12 +233,12 @@ const MobileSeriesCard: React.FC<MobileSeriesCardProps> = ({
       <TeamDialog
         isOpen={isDialogOpen}
         series={series}
-        closeDialog={closeDialog}
         userPoints={userPoints}
+        closeDialog={closeDialog}
         fetchData={fetchData}
       />
     </>
   );
 };
 
-export default React.memo(MobileSeriesCard);
+export default MobileSeriesCard;

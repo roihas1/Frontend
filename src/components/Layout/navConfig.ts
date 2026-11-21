@@ -83,9 +83,9 @@ export const NAV_ITEMS: Record<NavItemId, NavItem> = {
   },
   updateBets: {
     id: "updateBets",
-    to: "/updateBets",
-    desktopLabel: "Update Bets",
-    mobileLabel: "Update Bets",
+    to: "/admin",
+    desktopLabel: "Admin",
+    mobileLabel: "Admin",
     icon: Cog6ToothIcon,
     isAdminOnly: true,
   },
